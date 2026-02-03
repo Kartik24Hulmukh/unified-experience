@@ -1,11 +1,15 @@
-import GooeyCursor from '@/components/GooeyCursor';
+import MagneticCursor from '@/components/MagneticCursor';
 import MasterExperience from '@/components/MasterExperience';
+import LiquidScene from '@/components/LiquidScene';
 
 const Index = () => {
   return (
     <main className="relative">
-      {/* Gooey Cursor - Z-9999 with mix-blend-difference */}
-      <GooeyCursor size={28} />
+      {/* Liquid Metal 3D Scene - Z-0 background layer */}
+      <LiquidScene scrollPages={5} />
+      
+      {/* Magnetic Cursor - Z-9999 with spring physics */}
+      <MagneticCursor size={28} springStrength={0.08} dampening={0.85} />
       
       {/* Unified Master Experience - Hero + Portal Transition + Modules */}
       <MasterExperience />

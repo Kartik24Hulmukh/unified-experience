@@ -81,68 +81,104 @@ const MasterExperience = () => {
           start: 'top top',
           end: 'bottom bottom',
           scrub: 1,
-          // markers: true, // Uncomment for debugging
         },
       });
 
-      // Phase 1: The Swallow (0% -> 25%)
-      // Hero text splits up/down, Portal expands
+      // Phase 1: White Room (0% -> 5%) - Initial state, no animation needed
+      
+      // Phase 2: The Swallow (5% -> 25%)
+      // "TRUST" flies Up-Left with glitch
       tl.to(
         heroTopRef.current,
         {
-          y: '-120vh',
+          y: '-150vh',
+          x: '-20vw',
           opacity: 0,
-          duration: 0.25,
+          clipPath: 'inset(0 0 0 100%)',
+          duration: 0.20,
+          ease: 'power3.inOut',
+        },
+        0.05
+      )
+      // "EXCHANGE" flies Down-Right with glitch
+      .to(
+        heroBottomRef.current,
+        {
+          y: '150vh',
+          x: '20vw',
+          opacity: 0,
+          clipPath: 'inset(0 100% 0 0)',
+          duration: 0.20,
+          ease: 'power3.inOut',
+        },
+        0.05
+      )
+      // Portal expands to full screen
+      .to(
+        portalRef.current,
+        {
+          width: '100vw',
+          height: '100vh',
+          borderRadius: '0px',
+          duration: 0.20,
           ease: 'power2.inOut',
         },
-        0
+        0.05
       )
-        .to(
-          heroBottomRef.current,
-          {
-            y: '120vh',
-            opacity: 0,
-            duration: 0.25,
-            ease: 'power2.inOut',
-          },
-          0
-        )
-        .to(
-          portalRef.current,
-          {
-            width: '100vw',
-            height: '100vh',
-            borderRadius: '0px',
-            duration: 0.25,
-            ease: 'power2.inOut',
-          },
-          0
-        );
+      // 3D Symbol scales slightly during expansion
+      .to(
+        symbolRef.current,
+        {
+          scale: 1.2,
+          duration: 0.20,
+          ease: 'power2.out',
+        },
+        0.05
+      );
 
-      // Phase 2: The Arrival (25% -> 60%)
-      // Modules fade in and slide up
+      // Phase 3: The Arrival (25% -> 60%)
+      // Modules container becomes visible
       tl.to(
         modulesRef.current,
         {
           opacity: 1,
-          y: 0,
-          duration: 0.35,
+          pointerEvents: 'auto',
+          duration: 0.10,
           ease: 'power2.out',
         },
         0.25
       );
 
-      // Phase 3: The Departure (60% -> 90%)
-      // Symbol fades out
+      // Staggered module items slide up
+      const moduleItems = modulesRef.current?.querySelectorAll('.module-item');
+      if (moduleItems) {
+        tl.fromTo(
+          moduleItems,
+          {
+            y: 100,
+            opacity: 0,
+          },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.25,
+            stagger: 0.05,
+            ease: 'power3.out',
+          },
+          0.28
+        );
+      }
+
+      // Symbol fades out after modules arrive
       tl.to(
         symbolRef.current,
         {
           opacity: 0,
           scale: 0.8,
-          duration: 0.3,
+          duration: 0.15,
           ease: 'power2.inOut',
         },
-        0.6
+        0.55
       );
     }, containerRef);
 
@@ -162,6 +198,7 @@ const MasterExperience = () => {
           <div
             ref={heroTopRef}
             className="text-hero-massive text-foreground select-none will-change-transform"
+            style={{ clipPath: 'inset(0 0 0 0)' }}
           >
             TRUST
           </div>
@@ -170,6 +207,7 @@ const MasterExperience = () => {
           <div
             ref={heroBottomRef}
             className="text-hero-massive text-foreground select-none will-change-transform"
+            style={{ clipPath: 'inset(0 0 0 0)' }}
           >
             EXCHANGE
           </div>
@@ -178,22 +216,25 @@ const MasterExperience = () => {
         {/* Z-20: The Portal (Black Background) */}
         <div
           ref={portalRef}
-          className="absolute z-20 bg-portal rounded-full will-change-[width,height,border-radius] flex items-center justify-center"
+          className="absolute z-20 bg-portal will-change-[width,height,border-radius] flex items-center justify-center"
           style={{
             width: '350px',
-            height: '350px',
+            height: '400px',
+            borderRadius: '8px',
           }}
         >
-          {/* 3D Symbol inside portal */}
+          {/* 3D Symbol inside portal - spins continuously */}
           <div
             ref={symbolRef}
-            className="absolute inset-0 flex items-center justify-center"
+            className="flex items-center justify-center"
+            style={{ transform: 'scale(1)' }}
           >
-            <div className="relative w-24 h-24 md:w-32 md:h-32">
+            <div className="relative w-24 h-24 md:w-32 md:h-32 animate-spin-slow">
               {/* Geometric trust symbol */}
-              <div className="absolute inset-0 border-2 border-portal-foreground/30 rotate-45 animate-pulse" />
-              <div className="absolute inset-2 border border-portal-foreground/20 rotate-12" />
-              <div className="absolute inset-4 bg-portal-foreground/10 rotate-45" />
+              <div className="absolute inset-0 border-2 border-portal-foreground/40 rotate-45" />
+              <div className="absolute inset-2 border border-portal-foreground/25 rotate-12 animate-pulse" />
+              <div className="absolute inset-4 bg-portal-foreground/15 rotate-45" />
+              <div className="absolute inset-6 border border-portal-foreground/20 -rotate-12" />
             </div>
           </div>
         </div>
@@ -201,12 +242,12 @@ const MasterExperience = () => {
         {/* Z-30: Modules Content Layer */}
         <div
           ref={modulesRef}
-          className="absolute inset-0 z-30 flex opacity-0 translate-y-20 will-change-[opacity,transform]"
-          style={{ pointerEvents: 'auto' }}
+          className="absolute inset-0 z-30 flex opacity-0 will-change-[opacity,transform]"
+          style={{ pointerEvents: 'none' }}
         >
           {/* Left Column: Module List (40%) */}
           <div className="w-full md:w-2/5 h-full flex flex-col justify-center px-8 md:px-16">
-            <div className="mb-8">
+            <div className="module-item mb-8">
               <p className="text-portal-foreground/60 text-sm uppercase tracking-widest mb-2">
                 Platform Modules
               </p>
@@ -219,7 +260,7 @@ const MasterExperience = () => {
               {modules.map((module) => (
                 <div
                   key={module.id}
-                  className="group cursor-pointer"
+                  className="module-item group cursor-pointer"
                   onMouseEnter={() => handleModuleHover(module.id)}
                   onMouseLeave={() => handleModuleHover(null)}
                 >

@@ -84,10 +84,19 @@ const MasterExperience = () => {
         },
       });
 
-      // Phase 1: White Room (0% -> 5%) - Initial state, no animation needed
+      // =====================================================
+      // Phase 1: White Room (0% -> 5%)
+      // State: White screen, small black portal centered,
+      // "TRUST/EXCHANGE" visible, modules hidden
+      // No animation needed - this is the initial state
+      // =====================================================
       
+      // =====================================================
       // Phase 2: The Swallow (5% -> 25%)
-      // "TRUST" flies Up-Left with glitch
+      // Text flies away with glitch, portal expands to fullscreen
+      // =====================================================
+      
+      // "TRUST" flies Up-Left with clip-path glitch
       tl.to(
         heroTopRef.current,
         {
@@ -95,12 +104,12 @@ const MasterExperience = () => {
           x: '-20vw',
           opacity: 0,
           clipPath: 'inset(0 0 0 100%)',
-          duration: 0.20,
+          duration: 0.20, // 5% to 25% = 20% of timeline
           ease: 'power3.inOut',
         },
-        0.05
+        0.05 // Start at 5%
       )
-      // "EXCHANGE" flies Down-Right with glitch
+      // "EXCHANGE" flies Down-Right with clip-path glitch
       .to(
         heroBottomRef.current,
         {
@@ -113,7 +122,7 @@ const MasterExperience = () => {
         },
         0.05
       )
-      // Portal expands to full screen
+      // Portal expands to full screen - CRITICAL for eliminating white gap
       .to(
         portalRef.current,
         {
@@ -125,7 +134,7 @@ const MasterExperience = () => {
         },
         0.05
       )
-      // 3D Symbol scales slightly during expansion
+      // 3D Symbol scales slightly during portal expansion (1.0 -> 1.2)
       .to(
         symbolRef.current,
         {
@@ -136,7 +145,11 @@ const MasterExperience = () => {
         0.05
       );
 
+      // =====================================================
       // Phase 3: The Arrival (25% -> 60%)
+      // Screen is black, modules fade in with staggered slide-up
+      // =====================================================
+      
       // Modules container becomes visible
       tl.to(
         modulesRef.current,
@@ -146,10 +159,10 @@ const MasterExperience = () => {
           duration: 0.10,
           ease: 'power2.out',
         },
-        0.25
+        0.25 // Start at 25%
       );
 
-      // Staggered module items slide up
+      // Staggered module items slide up from y:100 to y:0
       const moduleItems = modulesRef.current?.querySelectorAll('.module-item');
       if (moduleItems) {
         tl.fromTo(
@@ -161,24 +174,28 @@ const MasterExperience = () => {
           {
             y: 0,
             opacity: 1,
-            duration: 0.25,
+            duration: 0.30, // 25% to 55% for staggered animation
             stagger: 0.05,
             ease: 'power3.out',
           },
-          0.28
+          0.28 // Slight delay after container fades in
         );
       }
 
-      // Symbol fades out after modules arrive
+      // =====================================================
+      // Phase 4: The Departure (60% -> 90%)
+      // 3D Symbol fades out, modules remain visible on black
+      // =====================================================
+      
       tl.to(
         symbolRef.current,
         {
           opacity: 0,
           scale: 0.8,
-          duration: 0.15,
+          duration: 0.30, // 60% to 90% = 30% of timeline
           ease: 'power2.inOut',
         },
-        0.55
+        0.60 // Start at 60%
       );
     }, containerRef);
 

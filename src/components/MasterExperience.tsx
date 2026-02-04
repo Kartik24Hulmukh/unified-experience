@@ -1,4 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -8,6 +9,9 @@ import housingPreview from '@/assets/housing-preview.jpg';
 import essentialsPreview from '@/assets/essentials-preview.jpg';
 import academicsPreview from '@/assets/academics-preview.jpg';
 
+// Lazy load 3D component
+const Portal3D = lazy(() => import('@/components/Portal3D'));
+
 gsap.registerPlugin(ScrollTrigger);
 
 interface Module {
@@ -16,6 +20,7 @@ interface Module {
   title: string;
   subtitle: string;
   preview: string;
+  path: string;
 }
 
 const modules: Module[] = [
@@ -25,6 +30,7 @@ const modules: Module[] = [
     title: 'RESALE',
     subtitle: 'Resource Exchange',
     preview: resalePreview,
+    path: '/resale',
   },
   {
     id: 'accommodation',
@@ -32,6 +38,7 @@ const modules: Module[] = [
     title: 'ACCOMMODATION',
     subtitle: 'Housing Discovery',
     preview: housingPreview,
+    path: '/accommodation',
   },
   {
     id: 'essentials',
@@ -39,6 +46,7 @@ const modules: Module[] = [
     title: 'ESSENTIALS',
     subtitle: 'Food & Health',
     preview: essentialsPreview,
+    path: '/essentials',
   },
   {
     id: 'academics',
@@ -46,6 +54,7 @@ const modules: Module[] = [
     title: 'ACADEMICS',
     subtitle: 'Syllabus & Notes',
     preview: academicsPreview,
+    path: '/academics',
   },
 ];
 
@@ -57,6 +66,7 @@ const MasterExperience = () => {
   const heroBottomRef = useRef<HTMLDivElement>(null);
   const modulesRef = useRef<HTMLDivElement>(null);
   const symbolRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const [activeModule, setActiveModule] = useState<string | null>(null);
   const [imageKey, setImageKey] = useState(0);
@@ -67,6 +77,11 @@ const MasterExperience = () => {
       setActiveModule(moduleId);
       setImageKey(prev => prev + 1); // Trigger glitch animation
     }
+  };
+
+  // Handle module click - navigate to page
+  const handleModuleClick = (path: string) => {
+    navigate(path);
   };
 
   // Get current preview image
@@ -240,19 +255,21 @@ const MasterExperience = () => {
             borderRadius: '8px',
           }}
         >
-          {/* 3D Symbol inside portal - spins continuously */}
+          {/* 3D Symbol inside portal */}
           <div
             ref={symbolRef}
-            className="flex items-center justify-center"
+            className="flex items-center justify-center w-full h-full"
             style={{ transform: 'scale(1)' }}
           >
-            <div className="relative w-24 h-24 md:w-32 md:h-32 animate-spin-slow">
-              {/* Geometric trust symbol */}
-              <div className="absolute inset-0 border-2 border-portal-foreground/40 rotate-45" />
-              <div className="absolute inset-2 border border-portal-foreground/25 rotate-12 animate-pulse" />
-              <div className="absolute inset-4 bg-portal-foreground/15 rotate-45" />
-              <div className="absolute inset-6 border border-portal-foreground/20 -rotate-12" />
-            </div>
+            <Suspense fallback={
+              <div className="relative w-24 h-24 md:w-32 md:h-32 animate-spin-slow">
+                <div className="absolute inset-0 border-2 border-portal-foreground/40 rotate-45" />
+                <div className="absolute inset-2 border border-portal-foreground/25 rotate-12 animate-pulse" />
+                <div className="absolute inset-4 bg-portal-foreground/15 rotate-45" />
+              </div>
+            }>
+              <Portal3D className="w-32 h-32 md:w-48 md:h-48" />
+            </Suspense>
           </div>
         </div>
 
@@ -280,6 +297,7 @@ const MasterExperience = () => {
                   className="module-item group cursor-pointer"
                   onMouseEnter={() => handleModuleHover(module.id)}
                   onMouseLeave={() => handleModuleHover(null)}
+                  onClick={() => handleModuleClick(module.path)}
                 >
                   <div className="flex items-baseline gap-4">
                     <span className="module-number text-portal-foreground/40">

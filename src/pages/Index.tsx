@@ -1,11 +1,8 @@
-import GooeyCursor from '@/components/GooeyCursor';
 import MasterExperience from '@/components/MasterExperience';
 
 const Index = () => {
   return (
-    <main className="relative">
-      {/* Gooey Cursor - Z-9999 with mix-blend-difference */}
-      <GooeyCursor size={28} />
+    <main className="relative bg-background">
       
       {/* Unified Master Experience - Hero + Portal Transition + Modules */}
       <MasterExperience />

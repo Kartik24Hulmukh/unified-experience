@@ -1,8 +1,13 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
-import resalePreview from '@/assets/resale-preview.jpg';
+import ListingFormModal from '@/components/ListingFormModal';
+import ResourceListingForm from '@/components/ResourceListingForm';
+import ModuleSearchFilter from '@/components/ModuleSearchFilter';
+import ListingGrid from '@/components/ListingGrid';
+import resaleTech from '@/assets/resale-tech.jpg';
+import { Plus, X } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,6 +22,27 @@ const ResalePage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Mock Data
+  const [items] = useState([
+    { id: '1', title: 'Calculus: Early Transcendentals', price: '450', category: 'Books', institution: 'MCTRGIT' },
+    { id: '2', title: 'Casio fx-991EX Classwiz', price: '1200', category: 'Calculators', institution: 'MCTRGIT' },
+    { id: '3', title: 'Engineering Drawing Tool Kit', price: '850', category: 'Instruments', institution: 'MCTRGIT' },
+    { id: '4', title: 'Microprocessor 8085 Kit', price: '2500', category: 'Lab Equipment', institution: 'MCTRGIT' },
+    { id: '5', title: 'Standard Data Book - Heat Transfer', price: '150', category: 'Books', institution: 'MCTRGIT' },
+    { id: '6', title: 'Stepping Motor 12V 1.2A', price: '400', category: 'Lab Equipment', institution: 'MCTRGIT' },
+    { id: '7', title: 'Analog & Digital IC Trainer', price: '3200', category: 'Electronics', institution: 'MCTRGIT' },
+    { id: '8', title: 'Drafter - Professional Series', price: '650', category: 'Instruments', institution: 'MCTRGIT' },
+  ]);
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, items]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -55,14 +81,14 @@ const ResalePage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-portal">
+    <main id="main-content" className="min-h-screen bg-portal">
       {/* Hero Section - Full bleed with diagonal split */}
       <section ref={heroRef} className="relative h-screen overflow-hidden">
         {/* Background Image with Parallax */}
         <div className="absolute inset-0 z-0">
           <img
             ref={imageRef}
-            src={resalePreview}
+            src={resaleTech}
             alt="Resource Resale"
             className="w-full h-[130%] object-cover opacity-40"
           />
@@ -119,15 +145,14 @@ const ResalePage = () => {
             {categories.map((cat, i) => (
               <div
                 key={cat.id}
-                className={`category-card group cursor-pointer ${
-                  i === 0 ? 'md:col-span-7' : i === 1 ? 'md:col-span-5' : i === 2 ? 'md:col-span-4' : 'md:col-span-8'
-                }`}
+                className={`category-card group cursor-pointer ${i === 0 ? 'md:col-span-7' : i === 1 ? 'md:col-span-5' : i === 2 ? 'md:col-span-4' : 'md:col-span-8'
+                  }`}
                 style={{ perspective: '1000px' }}
               >
                 <div className="relative h-64 md:h-80 border border-portal-foreground/20 overflow-hidden transition-all duration-500 group-hover:border-portal-foreground/50">
                   {/* Background gradient */}
                   <div className="absolute inset-0 bg-gradient-to-br from-portal-foreground/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
+
                   {/* Content */}
                   <div className="absolute inset-0 p-8 flex flex-col justify-between">
                     <span className="text-portal-foreground/30 text-sm font-body">
@@ -187,6 +212,35 @@ const ResalePage = () => {
         </div>
       </section>
 
+      {/* Browse Section */}
+      <section className="py-32 px-8 md:px-16 border-t border-white/5">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <ModuleSearchFilter
+            onSearch={setSearchQuery}
+            onFilterChange={() => { }}
+            resultCount={filteredItems.length}
+            categories={[
+              { id: 'books', label: 'Books', count: 2 },
+              { id: 'calculators', label: 'Calculators', count: 1 },
+              { id: 'instruments', label: 'Instruments', count: 2 },
+              { id: 'electronics', label: 'Electronics', count: 3 }
+            ]}
+            priceRange={[0, 5000]}
+          />
+
+          <ListingGrid items={filteredItems} />
+
+          {filteredItems.length === 0 && (
+            <div className="py-24 text-center space-y-6">
+              <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                <X className="w-8 h-8 text-white -rotate-45" />
+              </div>
+              <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">Zero Entities Detected in Search Field</p>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-32 px-8 md:px-16">
         <div className="max-w-4xl mx-auto text-center">
@@ -196,12 +250,30 @@ const ResalePage = () => {
           <p className="text-portal-foreground/50 text-lg mb-12 max-w-xl mx-auto">
             Join verified MCTRGIT students in creating a sustainable resource exchange ecosystem.
           </p>
-          <button className="px-12 py-5 bg-portal-foreground text-portal font-display uppercase tracking-wider text-sm hover:bg-portal-foreground/90 transition-colors">
-            List Your First Item
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-12 py-5 bg-portal-foreground text-portal font-display uppercase tracking-wider text-sm hover:bg-teal-400 transition-colors group relative overflow-hidden"
+          >
+            <span className="relative z-10 flex items-center justify-center">
+              List Your First Item <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
+            </span>
+            <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 opacity-20" />
           </button>
         </div>
       </section>
-    </div>
+
+      {/* Listing Form Modal */}
+      <ListingFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="New Resale Resource"
+      >
+        <ResourceListingForm
+          moduleName="Resale"
+          onSuccess={() => setIsModalOpen(false)}
+        />
+      </ListingFormModal>
+    </main>
   );
 };
 

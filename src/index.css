@@ -136,7 +136,12 @@
     overflow-x: hidden;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -151,6 +156,7 @@
 }
 
 @layer utilities {
+
   /* Hero text styles - massive display */
   .text-hero-massive {
     font-family: var(--font-display);
@@ -181,6 +187,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -221,38 +228,47 @@
       filter: hue-rotate(0deg) brightness(1.2);
       clip-path: inset(0 0 0 0);
     }
+
     10% {
       clip-path: inset(10% 0 80% 0);
     }
+
     20% {
       transform: translate(-3px, 3px) scale(1);
       filter: hue-rotate(90deg) brightness(1);
       clip-path: inset(40% 0 40% 0);
     }
+
     30% {
       clip-path: inset(70% 0 10% 0);
     }
+
     40% {
       transform: translate(3px, -3px);
       filter: hue-rotate(180deg);
       clip-path: inset(20% 0 60% 0);
     }
+
     50% {
       clip-path: inset(50% 0 30% 0);
     }
+
     60% {
       transform: translate(-2px, -2px);
       filter: hue-rotate(270deg);
       clip-path: inset(80% 0 5% 0);
     }
+
     70% {
       clip-path: inset(5% 0 85% 0);
     }
+
     80% {
       transform: translate(2px, 2px);
       filter: hue-rotate(360deg);
       clip-path: inset(0 0 0 0);
     }
+
     100% {
       transform: translate(0) scale(1);
       filter: hue-rotate(0deg) brightness(1);
@@ -269,6 +285,7 @@
     from {
       transform: rotate(0deg);
     }
+
     to {
       transform: rotate(360deg);
     }
@@ -284,6 +301,7 @@
       opacity: 0;
       transform: translateY(40px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -295,11 +313,25 @@
   }
 
   /* Stagger delay utilities */
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
+  .stagger-1 {
+    animation-delay: 0.1s;
+  }
+
+  .stagger-2 {
+    animation-delay: 0.2s;
+  }
+
+  .stagger-3 {
+    animation-delay: 0.3s;
+  }
+
+  .stagger-4 {
+    animation-delay: 0.4s;
+  }
+
+  .stagger-5 {
+    animation-delay: 0.5s;
+  }
 
   /* Module hover underline */
   .module-link {
@@ -327,4 +359,102 @@
     opacity: 0.5;
     letter-spacing: 0.1em;
   }
+}
+
+/* Institutional Notification Glitch */
+@keyframes toast-glitch {
+  0% {
+    transform: translate(0);
+  }
+
+  20% {
+    transform: translate(-2px, 2px);
+  }
+
+  40% {
+    transform: translate(-2px, -2px);
+  }
+
+  60% {
+    transform: translate(2px, 2px);
+  }
+
+  80% {
+    transform: translate(2px, -2px);
+  }
+
+  100% {
+    transform: translate(0);
+  }
+}
+
+.glitch-toast {
+  animation: toast-glitch 0.3s cubic-bezier(.25, .46, .45, .94) both;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* HUD System Animations */
+@keyframes blink-arrow {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  50% {
+    opacity: 0;
+    transform: translateX(5px);
+  }
+}
+
+.animate-blink-arrow {
+  animation: blink-arrow 0.4s step-end infinite;
+}
+
+.hud-image-box {
+  @apply relative border border-white/20 bg-black overflow-hidden;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.hud-image-box::before {
+  content: '';
+  @apply absolute top-0 left-0 w-full h-[1px] bg-white/20 z-10;
+  animation: scan-line 2s linear infinite;
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(200%);
+  }
+}
+
+@keyframes scale-in-hor-left {
+  0% {
+    transform: scaleX(0) translateY(-50%);
+    transform-origin: 0% 0%;
+    opacity: 0;
+  }
+
+  100% {
+    transform: scaleX(1) translateY(-50%);
+    transform-origin: 0% 0%;
+    opacity: 1;
+  }
+}
+
+.scale-in-hor-left {
+  animation: scale-in-hor-left 0.4s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
 }

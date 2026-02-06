@@ -5,8 +5,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 // Module preview images
 import resalePreview from '@/assets/resale-preview.jpg';
+import resaleTech from '@/assets/resale-tech.jpg';
 import housingPreview from '@/assets/housing-preview.jpg';
+import housingHandover from '@/assets/housing-handover.jpg';
 import essentialsPreview from '@/assets/essentials-preview.jpg';
+import essentialsTiffin from '@/assets/essentials-tiffin.jpg';
 import academicsPreview from '@/assets/academics-preview.jpg';
 
 // Lazy load 3D component
@@ -27,32 +30,32 @@ const modules: Module[] = [
   {
     id: 'resale',
     number: '01',
-    title: 'RESALE',
-    subtitle: 'Resource Exchange',
-    preview: resalePreview,
+    title: 'RESOURCE RESALE',
+    subtitle: 'VERIFIED P2P EXCHANGE',
+    preview: resaleTech,
     path: '/resale',
   },
   {
     id: 'accommodation',
     number: '02',
     title: 'ACCOMMODATION',
-    subtitle: 'Housing Discovery',
-    preview: housingPreview,
+    subtitle: 'PRIVACY-FIRST DISCOVERY',
+    preview: housingHandover,
     path: '/accommodation',
   },
   {
     id: 'essentials',
     number: '03',
     title: 'ESSENTIALS',
-    subtitle: 'Food & Health',
-    preview: essentialsPreview,
+    subtitle: 'HEALTHCARE & FOOD GUIDE',
+    preview: essentialsTiffin,
     path: '/essentials',
   },
   {
     id: 'academics',
     number: '04',
-    title: 'ACADEMICS',
-    subtitle: 'Syllabus & Notes',
+    title: 'ACADEMICS HUB',
+    subtitle: 'CENTRALIZED SYLLABUS & NOTES',
     preview: academicsPreview,
     path: '/academics',
   },
@@ -105,12 +108,12 @@ const MasterExperience = () => {
       // "TRUST/EXCHANGE" visible, modules hidden
       // No animation needed - this is the initial state
       // =====================================================
-      
+
       // =====================================================
       // Phase 2: The Swallow (5% -> 25%)
       // Text flies away with glitch, portal expands to fullscreen
       // =====================================================
-      
+
       // "TRUST" flies Up-Left with clip-path glitch
       tl.to(
         heroTopRef.current,
@@ -124,47 +127,47 @@ const MasterExperience = () => {
         },
         0.05 // Start at 5%
       )
-      // "EXCHANGE" flies Down-Right with clip-path glitch
-      .to(
-        heroBottomRef.current,
-        {
-          y: '150vh',
-          x: '20vw',
-          opacity: 0,
-          clipPath: 'inset(0 100% 0 0)',
-          duration: 0.20,
-          ease: 'power3.inOut',
-        },
-        0.05
-      )
-      // Portal expands to full screen - CRITICAL for eliminating white gap
-      .to(
-        portalRef.current,
-        {
-          width: '100vw',
-          height: '100vh',
-          borderRadius: '0px',
-          duration: 0.20,
-          ease: 'power2.inOut',
-        },
-        0.05
-      )
-      // 3D Symbol scales slightly during portal expansion (1.0 -> 1.2)
-      .to(
-        symbolRef.current,
-        {
-          scale: 1.2,
-          duration: 0.20,
-          ease: 'power2.out',
-        },
-        0.05
-      );
+        // "EXCHANGE" flies Down-Right with clip-path glitch
+        .to(
+          heroBottomRef.current,
+          {
+            y: '150vh',
+            x: '20vw',
+            opacity: 0,
+            clipPath: 'inset(0 100% 0 0)',
+            duration: 0.20,
+            ease: 'power3.inOut',
+          },
+          0.05
+        )
+        // Portal expands to full screen - CRITICAL for eliminating white gap
+        .to(
+          portalRef.current,
+          {
+            width: '100vw',
+            height: '100vh',
+            borderRadius: '0px',
+            duration: 0.20,
+            ease: 'power2.inOut',
+          },
+          0.05
+        )
+        // 3D Symbol scales slightly during portal expansion (1.0 -> 1.2)
+        .to(
+          symbolRef.current,
+          {
+            scale: 1.2,
+            duration: 0.20,
+            ease: 'power2.out',
+          },
+          0.05
+        );
 
       // =====================================================
       // Phase 3: The Arrival (25% -> 60%)
       // Screen is black, modules fade in with staggered slide-up
       // =====================================================
-      
+
       // Modules container becomes visible
       tl.to(
         modulesRef.current,
@@ -201,7 +204,7 @@ const MasterExperience = () => {
       // Phase 4: The Departure (60% -> 90%)
       // 3D Symbol fades out, modules remain visible on black
       // =====================================================
-      
+
       tl.to(
         symbolRef.current,
         {
@@ -279,90 +282,78 @@ const MasterExperience = () => {
           className="absolute inset-0 z-30 flex opacity-0 will-change-[opacity,transform]"
           style={{ pointerEvents: 'none' }}
         >
-          {/* Left Column: Module List (40%) */}
-          <div className="w-full md:w-2/5 h-full flex flex-col justify-center px-8 md:px-16">
-            <div className="module-item mb-8">
-              <p className="text-portal-foreground/60 text-sm uppercase tracking-widest mb-2">
-                Platform Modules
+          {/* Unified Column: Module List with HUD Preview */}
+          <div className="w-full h-full flex flex-col justify-center px-8 md:px-32">
+            <div className="module-item mb-12 border-l-2 border-primary pl-6">
+              <p className="text-primary text-[10px] font-mono uppercase tracking-[0.4em] mb-2">
+                SYS_CORE_MODULES // DIRECTION_@1_NOIR
               </p>
-              <h2 className="text-portal-foreground text-2xl md:text-3xl font-display font-bold">
-                BErozgar
+              <h2 className="text-portal-foreground text-4xl md:text-5xl font-display font-bold italic-syne">
+                COMMAND CENTER
               </h2>
             </div>
 
-            <nav className="space-y-6 md:space-y-8">
+            <nav className="flex flex-col gap-0">
               {modules.map((module) => (
                 <div
                   key={module.id}
-                  className="module-item group cursor-pointer"
+                  className="module-item group relative cursor-pointer py-2 md:py-1"
                   onMouseEnter={() => handleModuleHover(module.id)}
                   onMouseLeave={() => handleModuleHover(null)}
                   onClick={() => handleModuleClick(module.path)}
                 >
-                  <div className="flex items-baseline gap-4">
-                    <span className="module-number text-portal-foreground/40">
-                      {module.number}
-                    </span>
-                    <div>
-                      <h3 className="text-module-title text-portal-foreground module-link transition-smooth">
-                        {module.title}
-                      </h3>
-                      <p className="text-portal-foreground/50 text-sm mt-1 font-body">
+                  <div className="flex items-center justify-between group-hover:bg-white/5 px-4 transition-all duration-300">
+                    <div className="flex items-baseline gap-12">
+                      <span className={`font-mono text-xl md:text-2xl transition-all duration-500 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/20'}`}>
+                        {module.number}
+                      </span>
+
+                      <div className="relative">
+                        <h3 className={`text-hero-massive text-[4rem] md:text-[8rem] transition-all duration-500 will-change-transform leading-[0.85] ${activeModule === module.id ? 'text-[#a3ff12]' : 'text-portal-foreground'
+                          }`}>
+                          {module.title}
+                        </h3>
+
+                        {/* HOVER HUD BOX - Positioned Right of text */}
+                        {activeModule === module.id && (
+                          <div className="absolute top-1/2 left-[105%] -translate-y-1/2 flex items-center gap-6 z-50 pointer-events-none">
+                            {/* Blinking Arrow */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-[#a3ff12] font-mono text-4xl animate-blink-arrow">→</span>
+                            </div>
+
+                            {/* HUD Image Box */}
+                            <div className="hud-image-box w-64 md:w-80 aspect-video scale-in-hor-left">
+                              <img
+                                key={imageKey}
+                                src={module.preview}
+                                alt=""
+                                className="w-full h-full object-cover animate-glitch scale-110"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                              <div className="absolute bottom-2 left-3">
+                                <p className="text-[9px] text-white/40 font-mono tracking-widest uppercase">Entity Preview: {module.id}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="hidden xl:block">
+                      <p className={`text-[10px] font-bold tracking-[0.3em] uppercase transition-all duration-500 ${activeModule === module.id ? 'text-white' : 'text-white/10'
+                        }`}>
                         {module.subtitle}
                       </p>
                     </div>
                   </div>
+
+                  {/* Subtle separator line */}
+                  <div className={`h-px w-full transition-all duration-700 ${activeModule === module.id ? 'bg-[#a3ff12]/30 scale-x-100' : 'bg-white/5 scale-x-90'
+                    }`} />
                 </div>
               ))}
             </nav>
-
-            {/* CTA */}
-            <div className="mt-12">
-              <button className="px-8 py-4 border border-portal-foreground/30 text-portal-foreground hover:bg-portal-foreground hover:text-portal transition-all duration-300 font-display uppercase tracking-wider text-sm">
-                Explore Platform
-              </button>
-            </div>
-          </div>
-
-          {/* Right Column: Preview Stage (60%) */}
-          <div className="hidden md:flex w-3/5 h-full items-center justify-center relative">
-            {/* Fixed position image container */}
-            <div className="relative w-4/5 h-3/5 overflow-hidden">
-              {currentPreview && (
-                <img
-                  key={imageKey}
-                  src={currentPreview}
-                  alt="Module preview"
-                  className="absolute inset-0 w-full h-full object-cover animate-glitch"
-                  style={{
-                    clipPath: 'inset(0 0 0 0)',
-                  }}
-                />
-              )}
-
-              {/* Placeholder when no module is hovered */}
-              {!currentPreview && (
-                <div className="absolute inset-0 flex items-center justify-center border border-portal-foreground/10">
-                  <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 border border-portal-foreground/20 rounded-full flex items-center justify-center">
-                      <div className="w-8 h-8 border border-portal-foreground/30 rotate-45" />
-                    </div>
-                    <p className="text-portal-foreground/30 text-sm uppercase tracking-widest">
-                      Hover to Preview
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Scanline overlay */}
-              <div
-                className="absolute inset-0 pointer-events-none opacity-20"
-                style={{
-                  background:
-                    'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)',
-                }}
-              />
-            </div>
           </div>
         </div>
 

@@ -12,6 +12,11 @@ import NotFound from "./pages/NotFound";
 import ContextNav from "./components/ContextNav";
 import GooeyCursor from "./components/GooeyCursor";
 import PageTransition from "./components/PageTransition";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import VerificationPage from "./pages/VerificationPage";
+import AdminPage from "./pages/AdminPage";
+import SkipToContent from "./components/SkipToContent";
 
 const queryClient = new QueryClient();
 
@@ -21,12 +26,13 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <SkipToContent />
         {/* Global cursor */}
         <GooeyCursor size={28} />
-        
+
         {/* Context-aware navigation */}
         <ContextNav />
-        
+
         {/* Page transitions wrapper */}
         <PageTransition>
           <Routes>
@@ -35,6 +41,10 @@ const App = () => (
             <Route path="/accommodation" element={<AccommodationPage />} />
             <Route path="/essentials" element={<EssentialsPage />} />
             <Route path="/academics" element={<AcademicsPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/verify" element={<VerificationPage />} />
+            <Route path="/admin" element={<AdminPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

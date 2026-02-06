@@ -1,8 +1,11 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
-import housingPreview from '@/assets/housing-preview.jpg';
+import ModuleSearchFilter from '@/components/ModuleSearchFilter';
+import ListingGrid from '@/components/ListingGrid';
+import housingHandover from '@/assets/housing-handover.jpg';
+import { Search, X } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -21,7 +24,29 @@ const features = [
 
 const AccommodationPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
+  const browseRef = useRef<HTMLDivElement>(null);
   const [activeArea, setActiveArea] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [items] = useState([
+    { id: 'h1', title: 'Premium Studio Flat', price: '12000', category: 'Near Campus', institution: 'Verified PG' },
+    { id: 'h2', title: 'Shared 2BHK Apartment', price: '8500', category: 'City Center', institution: 'Student Housing' },
+    { id: 'h3', title: 'Single Occupancy Room', price: '6000', category: 'Outer Ring', institution: 'MCTRGIT Internal' },
+    { id: 'h4', title: 'Luxury Boys Hostel', price: '15000', category: 'Near Campus', institution: 'Verified Partner' },
+    { id: 'h5', title: 'Quiet Study Flatmate', price: '4500', category: 'City Center', institution: 'Peer-to-Peer' },
+    { id: 'h6', title: 'Full 3BHK for Students', price: '22000', category: 'Outer Ring', institution: 'Broker and Verified' },
+  ]);
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, items]);
+
+  const scrollToBrowse = () => {
+    browseRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -53,7 +78,7 @@ const AccommodationPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-portal">
+    <main id="main-content" className="min-h-screen bg-portal">
       {/* Hero - Split screen with floating elements */}
       <section ref={heroRef} className="min-h-screen flex flex-col md:flex-row">
         {/* Left Content */}
@@ -61,7 +86,7 @@ const AccommodationPage = () => {
           <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-4">
             Module 02
           </p>
-          
+
           <div className="overflow-hidden">
             <h1 className="hero-reveal text-portal-foreground font-display text-5xl md:text-8xl font-bold leading-none">
               ACCOMMO
@@ -72,7 +97,7 @@ const AccommodationPage = () => {
               DATION
             </h1>
           </div>
-          
+
           <p className="text-portal-foreground/60 text-lg md:text-xl font-body max-w-md mt-8">
             Privacy-preserving housing discovery. Find PGs, flats, and flatmates without exposing personal data.
           </p>
@@ -93,24 +118,23 @@ const AccommodationPage = () => {
         {/* Right Visual */}
         <div className="w-full md:w-1/2 relative overflow-hidden">
           <img
-            src={housingPreview}
+            src={housingHandover}
             alt="Housing Discovery"
             className="absolute inset-0 w-full h-full object-cover opacity-50"
           />
           <div className="absolute inset-0 bg-gradient-to-l from-transparent to-portal" />
-          
+
           {/* Floating info cards */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative w-full max-w-sm mx-8">
               {features.map((feature, i) => (
                 <div
                   key={i}
-                  className={`floating-card absolute bg-portal/90 backdrop-blur-sm border border-portal-foreground/20 p-4 ${
-                    i === 0 ? 'top-0 left-0' :
+                  className={`floating-card absolute bg-portal/90 backdrop-blur-sm border border-portal-foreground/20 p-4 ${i === 0 ? 'top-0 left-0' :
                     i === 1 ? 'top-20 right-0' :
-                    i === 2 ? 'bottom-20 left-4' :
-                    'bottom-0 right-4'
-                  }`}
+                      i === 2 ? 'bottom-20 left-4' :
+                        'bottom-0 right-4'
+                    }`}
                   style={{ animationDelay: `${i * 0.3}s` }}
                 >
                   <span className="text-2xl">{feature.icon}</span>
@@ -145,11 +169,10 @@ const AccommodationPage = () => {
                   <button
                     key={area.name}
                     onClick={() => setActiveArea(i)}
-                    className={`w-full text-left p-6 border transition-all duration-300 ${
-                      activeArea === i
-                        ? 'border-portal-foreground/50 bg-portal-foreground/10'
-                        : 'border-portal-foreground/10 hover:border-portal-foreground/30'
-                    }`}
+                    className={`w-full text-left p-6 border transition-all duration-300 ${activeArea === i
+                      ? 'border-portal-foreground/50 bg-portal-foreground/10'
+                      : 'border-portal-foreground/10 hover:border-portal-foreground/30'
+                      }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>
@@ -182,13 +205,44 @@ const AccommodationPage = () => {
                   <p className="text-portal-foreground/50 text-sm mt-2">
                     {areas[activeArea].listings} verified listings available
                   </p>
-                  <button className="mt-8 px-8 py-3 border border-portal-foreground/30 text-portal-foreground text-sm uppercase tracking-wider hover:bg-portal-foreground/10 transition-colors">
+                  <button
+                    onClick={scrollToBrowse}
+                    className="mt-8 px-8 py-3 border border-portal-foreground/30 text-portal-foreground text-sm uppercase tracking-wider hover:bg-portal-foreground/10 transition-colors"
+                  >
                     Browse Listings
                   </button>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Browse Section */}
+      <section ref={browseRef} className="py-32 px-8 md:px-16 border-t border-white/5">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <ModuleSearchFilter
+            onSearch={setSearchQuery}
+            onFilterChange={() => { }}
+            resultCount={filteredItems.length}
+            categories={[
+              { id: 'near', label: 'Near Campus', count: 2 },
+              { id: 'city', label: 'City Center', count: 2 },
+              { id: 'outer', label: 'Outer Ring', count: 2 }
+            ]}
+            priceRange={[0, 30000]}
+          />
+
+          <ListingGrid items={filteredItems} />
+
+          {filteredItems.length === 0 && (
+            <div className="py-24 text-center space-y-6">
+              <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                <X className="w-8 h-8 text-white -rotate-45" />
+              </div>
+              <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">No Accommodation Protocols Found</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -245,7 +299,7 @@ const AccommodationPage = () => {
           </button>
         </div>
       </section>
-    </div>
+    </main>
   );
 };
 

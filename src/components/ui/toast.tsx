@@ -27,8 +27,8 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
-        destructive: "destructive group border-destructive bg-destructive text-destructive-foreground",
+        default: "border-white/10 bg-[#0a0a0a] text-white rounded-none",
+        destructive: "destructive group border-red-500/50 bg-[#0a0a0a] text-red-500 rounded-none",
       },
     },
     defaultVariants: {
@@ -41,7 +41,7 @@ const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & VariantProps<typeof toastVariants>
 >(({ className, variant, ...props }, ref) => {
-  return <ToastPrimitives.Root ref={ref} className={cn(toastVariants({ variant }), className)} {...props} />;
+  return <ToastPrimitives.Root ref={ref} className={cn(toastVariants({ variant }), "glitch-toast", className)} {...props} />;
 });
 Toast.displayName = ToastPrimitives.Root.displayName;
 
@@ -82,7 +82,7 @@ const ToastTitle = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Title>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
 >(({ className, ...props }, ref) => (
-  <ToastPrimitives.Title ref={ref} className={cn("text-sm font-semibold", className)} {...props} />
+  <ToastPrimitives.Title ref={ref} className={cn("text-xs font-bold uppercase tracking-widest font-display", className)} {...props} />
 ));
 ToastTitle.displayName = ToastPrimitives.Title.displayName;
 
@@ -90,7 +90,7 @@ const ToastDescription = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Description>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>
 >(({ className, ...props }, ref) => (
-  <ToastPrimitives.Description ref={ref} className={cn("text-sm opacity-90", className)} {...props} />
+  <ToastPrimitives.Description ref={ref} className={cn("text-[11px] text-white/40 leading-relaxed font-body", className)} {...props} />
 ));
 ToastDescription.displayName = ToastPrimitives.Description.displayName;
 

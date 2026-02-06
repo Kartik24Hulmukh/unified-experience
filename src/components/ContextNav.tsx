@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useTheme } from 'next-themes';
+import { Sun, Moon } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -22,10 +25,14 @@ const navItems: NavItem[] = [
 const ContextNav = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const { theme, setTheme } = useTheme();
   const [scrollProgress, setScrollProgress] = useState(0);
   const navRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const isAuthPage = ['/login', '/signup', '/verify', '/admin'].includes(location.pathname);
+
+  if (isAuthPage) return null;
 
   // Track scroll position and update nav style
   useEffect(() => {
@@ -34,7 +41,7 @@ const ContextNav = () => {
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const progress = docHeight > 0 ? scrollTop / docHeight : 0;
       setScrollProgress(progress);
-      
+
       // Switch to dark mode when portal has expanded (around 25% scroll)
       setIsDark(progress > 0.06);
     };
@@ -78,9 +85,8 @@ const ContextNav = () => {
       {/* Fixed Navigation Bar */}
       <nav
         ref={navRef}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          isDark ? 'text-portal-foreground' : 'text-foreground'
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isDark ? 'text-portal-foreground' : 'text-foreground'
+          }`}
       >
         <div className="flex items-center justify-between px-6 md:px-12 py-6">
           {/* Logo */}
@@ -106,36 +112,47 @@ const ContextNav = () => {
             <div className={`h-px w-12 ${isDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
           </div>
 
-          {/* Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="relative z-50 flex items-center gap-3 group"
-            aria-label="Toggle menu"
-          >
-            <span className={`text-xs uppercase tracking-widest transition-opacity ${isMenuOpen ? 'opacity-0' : 'opacity-60'}`}>
-              Menu
-            </span>
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <span
-                className={`absolute block w-6 h-0.5 transition-all duration-300 ${
-                  isDark || isMenuOpen ? 'bg-portal-foreground' : 'bg-foreground'
-                } ${isMenuOpen ? 'rotate-45' : '-translate-y-1.5'}`}
-              />
-              <span
-                className={`absolute block w-6 h-0.5 transition-all duration-300 ${
-                  isDark || isMenuOpen ? 'bg-portal-foreground' : 'bg-foreground'
-                } ${isMenuOpen ? '-rotate-45' : 'translate-y-1.5'}`}
-              />
-            </div>
-          </button>
-        </div>
+          {/* Nav Actions */}
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className={`p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+              aria-label="Toggle structural mode"
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
 
-        {/* Progress bar */}
-        <div className={`absolute bottom-0 left-0 h-px ${isDark ? 'bg-portal-foreground/20' : 'bg-foreground/20'} w-full`}>
-          <div
-            className={`h-full ${isDark ? 'bg-portal-foreground' : 'bg-foreground'} transition-all duration-100`}
-            style={{ width: `${scrollProgress * 100}%` }}
-          />
+            <NotificationCenter isDark={isDark} />
+
+            {/* Menu Button */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="relative z-50 flex items-center gap-3 group"
+              aria-label="Toggle menu"
+            >
+              <span className={`text-xs uppercase tracking-widest transition-opacity ${isMenuOpen ? 'opacity-0' : 'opacity-60'}`}>
+                Menu
+              </span>
+              <div className="relative w-8 h-8 flex items-center justify-center">
+                <span
+                  className={`absolute block w-6 h-0.5 transition-all duration-300 ${isDark || isMenuOpen ? 'bg-portal-foreground' : 'bg-foreground'
+                    } ${isMenuOpen ? 'rotate-45' : '-translate-y-1.5'}`}
+                />
+                <span
+                  className={`absolute block w-6 h-0.5 transition-all duration-300 ${isDark || isMenuOpen ? 'bg-portal-foreground' : 'bg-foreground'
+                    } ${isMenuOpen ? '-rotate-45' : 'translate-y-1.5'}`}
+                />
+              </div>
+            </button>
+          </div>
+
+          {/* Progress bar */}
+          <div className={`absolute bottom-0 left-0 h-px ${isDark ? 'bg-portal-foreground/20' : 'bg-foreground/20'} w-full`}>
+            <div
+              className={`h-full ${isDark ? 'bg-portal-foreground' : 'bg-foreground'} transition-all duration-100`}
+              style={{ width: `${scrollProgress * 100}%` }}
+            />
+          </div>
         </div>
       </nav>
 
@@ -152,9 +169,8 @@ const ContextNav = () => {
                 key={item.path}
                 to={item.path}
                 onClick={handleNavClick}
-                className={`nav-item block group ${
-                  location.pathname === item.path ? 'opacity-100' : 'opacity-60 hover:opacity-100'
-                }`}
+                className={`nav-item block group ${location.pathname === item.path ? 'opacity-100' : 'opacity-60 hover:opacity-100'
+                  }`}
               >
                 <div className="flex items-baseline gap-4 md:gap-8">
                   <span className="text-portal-foreground/40 text-sm font-body">{item.number}</span>

@@ -1,8 +1,11 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
-import essentialsPreview from '@/assets/essentials-preview.jpg';
+import ModuleSearchFilter from '@/components/ModuleSearchFilter';
+import ListingGrid from '@/components/ListingGrid';
+import essentialsTiffin from '@/assets/essentials-tiffin.jpg';
+import { Search, X } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,7 +28,31 @@ const foodData = [
 
 const EssentialsPage = () => {
   const [activeTab, setActiveTab] = useState('health');
+  const [searchQuery, setSearchQuery] = useState("");
   const heroRef = useRef<HTMLDivElement>(null);
+  const browseRef = useRef<HTMLDivElement>(null);
+
+  const [items] = useState([
+    { id: 'e1', title: 'Campus Medical Center', price: '100', category: 'Healthcare', institution: 'Campus Unit' },
+    { id: 'e2', title: 'City Pediatric Clinic', price: '400', category: 'Healthcare', institution: 'Private Partner' },
+    { id: 'e3', title: 'LifeLine Pharmacy 24/7', price: '0', category: 'Healthcare', institution: 'Verified Store' },
+    { id: 'e4', title: 'Annapurna Mess', price: '3000', category: 'Food & Mess', institution: 'Student Favorite' },
+    { id: 'e5', title: 'Healthy Tiffin Service', price: '2800', category: 'Food & Mess', institution: 'Home Cooked' },
+    { id: 'e6', title: 'Campus Night Canteen', price: '50', category: 'Food & Mess', institution: 'Internal' },
+  ]);
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTab = activeTab === 'health' ? item.category === 'Healthcare' : item.category === 'Food & Mess';
+      return matchesSearch && matchesTab;
+    });
+  }, [searchQuery, activeTab, items]);
+
+  const scrollToBrowse = () => {
+    browseRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -50,12 +77,12 @@ const EssentialsPage = () => {
   const currentData = activeTab === 'health' ? healthcareData : foodData;
 
   return (
-    <div className="min-h-screen bg-portal">
+    <main id="main-content" className="min-h-screen bg-portal">
       {/* Hero - Centered with radial design */}
       <section ref={heroRef} className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background */}
         <img
-          src={essentialsPreview}
+          src={essentialsTiffin}
           alt="Campus Essentials"
           className="hero-image absolute inset-0 w-full h-full object-cover"
         />
@@ -73,13 +100,13 @@ const EssentialsPage = () => {
           <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-6">
             Module 03
           </p>
-          
+
           <div className="title-reveal">
             <h1 className="text-portal-foreground font-display text-6xl md:text-9xl font-bold leading-none">
               ESSENTIALS
             </h1>
           </div>
-          
+
           <p className="text-portal-foreground/60 text-lg md:text-xl font-body max-w-xl mx-auto mt-8">
             Healthcare guides and food services for daily student needs. Curated by students, for students.
           </p>
@@ -90,11 +117,10 @@ const EssentialsPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-8 py-4 border transition-all duration-300 ${
-                  activeTab === tab.id
-                    ? 'border-portal-foreground bg-portal-foreground text-portal'
-                    : 'border-portal-foreground/30 text-portal-foreground hover:border-portal-foreground/60'
-                }`}
+                className={`px-8 py-4 border transition-all duration-300 ${activeTab === tab.id
+                  ? 'border-portal-foreground bg-portal-foreground text-portal'
+                  : 'border-portal-foreground/30 text-portal-foreground hover:border-portal-foreground/60'
+                  }`}
               >
                 <span className="mr-2">{tab.icon}</span>
                 {tab.label}
@@ -116,49 +142,29 @@ const EssentialsPage = () => {
             </h2>
           </div>
 
-          {/* Cards */}
-          <div className="space-y-6">
-            {currentData.map((item, i) => (
-              <div
-                key={i}
-                className="group flex flex-col md:flex-row md:items-center justify-between p-8 border border-portal-foreground/10 hover:border-portal-foreground/30 transition-all duration-300"
-              >
-                <div className="flex-1">
-                  <h3 className="text-portal-foreground font-display text-2xl font-bold group-hover:translate-x-2 transition-transform">
-                    {item.name}
-                  </h3>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {item.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-3 py-1 bg-portal-foreground/10 text-portal-foreground/70 text-xs uppercase tracking-wider"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+          {/* Search and Grid Section */}
+          <div ref={browseRef} className="space-y-12">
+            <ModuleSearchFilter
+              onSearch={setSearchQuery}
+              onFilterChange={() => { }}
+              resultCount={filteredItems.length}
+              categories={[
+                { id: 'health', label: 'Healthcare', count: items.filter(i => i.category === 'Healthcare').length },
+                { id: 'food', label: 'Food & Mess', count: items.filter(i => i.category === 'Food & Mess').length }
+              ]}
+              priceRange={[0, 5000]}
+            />
 
-                <div className="flex gap-8 mt-6 md:mt-0">
-                  {'distance' in item && (
-                    <div className="text-right">
-                      <p className="text-portal-foreground/40 text-xs uppercase tracking-wider">Distance</p>
-                      <p className="text-portal-foreground font-display text-lg">{item.distance}</p>
-                    </div>
-                  )}
-                  {'type' in item && (
-                    <div className="text-right">
-                      <p className="text-portal-foreground/40 text-xs uppercase tracking-wider">Type</p>
-                      <p className="text-portal-foreground font-display text-lg">{item.type}</p>
-                    </div>
-                  )}
-                  <div className="text-right">
-                    <p className="text-portal-foreground/40 text-xs uppercase tracking-wider">Cost</p>
-                    <p className="text-portal-foreground font-display text-lg">{item.cost}</p>
-                  </div>
+            <ListingGrid items={filteredItems} />
+
+            {filteredItems.length === 0 && (
+              <div className="py-24 text-center space-y-6">
+                <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                  <X className="w-8 h-8 text-white -rotate-45" />
                 </div>
+                <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">Protocol Filter Failure: No Units Detected</p>
               </div>
-            ))}
+            )}
           </div>
 
           {/* Disclaimer */}
@@ -187,7 +193,7 @@ const EssentialsPage = () => {
           </button>
         </div>
       </section>
-    </div>
+    </main>
   );
 };
 

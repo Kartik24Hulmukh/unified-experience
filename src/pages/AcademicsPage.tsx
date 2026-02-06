@@ -1,8 +1,11 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
+import ModuleSearchFilter from '@/components/ModuleSearchFilter';
+import ListingGrid from '@/components/ListingGrid';
 import academicsPreview from '@/assets/academics-preview.jpg';
+import { Search, X } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -23,8 +26,26 @@ const resources = [
 
 const AcademicsPage = () => {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const browseRef = useRef<HTMLDivElement>(null);
+
+  const [items] = useState([
+    { id: 'a1', title: 'Calculus Question Bank 2024', price: '0', category: 'Question Banks', institution: 'MCTRGIT Admin' },
+    { id: 'a2', title: 'CSE Semester 3 Syllabus', price: '0', category: 'Syllabus', institution: 'Academic Office' },
+    { id: 'a3', title: 'Heat & Mass Transfer Notes', price: '0', category: 'Notes', institution: 'Student Council' },
+    { id: 'a4', title: 'Workshop Practice Manual', price: '0', category: 'Notes', institution: 'ME Department' },
+    { id: 'a5', title: 'Internal Exam Pattern 2025', price: '0', category: 'Exam Patterns', institution: 'Authorized' },
+    { id: 'a6', title: 'Discrete Mathematics PPTs', price: '0', category: 'Notes', institution: 'CSE Faculty' },
+  ]);
+
+  const filteredItems = useMemo(() => {
+    return items.filter(item =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, items]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -62,7 +83,7 @@ const AcademicsPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-portal">
+    <main id="main-content" className="min-h-screen bg-portal">
       {/* Hero - Typography-focused with branch codes as design elements */}
       <section ref={heroRef} className="relative min-h-screen overflow-hidden">
         {/* Background pattern - branch codes */}
@@ -86,13 +107,13 @@ const AcademicsPage = () => {
             <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-4">
               Module 04
             </p>
-            
+
             <h1 className="text-portal-foreground font-display text-6xl md:text-9xl font-bold leading-none mb-8">
               <SplitText animation="reveal" trigger="load" type="chars" stagger={0.02}>
                 ACADEMICS
               </SplitText>
             </h1>
-            
+
             <p className="text-portal-foreground/60 text-xl font-body max-w-xl">
               Centralized academic resources. Syllabus, question banks, notes, and exam patterns — all admin-approved.
             </p>
@@ -107,11 +128,10 @@ const AcademicsPage = () => {
                   <button
                     key={branch.code}
                     onClick={() => setSelectedBranch(branch.code)}
-                    className={`px-6 py-4 border transition-all duration-300 ${
-                      selectedBranch === branch.code
-                        ? 'border-portal-foreground bg-portal-foreground text-portal'
-                        : 'border-portal-foreground/20 text-portal-foreground hover:border-portal-foreground/50'
-                    }`}
+                    className={`px-6 py-4 border transition-all duration-300 ${selectedBranch === branch.code
+                      ? 'border-portal-foreground bg-portal-foreground text-portal'
+                      : 'border-portal-foreground/20 text-portal-foreground hover:border-portal-foreground/50'
+                      }`}
                   >
                     <span className="font-display font-bold text-lg">{branch.code}</span>
                     <span className="hidden md:inline text-sm ml-2 opacity-60">{branch.name}</span>
@@ -136,34 +156,31 @@ const AcademicsPage = () => {
           </div>
 
           {/* Bento Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {resources.map((resource, i) => (
-              <div
-                key={resource.type}
-                className={`resource-card group relative overflow-hidden ${
-                  i === 0 ? 'lg:col-span-2 lg:row-span-2' : ''
-                }`}
-              >
-                <div
-                  className={`h-full border border-portal-foreground/10 bg-gradient-to-br from-portal-foreground/5 to-transparent p-8 flex flex-col justify-between transition-all duration-500 group-hover:border-portal-foreground/30 ${
-                    i === 0 ? 'min-h-[400px]' : 'min-h-[200px]'
-                  }`}
-                >
-                  <span className={`text-${i === 0 ? '6xl' : '4xl'}`}>{resource.icon}</span>
-                  <div>
-                    <h3 className={`text-portal-foreground font-display font-bold ${i === 0 ? 'text-3xl' : 'text-xl'}`}>
-                      {resource.type}
-                    </h3>
-                    <p className="text-portal-foreground/50 text-sm mt-2">
-                      {resource.desc}
-                    </p>
-                  </div>
+          {/* Search and Resources Section */}
+          <div ref={browseRef} className="space-y-16">
+            <ModuleSearchFilter
+              onSearch={setSearchQuery}
+              onFilterChange={() => { }}
+              resultCount={filteredItems.length}
+              categories={[
+                { id: 'syllabus', label: 'Syllabus', count: 1 },
+                { id: 'qbank', label: 'Question Banks', count: 1 },
+                { id: 'notes', label: 'Notes', count: 3 },
+                { id: 'pattern', label: 'Exam Patterns', count: 1 }
+              ]}
+              priceRange={[0, 1000]}
+            />
 
-                  {/* Hover accent */}
-                  <div className="absolute bottom-0 left-0 w-full h-1 bg-portal-foreground scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+            <ListingGrid items={filteredItems} />
+
+            {filteredItems.length === 0 && (
+              <div className="py-24 text-center space-y-6">
+                <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                  <X className="w-8 h-8 text-white -rotate-45" />
                 </div>
+                <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">Academic Index Mismatch: Entity Not Found</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -211,7 +228,7 @@ const AcademicsPage = () => {
           </p>
         </div>
       </section>
-    </div>
+    </main>
   );
 };
 

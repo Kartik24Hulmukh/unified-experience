@@ -78,7 +78,8 @@ const FloatingGeometry = () => {
 
 // Particle field background
 const ParticleField = () => {
-  const count = 100;
+  const isMobile = window.innerWidth < 768;
+  const count = isMobile ? 40 : 100;
   const pointsRef = useRef<THREE.Points>(null);
 
   const positions = useMemo(() => {
@@ -89,7 +90,7 @@ const ParticleField = () => {
       pos[i * 3 + 2] = (Math.random() - 0.5) * 10;
     }
     return pos;
-  }, []);
+  }, [count]);
 
   useFrame((state) => {
     if (pointsRef.current) {
@@ -134,7 +135,7 @@ const Portal3D = ({ className = '' }: Portal3DProps) => {
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         <pointLight position={[-10, -10, -10]} intensity={0.5} color="#00d4aa" />
-        
+
         <FloatingGeometry />
         <ParticleField />
       </Canvas>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Shield, RefreshCw, ArrowRight, Lock } from "lucide-react";
 
+import { useAuth } from "@/contexts/AuthContext";
 import AuthPortal from "@/components/AuthPortal";
 import Portal3D from "@/components/Portal3D";
 import SplitText from "@/components/SplitText";
@@ -15,9 +16,17 @@ import { toast } from "@/components/ui/use-toast";
 
 const VerificationPage = () => {
     const navigate = useNavigate();
+    const { verifyOtp, isAuthenticated } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [otp, setOtp] = useState("");
     const [timeLeft, setTimeLeft] = useState(120);
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate("/home", { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     useEffect(() => {
         if (timeLeft <= 0) return;
@@ -30,18 +39,26 @@ const VerificationPage = () => {
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
 
-    const handleVerify = () => {
+    const handleVerify = async () => {
         if (otp.length < 6) return;
 
         setIsLoading(true);
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            await verifyOtp(otp);
             toast({
                 title: "Protocol Success",
                 description: "Your identity has been verified. Welcome student.",
             });
-            navigate("/");
-        }, 1500);
+            navigate("/home", { replace: true });
+        } catch (err) {
+            toast({
+                title: "Verification Failed",
+                description: "Invalid code or no pending registration found.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const resendOtp = () => {

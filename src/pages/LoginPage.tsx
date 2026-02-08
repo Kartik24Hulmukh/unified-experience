@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import gsap from "gsap";
-import { Shield, ArrowRight, Github } from "lucide-react";
+import { Shield, ArrowRight } from "lucide-react";
 
+import { useAuth } from "@/contexts/AuthContext";
 import AuthPortal from "@/components/AuthPortal";
 import Portal3D from "@/components/Portal3D";
 import SplitText from "@/components/SplitText";
@@ -28,7 +28,17 @@ const loginSchema = z.object({
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login, isAuthenticated } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
+
+    // If already authenticated, redirect away
+    const from = (location.state as { from?: string })?.from || "/home";
+
+    // Redirect if already logged in
+    if (isAuthenticated) {
+        navigate(from, { replace: true });
+    }
 
     const form = useForm<z.infer<typeof loginSchema>>({
         resolver: zodResolver(loginSchema),
@@ -40,17 +50,22 @@ const LoginPage = () => {
 
     async function onSubmit(values: z.infer<typeof loginSchema>) {
         setIsLoading(true);
-        // Simulate API call
-        console.log(values);
-
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            await login(values.email, values.password);
             toast({
                 title: "Access Granted",
                 description: "Welcome to the BErozgar Trust Exchange.",
             });
-            navigate("/");
-        }, 1500);
+            navigate(from, { replace: true });
+        } catch (err) {
+            toast({
+                title: "Access Denied",
+                description: "Invalid credentials. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (

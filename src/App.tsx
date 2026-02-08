@@ -3,6 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import LandingPage from "./pages/LandingPage";
 import Index from "./pages/Index";
 import ResalePage from "./pages/ResalePage";
 import AccommodationPage from "./pages/AccommodationPage";
@@ -25,35 +28,41 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <SkipToContent />
-        {/* Global cursor */}
-        <GooeyCursor size={28} />
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <SkipToContent />
+          <GooeyCursor size={28} />
+          <ContextNav />
 
-        {/* Context-aware navigation */}
-        <ContextNav />
+          <PageTransition>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/verify" element={<VerificationPage />} />
 
-        {/* Page transitions wrapper */}
-        <PageTransition>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/resale" element={<ResalePage />} />
-            <Route path="/accommodation" element={<AccommodationPage />} />
-            <Route path="/essentials" element={<EssentialsPage />} />
-            <Route path="/academics" element={<AcademicsPage />} />
-            <Route path="/mess" element={<MessPage />} />
-            <Route path="/hospital" element={<HospitalPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/verify" element={<VerificationPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </PageTransition>
-      </BrowserRouter>
+              {/* Post-login home — MasterExperience + modules */}
+              <Route path="/home" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+
+              {/* Protected module routes — require authentication */}
+              <Route path="/resale" element={<ProtectedRoute><ResalePage /></ProtectedRoute>} />
+              <Route path="/accommodation" element={<ProtectedRoute><AccommodationPage /></ProtectedRoute>} />
+              <Route path="/essentials" element={<ProtectedRoute><EssentialsPage /></ProtectedRoute>} />
+              <Route path="/academics" element={<ProtectedRoute><AcademicsPage /></ProtectedRoute>} />
+              <Route path="/mess" element={<ProtectedRoute><MessPage /></ProtectedRoute>} />
+              <Route path="/hospital" element={<ProtectedRoute><HospitalPage /></ProtectedRoute>} />
+
+              {/* Admin — restricted to admin role */}
+              <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminPage /></ProtectedRoute>} />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </PageTransition>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

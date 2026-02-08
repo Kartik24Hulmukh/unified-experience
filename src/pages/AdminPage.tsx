@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import {
     ShieldCheck,
@@ -34,6 +34,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import SplitText from '@/components/SplitText';
+import {
+    createListingMachine,
+    type ListingMachine,
+    InvalidTransitionError,
+} from '@/lib/fsm';
 
 const AdminPage = () => {
     const [activeTab, setActiveTab] = useState('pending');
@@ -47,6 +52,22 @@ const AdminPage = () => {
         { id: 'L-903', user: 'Mehta (E-08)', item: '1BHK Near Gate 2', date: '2026-02-05', status: 10 },
     ]);
 
+    /**
+     * Each pending listing is assumed to be in `pending_review`
+     * (user already submitted → admin queue). We hold one FSM per row
+     * so transitions are validated before any UI mutation.
+     */
+    const [machines, setMachines] = useState<Record<string, ListingMachine>>(() => {
+        const map: Record<string, ListingMachine> = {};
+        for (const l of [
+            { id: 'L-901' }, { id: 'L-902' }, { id: 'L-903' },
+        ]) {
+            // Fast-forward: draft → pending_review
+            map[l.id] = createListingMachine().send('SUBMIT');
+        }
+        return map;
+    });
+
     useEffect(() => {
         // Reveal sidebar and table
         const tl = gsap.timeline();
@@ -54,7 +75,19 @@ const AdminPage = () => {
             .fromTo('.admin-main', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.6');
     }, []);
 
-    const handleApprove = (id: string) => {
+    const handleApprove = useCallback((id: string) => {
+        const machine = machines[id];
+        if (!machine || !machine.can('APPROVE')) {
+            console.error(
+                new InvalidTransitionError('Listing', machine?.state ?? 'unknown', 'APPROVE'),
+            );
+            return;
+        }
+
+        const next = machine.send('APPROVE'); // pending_review → approved
+
+        setMachines(prev => ({ ...prev, [id]: next }));
+
         // Portal confirmation simulation
         gsap.to(`.row-${id}`, {
             backgroundColor: 'rgba(0, 212, 170, 0.1)',
@@ -63,7 +96,29 @@ const AdminPage = () => {
                 setPendingListings(prev => prev.filter(l => l.id !== id));
             }
         });
-    };
+    }, [machines]);
+
+    const handleReject = useCallback((id: string) => {
+        const machine = machines[id];
+        if (!machine || !machine.can('REJECT')) {
+            console.error(
+                new InvalidTransitionError('Listing', machine?.state ?? 'unknown', 'REJECT'),
+            );
+            return;
+        }
+
+        const next = machine.send('REJECT'); // pending_review → rejected
+
+        setMachines(prev => ({ ...prev, [id]: next }));
+
+        gsap.to(`.row-${id}`, {
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            duration: 0.3,
+            onComplete: () => {
+                setPendingListings(prev => prev.filter(l => l.id !== id));
+            }
+        });
+    }, [machines]);
 
     return (
         <div ref={containerRef} className="min-h-screen bg-portal flex text-white overflow-hidden">
@@ -221,8 +276,19 @@ const AdminPage = () => {
                                                                 </div>
                                                             </div>
                                                             <div className="flex justify-end space-x-4">
-                                                                <Button variant="outline" className="rounded-none border-white/10 hover:bg-white/5 uppercase text-[10px] font-bold tracking-widest">Reject Protocol</Button>
-                                                                <Button className="bg-primary hover:bg-teal-400 text-black rounded-none font-bold uppercase text-[10px] tracking-widest">Confirm & Manifest</Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    className="rounded-none border-white/10 hover:bg-white/5 uppercase text-[10px] font-bold tracking-widest"
+                                                                    onClick={() => handleReject(listing.id)}
+                                                                >
+                                                                    Reject Protocol
+                                                                </Button>
+                                                                <Button
+                                                                    className="bg-primary hover:bg-teal-400 text-black rounded-none font-bold uppercase text-[10px] tracking-widest"
+                                                                    onClick={() => handleApprove(listing.id)}
+                                                                >
+                                                                    Confirm & Manifest
+                                                                </Button>
                                                             </div>
                                                         </DialogContent>
                                                     </Dialog>
@@ -233,7 +299,11 @@ const AdminPage = () => {
                                                     >
                                                         <Check className="w-4 h-4 text-emerald-400" />
                                                     </Button>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-red-500/20">
+                                                    <Button
+                                                        variant="ghost"
+                                                        onClick={() => handleReject(listing.id)}
+                                                        className="h-8 w-8 p-0 hover:bg-red-500/20"
+                                                    >
                                                         <X className="w-4 h-4 text-red-400" />
                                                     </Button>
                                                 </div>

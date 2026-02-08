@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { User, Mail, Shield, ArrowRight, Check } from "lucide-react";
 
+import { useAuth } from "@/contexts/AuthContext";
 import AuthPortal from "@/components/AuthPortal";
 import Portal3D from "@/components/Portal3D";
 import SplitText from "@/components/SplitText";
@@ -28,7 +29,13 @@ const signupSchema = z.object({
 
 const SignupPage = () => {
     const navigate = useNavigate();
+    const { signup, isAuthenticated } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
+
+    // Redirect if already logged in
+    if (isAuthenticated) {
+        navigate("/home", { replace: true });
+    }
 
     const form = useForm<z.infer<typeof signupSchema>>({
         resolver: zodResolver(signupSchema),
@@ -41,17 +48,22 @@ const SignupPage = () => {
 
     async function onSubmit(values: z.infer<typeof signupSchema>) {
         setIsLoading(true);
-        // Simulate API call
-        console.log(values);
-
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            await signup(values.fullName, values.email, values.password);
             toast({
                 title: "Registration Initialized",
                 description: "Please verify your institutional email to complete the process.",
             });
             navigate("/verify");
-        }, 1500);
+        } catch (err) {
+            toast({
+                title: "Registration Failed",
+                description: "Could not create your account. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (

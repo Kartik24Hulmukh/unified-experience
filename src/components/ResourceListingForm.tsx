@@ -26,6 +26,10 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
+import {
+    createListingMachine,
+    InvalidTransitionError,
+} from '@/lib/fsm';
 
 const listingSchema = z.object({
     title: z.string().min(5, { message: "Title must be at least 5 characters" }).max(50),
@@ -72,8 +76,26 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
     };
 
     async function onSubmit(values: z.infer<typeof listingSchema>) {
-        // Simulate submission
-        console.log(values);
+        // Domain: draft → pending_review
+        try {
+            const machine = createListingMachine();
+            const submitted = machine.send('SUBMIT');
+            console.log(
+                `[ListingFSM] ${machine.state} → ${submitted.state}`,
+                values,
+            );
+        } catch (err) {
+            if (err instanceof InvalidTransitionError) {
+                toast({
+                    title: "Transition Blocked",
+                    description: err.message,
+                    variant: "destructive",
+                });
+                return;
+            }
+            throw err;
+        }
+
         toast({
             title: "Protocol Initialized",
             description: "Listing submitted for admin verification.",

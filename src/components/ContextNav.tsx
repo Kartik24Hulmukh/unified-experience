@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useTheme } from 'next-themes';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, LogOut, UserCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import NotificationCenter from './NotificationCenter';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -15,7 +16,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Home', path: '/', number: '00' },
+  { label: 'Home', path: '/home', number: '00' },
   { label: 'Resale', path: '/resale', number: '01' },
   { label: 'Accommodation', path: '/accommodation', number: '02' },
   { label: 'Essentials', path: '/essentials', number: '03' },
@@ -30,14 +31,17 @@ const ContextNav = () => {
   const navRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
-  const isAuthPage = ['/login', '/signup', '/verify', '/admin'].includes(location.pathname);
-  const isHomepage = location.pathname === '/';
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
+  const isAuthPage = ['/login', '/signup', '/verify'].includes(location.pathname);
+  const isLandingPage = location.pathname === '/';
+  const isHomepage = location.pathname === '/home';
 
   // Pages with dark backgrounds need light nav text immediately
   const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics', '/mess', '/hospital'];
   const isDarkBgPage = darkBgPages.includes(location.pathname);
 
-  if (isAuthPage) return null;
+  if (isAuthPage || isLandingPage) return null;
 
   // During the hero phase on homepage the duplicated nav elements
   // inside the splash layers provide the visual. The REAL nav stays
@@ -111,7 +115,7 @@ const ContextNav = () => {
         <div className="flex items-center justify-between px-6 md:px-12 py-6">
           {/* Logo */}
           <Link
-            to="/"
+            to="/home"
             className="relative z-50 font-display font-bold text-xl tracking-tight hover:opacity-70 transition-opacity"
           >
             <span className="sr-only">BErozgar</span>
@@ -133,7 +137,31 @@ const ContextNav = () => {
           </div>
 
           {/* Nav Actions */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
+            {/* Auth Action */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <span className={`hidden md:inline text-[10px] uppercase tracking-widest opacity-60 font-body ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}>
+                  {user?.fullName?.split(' ')[0] || 'User'}
+                </span>
+                <button
+                  onClick={() => { logout(); navigate('/'); }}
+                  className={`p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+                  aria-label="Logout"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className={`text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity font-body ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+              >
+                Login
+              </Link>
+            )}
+
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className={`p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
@@ -215,7 +243,28 @@ const ContextNav = () => {
             </div>
             <div>
               <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-2">Access</p>
-              <p className="text-portal-foreground font-display text-lg">Students Only</p>
+              {isAuthenticated ? (
+                <div className="flex items-center gap-4">
+                  <p className="text-portal-foreground font-display text-lg capitalize">{user?.role || 'Student'}</p>
+                  {user?.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      onClick={handleNavClick}
+                      className="text-[#a3ff12] text-xs uppercase tracking-widest hover:opacity-80 transition-opacity"
+                    >
+                      Admin Panel →
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={handleNavClick}
+                  className="text-portal-foreground font-display text-lg hover:text-[#a3ff12] transition-colors"
+                >
+                  Sign In →
+                </Link>
+              )}
             </div>
           </div>
         </div>

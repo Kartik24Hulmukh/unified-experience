@@ -16,6 +16,8 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import VerificationPage from "./pages/VerificationPage";
 import AdminPage from "./pages/AdminPage";
+import MessPage from "./pages/MessPage";
+import HospitalPage from "./pages/HospitalPage";
 import SkipToContent from "./components/SkipToContent";
 
 const queryClient = new QueryClient();
@@ -41,6 +43,8 @@ const App = () => (
             <Route path="/accommodation" element={<AccommodationPage />} />
             <Route path="/essentials" element={<EssentialsPage />} />
             <Route path="/academics" element={<AcademicsPage />} />
+            <Route path="/mess" element={<MessPage />} />
+            <Route path="/hospital" element={<HospitalPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/verify" element={<VerificationPage />} />

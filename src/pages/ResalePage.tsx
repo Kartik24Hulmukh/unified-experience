@@ -90,9 +90,9 @@ const ResalePage = () => {
             ref={imageRef}
             src={resaleTech}
             alt="Resource Resale"
-            className="w-full h-[130%] object-cover opacity-40"
+            className="w-full h-[130%] object-cover opacity-70"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-portal/60 via-portal/80 to-portal" />
+          <div className="absolute inset-0 bg-gradient-to-b from-portal/30 via-portal/50 to-portal" />
         </div>
 
         {/* Diagonal Overlay */}

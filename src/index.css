@@ -1,6 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Hide global cursor on home page */
+.hide-global-cursor {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.hide-global-cursor #gooey-cursor {
+  display: none !important;
+}
 
 /* BErozgar Design System - Cappen-inspired unified scroll architecture
    Base: Pure White (#ffffff) for hero
@@ -8,7 +20,6 @@
    Cursor: White with mix-blend-difference
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
@@ -28,8 +39,8 @@
     --popover-foreground: 0 0% 0%;
 
     /* Accent - Subtle teal/cyan for trust */
-    --primary: 180 100% 25%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 195 100% 50%;
+    --primary-foreground: 0 0% 0%;
 
     /* Secondary - Warm muted */
     --secondary: 40 15% 95%;
@@ -89,7 +100,7 @@
     --popover: 0 0% 5%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 180 100% 40%;
+    --primary: 195 100% 50%;
     --primary-foreground: 0 0% 0%;
 
     --secondary: 0 0% 15%;
@@ -160,19 +171,19 @@
   /* Hero text styles - massive display */
   .text-hero-massive {
     font-family: var(--font-display);
-    font-size: clamp(4rem, 15vw, 18rem);
+    font-size: clamp(2rem, 8vw, 11rem);
     font-weight: 800;
-    line-height: 0.85;
-    letter-spacing: -0.03em;
+    line-height: 0.8;
+    letter-spacing: -0.04em;
     text-transform: uppercase;
   }
 
   /* Module list text */
   .text-module-title {
     font-family: var(--font-display);
-    font-size: clamp(2rem, 6vw, 5rem);
-    font-weight: 700;
-    line-height: 1.1;
+    font-size: clamp(1.5rem, 3.5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1;
     letter-spacing: -0.02em;
     text-transform: uppercase;
   }
@@ -421,8 +432,9 @@
 }
 
 .hud-image-box {
-  @apply relative border border-white/20 bg-black overflow-hidden;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.2);
+  @apply relative bg-black overflow-hidden;
+  border: 1px dashed rgba(163, 255, 18, 0.3);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 1px rgba(163, 255, 18, 0.15);
 }
 
 .hud-image-box::before {
@@ -457,4 +469,71 @@
 
 .scale-in-hor-left {
   animation: scale-in-hor-left 0.4s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   REDUCED MOTION ACCESSIBILITY
+   PRD Section 8: "Must work without animation", "Reduced-motion fallback"
+   Respects user preference for reduced motion (vestibular disorders, etc.)
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable parallax effects */
+  .parallax,
+  [data-parallax] {
+    transform: none !important;
+  }
+
+  /* Disable GSAP scroll triggers visually (GSAP handles this, but fallback) */
+  .gsap-marker-start,
+  .gsap-marker-end,
+  .gsap-marker-scroller-start,
+  .gsap-marker-scroller-end {
+    display: none !important;
+  }
+
+  /* Ensure content is visible without animation */
+  [data-animate],
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-slide-in {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Disable marquee/ticker animations */
+  .marquee,
+  .ticker,
+  [class*="marquee"],
+  [class*="ticker"] {
+    animation: none !important;
+  }
+
+  /* Disable pulse animations */
+  .animate-pulse {
+    animation: none !important;
+  }
+
+  /* Make sure all text is immediately visible */
+  .split-text-char,
+  .split-text-word,
+  [data-split-text] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Disable cursor blend effects for clarity */
+  .gooey-cursor,
+  .fluid-cursor {
+    display: none !important;
+  }
 }

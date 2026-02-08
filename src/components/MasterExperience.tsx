@@ -1,18 +1,16 @@
-import { useRef, useEffect, useState, lazy, Suspense } from 'react';
+import { useRef, useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import FluidMaskCursor from '@/components/FluidMaskCursor';
 
 // Module preview images
-import resalePreview from '@/assets/resale-preview.jpg';
 import resaleTech from '@/assets/resale-tech.jpg';
-import housingPreview from '@/assets/housing-preview.jpg';
 import housingHandover from '@/assets/housing-handover.jpg';
-import essentialsPreview from '@/assets/essentials-preview.jpg';
 import essentialsTiffin from '@/assets/essentials-tiffin.jpg';
-import academicsPreview from '@/assets/academics-preview.jpg';
+const academicsPreview = '/Academics.jpg';
 
-// Lazy load 3D component
+// Components
 const Portal3D = lazy(() => import('@/components/Portal3D'));
 
 gsap.registerPlugin(ScrollTrigger);
@@ -61,217 +59,403 @@ const modules: Module[] = [
   },
 ];
 
+/* ───────────────────────────────────────────────────
+   Cappen-style Full-Page Fluid Splash Reveal
+
+   Architecture (bottom → top):
+   ┌──────────────────────────────────────────────┐
+   │  Layer 1 — BASE (z-10)                       │
+   │  White bg  +  Black text + BErozgar + Menu   │
+   │  Always visible                               │
+   ├──────────────────────────────────────────────┤
+   │  WebGL SplashCursor canvas (z-12)            │
+   │  Transparent + colourful fluid (visual only) │
+   ├──────────────────────────────────────────────┤
+   │  Layer 2 — REVEAL (z-[14])                   │
+   │  Black bg + White text + BErozgar + Menu     │
+   │  Masked by WebGL canvas luminance via        │
+   │  CSS mask-image data-URL from the canvas.    │
+   │  Only visible inside the fluid splash shape. │
+   └──────────────────────────────────────────────┘
+   ─────────────────────────────────────────────────── */
+
+/* Shared hero content rendered twice — once normal, once inverted.
+   Includes BErozgar logo + Menu button duplicates so the splash
+   effect works on the nav elements too. */
+function HeroContent({
+  heroTopRef,
+  heroMiddleRef,
+  heroBottomRef,
+  inverted = false,
+}: {
+  heroTopRef?: React.RefObject<HTMLDivElement | null>;
+  heroMiddleRef?: React.RefObject<HTMLDivElement | null>;
+  heroBottomRef?: React.RefObject<HTMLDivElement | null>;
+  inverted?: boolean;
+}) {
+  const textColor = inverted ? 'text-[#00BFFF]' : 'text-foreground';
+  const subTextColor = inverted ? 'text-[#00BFFF]/40' : 'text-foreground/30';
+  const subTextAccent = inverted ? 'text-[#00BFFF]' : 'text-foreground';
+  const borderColor = inverted ? 'bg-[#00BFFF]/20' : 'bg-foreground/20';
+  const fgClass = inverted ? 'border-[#00BFFF]' : 'border-foreground';
+  const fgBg = inverted ? 'bg-[#00BFFF]' : 'bg-foreground';
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 md:p-12">
+      {/* ── Nav-mirror: BErozgar logo (top-left) ── */}
+      <div className="absolute top-6 left-6 md:left-12 flex items-center gap-2 z-10">
+        <div className={`w-8 h-8 border-2 ${fgClass} rotate-45 flex items-center justify-center`}>
+          <div className={`w-3 h-3 ${fgBg}`} />
+        </div>
+        <span className={`hidden md:block uppercase font-display font-bold text-xl tracking-tight ${textColor}`}>
+          BErozgar
+        </span>
+      </div>
+
+      {/* ── Nav-mirror: section indicator (top-center) ── */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 hidden md:flex items-center gap-4 z-10">
+        <div className={`h-px w-12 ${inverted ? 'bg-background/30' : 'bg-foreground/30'}`} />
+        <span className={`text-xs uppercase tracking-widest opacity-60 font-body ${textColor}`}>
+          Welcome
+        </span>
+        <div className={`h-px w-12 ${inverted ? 'bg-background/30' : 'bg-foreground/30'}`} />
+      </div>
+
+      {/* ── Nav-mirror: Menu button (top-right) ── */}
+      <div className="absolute top-6 right-6 md:right-12 flex items-center gap-3 z-10">
+        <span className={`text-xs uppercase tracking-widest opacity-60 font-body ${textColor}`}>
+          Menu
+        </span>
+        <div className="relative w-8 h-8 flex items-center justify-center">
+          <span className={`absolute block w-6 h-0.5 ${fgBg} -translate-y-1.5`} />
+          <span className={`absolute block w-6 h-0.5 ${fgBg} translate-y-1.5`} />
+        </div>
+      </div>
+
+      {/* ── Hero text ── */}
+      <div className="relative w-full max-w-[85vw] h-full flex flex-col items-center justify-center" style={{ gap: 0 }}>
+        {/* Row 1: TRUST */}
+        <div ref={heroTopRef || undefined} className="will-change-transform">
+          <span className={`text-hero-massive ${textColor} whitespace-nowrap select-none block`}>
+            TRUST
+          </span>
+        </div>
+
+        {/* Row 2: CENTRIC */}
+        <div ref={heroMiddleRef || undefined} className="will-change-transform">
+          <span className={`text-hero-massive ${textColor} whitespace-nowrap select-none block`}>
+            CENTRIC
+          </span>
+        </div>
+
+        {/* Row 3: EXCHANGE */}
+        <div ref={heroBottomRef || undefined} className="will-change-transform">
+          <span className={`text-hero-massive ${textColor} whitespace-nowrap select-none block`}>
+            EXCHANGE
+          </span>
+        </div>
+
+        {/* Side description */}
+        <div className="absolute right-0 top-[15%] max-w-[180px] text-right hidden xl:block opacity-30">
+          <p className={`text-[10px] font-body ${subTextAccent} leading-relaxed uppercase tracking-[0.2em]`}>
+            A student-centric digital ecosystem crafting trust & seamless interactions for campus life since 2026.
+          </p>
+        </div>
+      </div>
+
+      {/* Corner branding */}
+      <div className="absolute bottom-8 left-8">
+        <p className={`text-[10px] font-mono tracking-[0.3em] ${subTextColor} uppercase`}>
+          MCTRGIT // CAMPUS_ECOSYSTEM
+        </p>
+      </div>
+      <div className="absolute bottom-8 right-8">
+        <div className="flex items-center gap-4">
+          <p className={`text-[10px] font-mono tracking-[0.3em] ${subTextColor} uppercase`}>
+            EST. 2026 // v0.1.0
+          </p>
+          <div className={`w-8 h-px ${borderColor}`} />
+        </div>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className={`absolute bottom-0 left-0 w-full h-px ${borderColor}`}>
+        <div
+          className={`h-full ${inverted ? 'bg-background/40' : 'bg-foreground/40'} transition-all duration-300`}
+          style={{ width: '15%' }}
+        />
+      </div>
+    </div>
+  );
+}
+
 const MasterExperience = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLDivElement>(null);
+
+  // Base layer refs (for GSAP scroll animations)
   const heroTopRef = useRef<HTMLDivElement>(null);
+  const heroMiddleRef = useRef<HTMLDivElement>(null);
   const heroBottomRef = useRef<HTMLDivElement>(null);
+
+  // Reveal (inverted) layer refs — must animate in sync
+  const heroTopRevealRef = useRef<HTMLDivElement>(null);
+  const heroMiddleRevealRef = useRef<HTMLDivElement>(null);
+  const heroBottomRevealRef = useRef<HTMLDivElement>(null);
+
   const modulesRef = useRef<HTMLDivElement>(null);
   const symbolRef = useRef<HTMLDivElement>(null);
+  const revealLayerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const [activeModule, setActiveModule] = useState<string | null>(null);
-  const [imageKey, setImageKey] = useState(0);
 
-  // Handle module hover
   const handleModuleHover = (moduleId: string | null) => {
     if (moduleId !== activeModule) {
       setActiveModule(moduleId);
-      setImageKey(prev => prev + 1); // Trigger glitch animation
     }
   };
 
-  // Handle module click - navigate to page
   const handleModuleClick = (path: string) => {
     navigate(path);
   };
 
-  // Get current preview image
-  const currentPreview = modules.find(m => m.id === activeModule)?.preview || null;
+  /* ── Mask callback: update the reveal layer's CSS mask every frame ── */
+  const handleMaskFrame = useCallback((dataUrl: string) => {
+    const el = revealLayerRef.current;
+    if (!el) return;
+    el.style.maskImage = `url(${dataUrl})`;
+    el.style.webkitMaskImage = `url(${dataUrl})`;
+    el.style.maskSize = '100% 100%';
+    (el.style as any).webkitMaskSize = '100% 100%';
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Main timeline for the unified scroll experience
+      // Ultra-smooth cinematic scroll — cappen.com style
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
           end: 'bottom bottom',
-          scrub: 1,
+          scrub: 4, // Very high scrub = buttery smooth transitions
         },
       });
 
-      // =====================================================
-      // Phase 1: White Room (0% -> 5%)
-      // State: White screen, small black portal centered,
-      // "TRUST/EXCHANGE" visible, modules hidden
-      // No animation needed - this is the initial state
-      // =====================================================
+      const baseTexts = [heroTopRef.current, heroMiddleRef.current, heroBottomRef.current];
+      const revealTexts = [heroTopRevealRef.current, heroMiddleRevealRef.current, heroBottomRevealRef.current];
 
-      // =====================================================
-      // Phase 2: The Swallow (5% -> 25%)
-      // Text flies away with glitch, portal expands to fullscreen
-      // =====================================================
-
-      // "TRUST" flies Up-Left with clip-path glitch
+      // Phase 1: Gentle background color transition (0% -> 15%)
       tl.to(
-        heroTopRef.current,
+        stickyRef.current,
         {
-          y: '-150vh',
-          x: '-20vw',
-          opacity: 0,
-          clipPath: 'inset(0 0 0 100%)',
-          duration: 0.20, // 5% to 25% = 20% of timeline
-          ease: 'power3.inOut',
+          backgroundColor: '#000000',
+          duration: 0.15,
+          ease: 'none', // Linear for smooth scrub
         },
-        0.05 // Start at 5%
-      )
-        // "EXCHANGE" flies Down-Right with clip-path glitch
-        .to(
-          heroBottomRef.current,
-          {
-            y: '150vh',
-            x: '20vw',
-            opacity: 0,
-            clipPath: 'inset(0 100% 0 0)',
-            duration: 0.20,
-            ease: 'power3.inOut',
-          },
-          0.05
-        )
-        // Portal expands to full screen - CRITICAL for eliminating white gap
-        .to(
-          portalRef.current,
-          {
-            width: '100vw',
-            height: '100vh',
-            borderRadius: '0px',
-            duration: 0.20,
-            ease: 'power2.inOut',
-          },
-          0.05
-        )
-        // 3D Symbol scales slightly during portal expansion (1.0 -> 1.2)
-        .to(
-          symbolRef.current,
-          {
-            scale: 1.2,
-            duration: 0.20,
-            ease: 'power2.out',
-          },
-          0.05
-        );
+        0.0
+      );
 
-      // =====================================================
-      // Phase 3: The Arrival (25% -> 60%)
-      // Screen is black, modules fade in with staggered slide-up
-      // =====================================================
+      // Phase 2: Text departure — staggered parallax with smooth ease
+      // TRUST floats up first
+      tl.to(
+        [heroTopRef.current, heroTopRevealRef.current],
+        {
+          y: '-100vh',
+          opacity: 0,
+          duration: 0.35,
+          ease: 'power2.in',
+        },
+        0.03
+      );
 
-      // Modules container becomes visible
+      // CENTRIC follows
+      tl.to(
+        [heroMiddleRef.current, heroMiddleRevealRef.current],
+        {
+          y: '-60vh',
+          opacity: 0,
+          duration: 0.32,
+          ease: 'power2.in',
+        },
+        0.06
+      );
+
+      // EXCHANGE drifts down
+      tl.to(
+        [heroBottomRef.current, heroBottomRevealRef.current],
+        {
+          y: '80vh',
+          opacity: 0,
+          duration: 0.35,
+          ease: 'power2.in',
+        },
+        0.04
+      );
+
+      // Phase 3: Portal expansion — cinematic reveal
+      tl.to(
+        portalRef.current,
+        {
+          width: '100vw',
+          height: '100vh',
+          duration: 0.50,
+          ease: 'power4.inOut',
+        },
+        0.08
+      );
+
+      // Symbol scales up gently
+      tl.to(
+        symbolRef.current,
+        {
+          scale: 2.0,
+          duration: 0.55,
+          ease: 'power4.inOut',
+        },
+        0.08
+      );
+
+      // Phase 4: Modules reveal — gradual, elegant fade in
       tl.to(
         modulesRef.current,
         {
           opacity: 1,
           pointerEvents: 'auto',
-          duration: 0.10,
-          ease: 'power2.out',
+          duration: 0.30,
+          ease: 'power3.out',
         },
-        0.25 // Start at 25%
+        0.38
       );
 
-      // Staggered module items slide up from y:100 to y:0
       const moduleItems = modulesRef.current?.querySelectorAll('.module-item');
       if (moduleItems) {
         tl.fromTo(
           moduleItems,
-          {
-            y: 100,
-            opacity: 0,
-          },
+          { y: 30, opacity: 0 },
           {
             y: 0,
             opacity: 1,
-            duration: 0.30, // 25% to 55% for staggered animation
-            stagger: 0.05,
+            duration: 0.28,
+            stagger: 0.02,
             ease: 'power3.out',
           },
-          0.28 // Slight delay after container fades in
+          0.42
         );
       }
 
-      // =====================================================
-      // Phase 4: The Departure (60% -> 90%)
-      // 3D Symbol fades out, modules remain visible on black
-      // =====================================================
-
+      // Phase 5: Symbol fades out — slow cinematic dissolve
       tl.to(
         symbolRef.current,
         {
           opacity: 0,
-          scale: 0.8,
-          duration: 0.30, // 60% to 90% = 30% of timeline
-          ease: 'power2.inOut',
+          scale: 1.6,
+          filter: 'blur(8px)',
+          duration: 0.35,
+          ease: 'power4.inOut',
         },
-        0.60 // Start at 60%
+        0.55
       );
     }, containerRef);
 
-    return () => ctx.revert();
+    document.body.classList.add('hide-global-cursor');
+
+    return () => {
+      ctx.revert();
+      document.body.classList.remove('hide-global-cursor');
+    };
   }, []);
 
   return (
     <div ref={containerRef} className="h-[500vh] bg-background">
-      {/* Sticky Viewport - Everything happens inside here */}
+      {/* Sticky Viewport */}
       <div
         ref={stickyRef}
         className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center"
       >
-        {/* Z-10: Hero Text Layer */}
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
-          {/* Top word - TRUST */}
-          <div
-            ref={heroTopRef}
-            className="text-hero-massive text-foreground select-none will-change-transform"
-            style={{ clipPath: 'inset(0 0 0 0)' }}
-          >
-            TRUST
-          </div>
-
-          {/* Bottom word - EXCHANGE */}
-          <div
-            ref={heroBottomRef}
-            className="text-hero-massive text-foreground select-none will-change-transform"
-            style={{ clipPath: 'inset(0 0 0 0)' }}
-          >
-            EXCHANGE
-          </div>
+        {/* ============================================
+            LAYER 1 — BASE: White bg + Black text
+            Always visible, sits at the bottom.
+            Includes duplicated nav elements (BErozgar
+            logo + Menu) so splash works on them.
+            ============================================ */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          <HeroContent
+            heroTopRef={heroTopRef}
+            heroMiddleRef={heroMiddleRef}
+            heroBottomRef={heroBottomRef}
+            inverted={false}
+          />
         </div>
 
-        {/* Z-20: The Portal (Black Background) */}
+        {/* ============================================
+            WebGL Fluid Splash Mask (INVISIBLE)
+            Full Navier-Stokes fluid sim on a hidden
+            canvas. Renders white luminance mask,
+            exports via readPixels + toDataURL every
+            frame for CSS mask-image on reveal layer.
+            ============================================ */}
+        <FluidMaskCursor
+          onMaskFrame={handleMaskFrame}
+        />
+
+        {/* ============================================
+            LAYER 2 — REVEAL: Black bg + White text
+            CSS-masked by the WebGL canvas luminance.
+            Only visible inside the fluid splash shape.
+            Includes duplicated nav elements.
+            ============================================ */}
         <div
-          ref={portalRef}
-          className="absolute z-20 bg-portal will-change-[width,height,border-radius] flex items-center justify-center"
+          ref={revealLayerRef}
+          className="absolute inset-0 z-[14] pointer-events-none"
           style={{
-            width: '350px',
-            height: '400px',
-            borderRadius: '8px',
+            maskImage: 'none',
+            WebkitMaskImage: 'none',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat' as any,
           }}
         >
-          {/* 3D Symbol inside portal */}
+          {/* Full-screen black fill — becomes the splash background */}
+          <div className="absolute inset-0 bg-foreground" />
+          {/* Inverted hero content on top */}
+          <HeroContent
+            heroTopRef={heroTopRevealRef}
+            heroMiddleRef={heroMiddleRevealRef}
+            heroBottomRef={heroBottomRevealRef}
+            inverted={true}
+          />
+        </div>
+
+        {/* Z-20: The Portal — auto-centered via inset+margin */}
+        <div
+          ref={portalRef}
+          className="absolute z-20 bg-portal will-change-[width,height] overflow-hidden flex items-center justify-center"
+          style={{
+            width: 'clamp(120px, 16vw, 220px)',
+            height: 'clamp(100px, 13vw, 180px)',
+            inset: '0',
+            margin: 'auto',
+          }}
+        >
+          {/* Symbol - centered via flexbox, transform-origin center */}
           <div
             ref={symbolRef}
-            className="flex items-center justify-center w-full h-full"
-            style={{ transform: 'scale(1)' }}
+            className="flex items-center justify-center flex-shrink-0 will-change-transform"
+            style={{
+              width: 'clamp(100px, 14vw, 180px)',
+              height: 'clamp(100px, 14vw, 180px)',
+              transformOrigin: 'center center',
+            }}
           >
             <Suspense fallback={
-              <div className="relative w-24 h-24 md:w-32 md:h-32 animate-spin-slow">
+              <div className="relative w-full h-full animate-spin-slow">
                 <div className="absolute inset-0 border-2 border-portal-foreground/40 rotate-45" />
                 <div className="absolute inset-2 border border-portal-foreground/25 rotate-12 animate-pulse" />
                 <div className="absolute inset-4 bg-portal-foreground/15 rotate-45" />
               </div>
             }>
-              <Portal3D className="w-32 h-32 md:w-48 md:h-48" />
+              <Portal3D className="w-full h-full" />
             </Suspense>
           </div>
         </div>
@@ -279,105 +463,90 @@ const MasterExperience = () => {
         {/* Z-30: Modules Content Layer */}
         <div
           ref={modulesRef}
-          className="absolute inset-0 z-30 flex opacity-0 will-change-[opacity,transform]"
+          className="absolute inset-0 z-30 flex opacity-0 will-change-[opacity,transform] bg-portal"
           style={{ pointerEvents: 'none' }}
         >
-          {/* Unified Column: Module List with HUD Preview */}
-          <div className="w-full h-full flex flex-col justify-center px-8 md:px-32">
-            <div className="module-item mb-12 border-l-2 border-primary pl-6">
-              <p className="text-primary text-[10px] font-mono uppercase tracking-[0.4em] mb-2">
-                SYS_CORE_MODULES // DIRECTION_@1_NOIR
-              </p>
-              <h2 className="text-portal-foreground text-4xl md:text-5xl font-display font-bold italic-syne">
-                COMMAND CENTER
-              </h2>
-            </div>
+          <div className="w-full h-full flex flex-row items-stretch">
+            {/* ─── Left Column: Module List (~60%) ─── */}
+            <div className="w-full lg:w-[62%] h-full flex flex-col justify-center px-8 md:px-12 lg:px-16">
+              {/* Header */}
+              <div className="module-item mb-10 border-l-2 border-primary pl-6">
+                <p className="text-primary text-[10px] font-mono uppercase tracking-[0.4em] mb-2">
+                  SYS_CORE_MODULES // FIXED_REVEAL
+                </p>
+              </div>
 
-            <nav className="flex flex-col gap-0">
-              {modules.map((module) => (
-                <div
-                  key={module.id}
-                  className="module-item group relative cursor-pointer py-2 md:py-1"
-                  onMouseEnter={() => handleModuleHover(module.id)}
-                  onMouseLeave={() => handleModuleHover(null)}
-                  onClick={() => handleModuleClick(module.path)}
-                >
-                  <div className="flex items-center justify-between group-hover:bg-white/5 px-4 transition-all duration-300">
-                    <div className="flex items-baseline gap-12">
-                      <span className={`font-mono text-xl md:text-2xl transition-all duration-500 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/20'}`}>
+              {/* Module nav list */}
+              <nav className="flex flex-col gap-0">
+                {modules.map((module) => (
+                  <div
+                    key={module.id}
+                    className="module-item group relative cursor-pointer"
+                    onMouseEnter={() => handleModuleHover(module.id)}
+                    onMouseLeave={() => handleModuleHover(null)}
+                    onClick={() => handleModuleClick(module.path)}
+                  >
+                    <div className="flex items-center gap-6 md:gap-8 py-6 md:py-8 px-4 group-hover:bg-white/[0.03] transition-all duration-300">
+                      {/* Number */}
+                      <span className={`font-mono text-lg md:text-xl transition-all duration-400 shrink-0 w-10 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/20'}`}>
                         {module.number}
                       </span>
 
-                      <div className="relative">
-                        <h3 className={`text-hero-massive text-[4rem] md:text-[8rem] transition-all duration-500 will-change-transform leading-[0.85] ${activeModule === module.id ? 'text-[#a3ff12]' : 'text-portal-foreground'
-                          }`}>
+                      {/* Title + Subtitle */}
+                      <div className="flex-1">
+                        <h3 className={`text-module-title transition-all duration-400 will-change-transform ${activeModule === module.id ? 'text-[#a3ff12]' : 'text-portal-foreground'}`}>
                           {module.title}
                         </h3>
-
-                        {/* HOVER HUD BOX - Positioned Right of text */}
-                        {activeModule === module.id && (
-                          <div className="absolute top-1/2 left-[105%] -translate-y-1/2 flex items-center gap-6 z-50 pointer-events-none">
-                            {/* Blinking Arrow */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-[#a3ff12] font-mono text-4xl animate-blink-arrow">→</span>
-                            </div>
-
-                            {/* HUD Image Box */}
-                            <div className="hud-image-box w-64 md:w-80 aspect-video scale-in-hor-left">
-                              <img
-                                key={imageKey}
-                                src={module.preview}
-                                alt=""
-                                className="w-full h-full object-cover animate-glitch scale-110"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                              <div className="absolute bottom-2 left-3">
-                                <p className="text-[9px] text-white/40 font-mono tracking-widest uppercase">Entity Preview: {module.id}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+                        <p className={`text-[10px] md:text-xs font-mono tracking-[0.3em] uppercase mt-2 transition-all duration-400 ${activeModule === module.id ? 'text-white/50' : 'text-white/10'}`}>
+                          {module.subtitle}
+                        </p>
                       </div>
+
+                      {/* Arrow */}
+                      <span className={`text-[#a3ff12] font-mono text-3xl md:text-4xl transition-all duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}>
+                        →
+                      </span>
                     </div>
 
-                    <div className="hidden xl:block">
-                      <p className={`text-[10px] font-bold tracking-[0.3em] uppercase transition-all duration-500 ${activeModule === module.id ? 'text-white' : 'text-white/10'
-                        }`}>
-                        {module.subtitle}
-                      </p>
+                    {/* Divider */}
+                    <div className={`h-px w-full transition-all duration-500 ${activeModule === module.id ? 'bg-[#a3ff12]/30' : 'bg-white/5'}`} />
+                  </div>
+                ))}
+              </nav>
+            </div>
+
+            {/* ─── Right Column: Preview Image (~38%) ─── */}
+            <div className="hidden lg:flex w-[38%] h-full items-center justify-center p-6 lg:p-10">
+              <div className="relative w-full max-w-lg aspect-[4/3]">
+                {modules.map((module) => (
+                  <div
+                    key={module.id}
+                    className={`absolute inset-0 transition-all duration-500 ${activeModule === module.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                  >
+                    <div className="hud-image-box w-full h-full rounded-none">
+                      <img
+                        src={module.preview}
+                        alt={module.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-transparent" />
+                    </div>
+                    {/* Label below image */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-[#a3ff12] font-mono text-[10px] tracking-wider">[{module.number}]</span>
+                      <span className="text-white/40 font-mono text-[10px] tracking-widest uppercase">{module.title}</span>
                     </div>
                   </div>
+                ))}
 
-                  {/* Subtle separator line */}
-                  <div className={`h-px w-full transition-all duration-700 ${activeModule === module.id ? 'bg-[#a3ff12]/30 scale-x-100' : 'bg-white/5 scale-x-90'
-                    }`} />
+                {/* Placeholder when nothing hovered */}
+                <div className={`absolute inset-0 border border-dashed border-white/10 flex items-center justify-center transition-opacity duration-300 ${activeModule ? 'opacity-0' : 'opacity-100'}`}>
+                  <p className="text-white/10 font-mono text-[10px] tracking-widest uppercase">
+                    Hover a module
+                  </p>
                 </div>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-        {/* Corner branding */}
-        <div className="absolute top-8 left-8 z-40">
-          <p className="text-sm font-display tracking-widest text-foreground/60">
-            MCTRGIT
-          </p>
-        </div>
-
-        <div className="absolute top-8 right-8 z-40">
-          <p className="text-sm font-body text-foreground/40">
-            Trust-Centric Platform
-          </p>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40">
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-xs text-foreground/40 uppercase tracking-widest">
-              Scroll
-            </p>
-            <div className="w-px h-12 bg-foreground/20 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-4 bg-foreground/60 animate-bounce" />
+              </div>
             </div>
           </div>
         </div>

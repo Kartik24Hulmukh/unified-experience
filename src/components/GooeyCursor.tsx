@@ -34,14 +34,14 @@ const GooeyCursor = ({ size = 24 }: GooeyCursorProps) => {
     // Detect hoverable elements
     const handleElementHover = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const isInteractive = 
-        target.tagName === 'A' || 
+      const isInteractive =
+        target.tagName === 'A' ||
         target.tagName === 'BUTTON' ||
         target.closest('a') ||
         target.closest('button') ||
         target.classList.contains('module-link') ||
         target.closest('.module-link');
-      
+
       setIsHovering(!!isInteractive);
     };
 
@@ -71,7 +71,7 @@ const GooeyCursor = ({ size = 24 }: GooeyCursorProps) => {
     document.addEventListener('mouseenter', handleMouseEnter);
     document.addEventListener('mouseleave', handleMouseLeave);
     document.addEventListener('mouseover', handleElementHover);
-    
+
     const animationId = requestAnimationFrame(animate);
 
     return () => {
@@ -87,6 +87,7 @@ const GooeyCursor = ({ size = 24 }: GooeyCursorProps) => {
     <>
       {/* Main cursor blob */}
       <div
+        id="gooey-cursor"
         ref={cursorRef}
         className="cursor-gooey gooey-cursor"
         style={{
@@ -99,6 +100,7 @@ const GooeyCursor = ({ size = 24 }: GooeyCursorProps) => {
       />
       {/* Trail blob for gooey effect */}
       <div
+        id="gooey-cursor"
         ref={trailRef}
         className="cursor-gooey gooey-cursor"
         style={{

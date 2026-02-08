@@ -4,7 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
 import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
-import academicsPreview from '@/assets/academics-preview.jpg';
+const academicsHero = '/Academics.jpg';
 import { Search, X } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -49,6 +49,14 @@ const AcademicsPage = () => {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Hero image reveal + parallax
+      gsap.fromTo('.acad-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 2, ease: 'power3.out' });
+      gsap.to('.acad-hero-img', {
+        yPercent: 15,
+        ease: 'none',
+        scrollTrigger: { trigger: heroRef.current, start: 'top top', end: 'bottom top', scrub: true },
+      });
+
       // Staggered branch code reveal
       gsap.fromTo(
         '.branch-code',
@@ -86,8 +94,27 @@ const AcademicsPage = () => {
     <main id="main-content" className="min-h-screen bg-portal">
       {/* Hero - Typography-focused with branch codes as design elements */}
       <section ref={heroRef} className="relative min-h-screen overflow-hidden">
+        {/* Background image + overlay */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src={academicsHero}
+            alt=""
+            className="acad-hero-img absolute inset-0 w-full h-[130%] object-cover"
+            style={{ opacity: 0 }}
+          />
+          <div className="absolute inset-0" style={{
+            background: 'radial-gradient(ellipse at 70% 30%, rgba(139,92,246,0.06) 0%, transparent 60%)',
+          }} />
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
+          }} />
+          <div className="absolute inset-0 bg-gradient-to-t from-portal via-portal/40 to-portal/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-portal/50 via-transparent to-transparent" />
+        </div>
+
         {/* Background pattern - branch codes */}
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none select-none">
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none select-none z-[1]">
           <div className="flex gap-8 opacity-[0.03]">
             {branches.map((branch, i) => (
               <span
@@ -99,6 +126,25 @@ const AcademicsPage = () => {
               </span>
             ))}
           </div>
+        </div>
+
+        {/* Corner brackets */}
+        <div className="absolute top-8 left-8 w-12 h-12 border-l-2 border-t-2 border-violet-400/30 z-10" />
+        <div className="absolute top-8 right-8 w-12 h-12 border-r-2 border-t-2 border-violet-400/30 z-10" />
+        <div className="absolute bottom-8 left-8 w-12 h-12 border-l-2 border-b-2 border-violet-400/30 z-10" />
+        <div className="absolute bottom-8 right-8 w-12 h-12 border-r-2 border-b-2 border-violet-400/30 z-10" />
+
+        {/* Top status bar */}
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-8 md:px-16 pt-28 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30">
+              Module 04 — Academics
+            </span>
+          </div>
+          <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20 hidden md:block">
+            ACADEMIC_REGISTRY: ACTIVE
+          </span>
         </div>
 
         {/* Content */}

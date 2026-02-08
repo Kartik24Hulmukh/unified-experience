@@ -31,8 +31,19 @@ const ContextNav = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const isAuthPage = ['/login', '/signup', '/verify', '/admin'].includes(location.pathname);
+  const isHomepage = location.pathname === '/';
+
+  // Pages with dark backgrounds need light nav text immediately
+  const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics', '/mess', '/hospital'];
+  const isDarkBgPage = darkBgPages.includes(location.pathname);
 
   if (isAuthPage) return null;
+
+  // During the hero phase on homepage the duplicated nav elements
+  // inside the splash layers provide the visual. The REAL nav stays
+  // fully interactive (pointer-events: auto) but with transparent
+  // background/text so clicks on Menu, Logo etc. still work.
+  const hideForSplash = isHomepage && scrollProgress < 0.06;
 
   // Track scroll position and update nav style
   useEffect(() => {
@@ -42,9 +53,13 @@ const ContextNav = () => {
       const progress = docHeight > 0 ? scrollTop / docHeight : 0;
       setScrollProgress(progress);
 
-      // Switch to dark mode when portal has expanded (around 25% scroll)
-      setIsDark(progress > 0.06);
+      // On dark-bg subpages, always use dark (light text) mode
+      // On homepage, switch after portal has expanded (~6% scroll)
+      setIsDark(isDarkBgPage ? true : progress > 0.06);
     };
+
+    // Set initial state for dark-bg pages
+    if (isDarkBgPage) setIsDark(true);
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -87,6 +102,11 @@ const ContextNav = () => {
         ref={navRef}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isDark ? 'text-portal-foreground' : 'text-foreground'
           }`}
+        style={{
+          opacity: hideForSplash ? 0 : 1,
+          pointerEvents: 'auto',  // ★ Always clickable — even when visually hidden during splash
+          transition: 'opacity 0.4s ease',
+        }}
       >
         <div className="flex items-center justify-between px-6 md:px-12 py-6">
           {/* Logo */}
@@ -99,14 +119,14 @@ const ContextNav = () => {
               <div className={`w-8 h-8 border-2 ${isDark ? 'border-portal-foreground' : 'border-foreground'} rotate-45 flex items-center justify-center`}>
                 <div className={`w-3 h-3 ${isDark ? 'bg-portal-foreground' : 'bg-foreground'}`} />
               </div>
-              <span className="hidden md:block">BErozgar</span>
+              <span className="hidden md:block uppercase">BErozgar</span>
             </div>
           </Link>
 
           {/* Center - Current section indicator */}
           <div className="hidden md:flex items-center gap-4">
             <div className={`h-px w-12 ${isDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
-            <span className="text-xs uppercase tracking-widest opacity-60">
+            <span className="text-xs uppercase tracking-widest opacity-60 font-body">
               {scrollProgress < 0.06 ? 'Welcome' : scrollProgress < 0.5 ? 'Explore' : 'Discover'}
             </span>
             <div className={`h-px w-12 ${isDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
@@ -130,7 +150,7 @@ const ContextNav = () => {
               className="relative z-50 flex items-center gap-3 group"
               aria-label="Toggle menu"
             >
-              <span className={`text-xs uppercase tracking-widest transition-opacity ${isMenuOpen ? 'opacity-0' : 'opacity-60'}`}>
+              <span className={`text-xs uppercase tracking-widest transition-opacity ${isMenuOpen ? 'opacity-0' : 'opacity-60'} font-body`}>
                 Menu
               </span>
               <div className="relative w-8 h-8 flex items-center justify-center">

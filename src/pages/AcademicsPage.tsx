@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
@@ -6,8 +6,10 @@ import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
 const academicsHero = '/Academics.jpg';
 import { Search, X } from 'lucide-react';
+import { useListings } from '@/hooks/api/useApi';
+import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 
-gsap.registerPlugin(ScrollTrigger);
+// ScrollTrigger registered in lib/gsap-init.ts
 
 const branches = [
   { code: 'CSE', name: 'Computer Science', semesters: 8 },
@@ -30,15 +32,11 @@ const AcademicsPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
-  const [items] = useState([
-    { id: 'a1', title: 'Calculus Question Bank 2024', price: '0', category: 'Question Banks', institution: 'MCTRGIT Admin' },
-    { id: 'a2', title: 'CSE Semester 3 Syllabus', price: '0', category: 'Syllabus', institution: 'Academic Office' },
-    { id: 'a3', title: 'Heat & Mass Transfer Notes', price: '0', category: 'Notes', institution: 'Student Council' },
-    { id: 'a4', title: 'Workshop Practice Manual', price: '0', category: 'Notes', institution: 'ME Department' },
-    { id: 'a5', title: 'Internal Exam Pattern 2025', price: '0', category: 'Exam Patterns', institution: 'Authorized' },
-    { id: 'a6', title: 'Discrete Mathematics PPTs', price: '0', category: 'Notes', institution: 'CSE Faculty' },
-  ]);
+  // Fetch listings from API
+  const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'academics' });
+  const items = listingsResponse?.data ?? [];
 
   const filteredItems = useMemo(() => {
     return items.filter(item =>
@@ -47,7 +45,8 @@ const AcademicsPage = () => {
     );
   }, [searchQuery, items]);
 
-  useEffect(() => {
+  // useLayoutEffect for GSAP animations to prevent flash of unstyled content
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal + parallax
       gsap.fromTo('.acad-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 2, ease: 'power3.out' });
@@ -85,13 +84,13 @@ const AcademicsPage = () => {
           },
         });
       }
-    });
+    }, mainRef);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <main id="main-content" className="min-h-screen bg-portal">
+    <div ref={mainRef} className="min-h-screen bg-portal">
       {/* Hero - Typography-focused with branch codes as design elements */}
       <section ref={heroRef} className="relative min-h-screen overflow-hidden">
         {/* Background image + overlay */}
@@ -217,15 +216,23 @@ const AcademicsPage = () => {
               priceRange={[0, 1000]}
             />
 
-            <ListingGrid items={filteredItems} />
+            {isLoading ? (
+              <LoadingSpinner className="py-16" />
+            ) : isError ? (
+              <ErrorFallback error={error} onRetry={() => refetch()} compact />
+            ) : (
+              <>
+                <ListingGrid items={filteredItems} />
 
-            {filteredItems.length === 0 && (
-              <div className="py-24 text-center space-y-6">
-                <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
-                  <X className="w-8 h-8 text-white -rotate-45" />
-                </div>
-                <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">Academic Index Mismatch: Entity Not Found</p>
-              </div>
+                {filteredItems.length === 0 && (
+                  <div className="py-24 text-center space-y-6">
+                    <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                      <X className="w-8 h-8 text-white -rotate-45" />
+                    </div>
+                    <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">Academic Index Mismatch: Entity Not Found</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -274,7 +281,7 @@ const AcademicsPage = () => {
           </p>
         </div>
       </section>
-    </main>
+    </div>
   );
 };
 

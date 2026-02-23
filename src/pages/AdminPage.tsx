@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import gsap from 'gsap';
+import logger from '@/lib/logger';
 import {
     ShieldCheck,
     Users,
@@ -29,11 +30,14 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@/components/ui/progress"; // kept for potential future use
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import SplitText from '@/components/SplitText';
+import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
+import { useAdminPending, useAdminStats, useUpdateListingStatus, useDisputes, useUpdateDisputeStatus, useAdminAuditLog } from '@/hooks/api/useApi';
+import type { PendingItem, Dispute, AuditLogEntry } from '@/hooks/api/useApi';
 import {
     createListingMachine,
     type ListingMachine,
@@ -44,81 +48,105 @@ const AdminPage = () => {
     const [activeTab, setActiveTab] = useState('pending');
     const [searchQuery, setSearchQuery] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
+    const gsapCtxRef = useRef<gsap.Context | null>(null);
 
-    // Mock Data for Admin
-    const [pendingListings, setPendingListings] = useState([
-        { id: 'L-901', user: 'Kadam (B-22)', item: 'Calculus: Early Trans.', date: '2026-02-04', status: 65 },
-        { id: 'L-902', user: 'Sharma (M-11)', item: 'Scientific Calculator', date: '2026-02-05', status: 40 },
-        { id: 'L-903', user: 'Mehta (E-08)', item: '1BHK Near Gate 2', date: '2026-02-05', status: 10 },
-    ]);
+    // API data
+    const { data: pendingResponse, isLoading: pendingLoading, isError: pendingError, error: pendingErr, refetch: refetchPending } = useAdminPending();
+    const { data: statsResponse } = useAdminStats();
+    const updateStatus = useUpdateListingStatus();
+    const { data: disputesResponse, isLoading: disputesLoading } = useDisputes();
+    const updateDisputeStatus = useUpdateDisputeStatus();
+    const { data: auditResponse, isLoading: auditLoading } = useAdminAuditLog();
+
+    const disputes = disputesResponse?.data ?? [];
+    const auditLogs = auditResponse?.data ?? [];
+
+    const pendingListings = pendingResponse?.data ?? [];
+    const stats = statsResponse?.data;
 
     /**
      * Each pending listing is assumed to be in `pending_review`
      * (user already submitted → admin queue). We hold one FSM per row
      * so transitions are validated before any UI mutation.
      */
-    const [machines, setMachines] = useState<Record<string, ListingMachine>>(() => {
-        const map: Record<string, ListingMachine> = {};
-        for (const l of [
-            { id: 'L-901' }, { id: 'L-902' }, { id: 'L-903' },
-        ]) {
-            // Fast-forward: draft → pending_review
-            map[l.id] = createListingMachine().send('SUBMIT');
-        }
-        return map;
-    });
+    const [machines, setMachines] = useState<Record<string, ListingMachine>>({});
 
+    // Sync FSM machines with API data
     useEffect(() => {
-        // Reveal sidebar and table
-        const tl = gsap.timeline();
-        tl.fromTo('.admin-sidebar', { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power4.out' })
-            .fromTo('.admin-main', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.6');
+        if (!pendingListings.length) return;
+        setMachines(prev => {
+            const next = { ...prev };
+            for (const l of pendingListings) {
+                if (!next[l.id]) {
+                    next[l.id] = createListingMachine().send('SUBMIT');
+                }
+            }
+            return next;
+        });
+    }, [pendingListings]);
+
+    useLayoutEffect(() => {
+        if (!containerRef.current) return;
+        
+        // Use gsap.context for proper scoping and cleanup
+        gsapCtxRef.current = gsap.context(() => {
+            const tl = gsap.timeline();
+            tl.fromTo('.admin-sidebar', { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power4.out' })
+                .fromTo('.admin-main', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.6');
+        }, containerRef);
+        
+        return () => { gsapCtxRef.current?.revert(); };
     }, []);
 
     const handleApprove = useCallback((id: string) => {
         const machine = machines[id];
         if (!machine || !machine.can('APPROVE')) {
-            console.error(
-                new InvalidTransitionError('Listing', machine?.state ?? 'unknown', 'APPROVE'),
+            logger.error('AdminPage',
+                String(new InvalidTransitionError('Listing', machine?.state ?? 'unknown', 'APPROVE')),
             );
             return;
         }
 
         const next = machine.send('APPROVE'); // pending_review → approved
-
         setMachines(prev => ({ ...prev, [id]: next }));
 
-        // Portal confirmation simulation
-        gsap.to(`.row-${id}`, {
-            backgroundColor: 'rgba(0, 212, 170, 0.1)',
-            duration: 0.3,
-            onComplete: () => {
-                setPendingListings(prev => prev.filter(l => l.id !== id));
-            }
+        // Call API to update status, then animate
+        updateStatus.mutate({ id, status: 'approved' }, {
+            onSuccess: () => {
+                gsapCtxRef.current?.add(() => {
+                    gsap.to(`.row-${id}`, {
+                        backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                        duration: 0.3,
+                    });
+                });
+            },
         });
-    }, [machines]);
+    }, [machines, updateStatus]);
 
     const handleReject = useCallback((id: string) => {
         const machine = machines[id];
         if (!machine || !machine.can('REJECT')) {
-            console.error(
-                new InvalidTransitionError('Listing', machine?.state ?? 'unknown', 'REJECT'),
+            logger.error('AdminPage',
+                String(new InvalidTransitionError('Listing', machine?.state ?? 'unknown', 'REJECT')),
             );
             return;
         }
 
         const next = machine.send('REJECT'); // pending_review → rejected
-
         setMachines(prev => ({ ...prev, [id]: next }));
 
-        gsap.to(`.row-${id}`, {
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            duration: 0.3,
-            onComplete: () => {
-                setPendingListings(prev => prev.filter(l => l.id !== id));
-            }
+        // Call API to update status, then animate
+        updateStatus.mutate({ id, status: 'rejected' }, {
+            onSuccess: () => {
+                gsapCtxRef.current?.add(() => {
+                    gsap.to(`.row-${id}`, {
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        duration: 0.3,
+                    });
+                });
+            },
         });
-    }, [machines]);
+    }, [machines, updateStatus]);
 
     return (
         <div ref={containerRef} className="min-h-screen bg-portal flex text-white overflow-hidden">
@@ -188,13 +216,13 @@ const AdminPage = () => {
                 </header>
 
                 <section className="p-12 space-y-12">
-                    {/* Stats Grid */}
+                    {/* Stats Grid — always visible */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {[
-                            { label: 'Total Listings', value: '452', delta: '+12%' },
-                            { label: 'Active Users', value: '1,280', delta: '+5%' },
-                            { label: 'Disputes Open', value: '03', delta: '-50%', danger: true },
-                            { label: 'Avg Approval', value: '2.4hr', delta: 'Optimized' },
+                            { label: 'Total Listings', value: stats ? String(stats.totalListings) : '—', delta: stats ? `${stats.completedExchanges} completed` : '' },
+                            { label: 'Active Users', value: stats ? stats.totalUsers.toLocaleString() : '—', delta: stats ? 'Verified' : '' },
+                            { label: 'Disputes Open', value: stats ? String(stats.activeDisputes).padStart(2, '0') : '—', delta: stats && stats.activeDisputes > 5 ? 'Attention' : 'Under Control', danger: stats ? stats.activeDisputes > 5 : false },
+                            { label: 'Pending Reviews', value: stats ? String(stats.pendingListings) : '—', delta: 'In Queue' },
                         ].map((stat, i) => (
                             <div key={i} className="p-6 border border-white/10 bg-black/20 space-y-2 group hover:border-primary/30 transition-all duration-500">
                                 <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">{stat.label}</p>
@@ -206,7 +234,8 @@ const AdminPage = () => {
                         ))}
                     </div>
 
-                    <div className="space-y-6">
+                    {/* ═══ PENDING TAB ═══ */}
+                    {activeTab === 'pending' && (
                         <div className="flex justify-between items-center">
                             <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Queue Matrix</h3>
                             <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
@@ -215,6 +244,16 @@ const AdminPage = () => {
                         </div>
 
                         <div className="border border-white/10 bg-black/20">
+                            {pendingLoading ? (
+                                <div className="p-12 flex flex-col items-center gap-4">
+                                    <LoadingSpinner />
+                                    <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading pending queue…</p>
+                                </div>
+                            ) : pendingError ? (
+                                <div className="p-12">
+                                    <ErrorFallback error={pendingErr} onRetry={refetchPending} compact />
+                                </div>
+                            ) : (
                             <Table>
                                 <TableHeader className="bg-white/5">
                                     <TableRow className="border-white/5 hover:bg-transparent">
@@ -232,14 +271,15 @@ const AdminPage = () => {
                                             key={listing.id}
                                             className={`row-${listing.id} border-white/5 hover:bg-primary/5 transition-all duration-300 group`}
                                         >
-                                            <TableCell className="font-mono text-[10px] text-primary font-bold">{listing.id}</TableCell>
-                                            <TableCell className="text-xs font-bold uppercase tracking-tight">{listing.user}</TableCell>
-                                            <TableCell className="text-xs text-white/60">{listing.item}</TableCell>
-                                            <TableCell className="text-[10px] font-bold text-white/20 font-display">{listing.date}</TableCell>
+                                            <TableCell className="font-mono text-[10px] text-primary font-bold">{listing.id.slice(0, 8)}</TableCell>
+                                            <TableCell className="text-xs font-bold uppercase tracking-tight">{listing.owner?.fullName ?? '—'}</TableCell>
+                                            <TableCell className="text-xs text-white/60">{listing.title}</TableCell>
+                                            <TableCell className="text-[10px] font-bold text-white/20 font-display">{new Date(listing.createdAt).toLocaleDateString()}</TableCell>
                                             <TableCell>
                                                 <div className="space-y-2">
-                                                    <Progress value={listing.status} className="h-1 bg-white/5" />
-                                                    <p className="text-[8px] uppercase font-bold text-white/30">{listing.status}% AUDITED</p>
+                                                    <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[8px] uppercase tracking-widest">
+                                                        {listing.status.replace(/_/g, ' ')}
+                                                    </Badge>
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -259,11 +299,17 @@ const AdminPage = () => {
                                                                 <div className="space-y-4">
                                                                     <div>
                                                                         <p className="text-[9px] text-white/30 uppercase font-bold font-display">Resource Details</p>
-                                                                        <h4 className="text-xl font-bold uppercase">{listing.item}</h4>
+                                                                        <h4 className="text-xl font-bold uppercase">{listing.title}</h4>
+                                                                        {listing.description && <p className="text-xs text-white/50 mt-1">{listing.description}</p>}
                                                                     </div>
                                                                     <div>
                                                                         <p className="text-[9px] text-white/30 uppercase font-bold font-display">Submitted By</p>
-                                                                        <p className="text-sm font-bold uppercase text-primary">{listing.user}</p>
+                                                                        <p className="text-sm font-bold uppercase text-primary">{listing.owner?.fullName ?? '—'}</p>
+                                                                        <p className="text-[10px] text-white/40">{listing.owner?.email}</p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-[9px] text-white/30 uppercase font-bold font-display">Price</p>
+                                                                        <p className="text-sm font-bold">₹{listing.price}</p>
                                                                     </div>
                                                                 </div>
                                                                 <div className="space-y-4 bg-white/5 p-4">
@@ -312,8 +358,164 @@ const AdminPage = () => {
                                     ))}
                                 </TableBody>
                             </Table>
+                            )}
                         </div>
                     </div>
+                    )}
+
+                    {/* ═══ DISPUTES TAB ═══ */}
+                    {activeTab === 'disputes' && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Dispute Protocols</h3>
+                            <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
+                                {disputes.length} RECORD{disputes.length !== 1 ? 'S' : ''}
+                            </Badge>
+                        </div>
+                        <div className="border border-white/10 bg-black/20">
+                            {disputesLoading ? (
+                                <div className="p-12 flex flex-col items-center gap-4"><LoadingSpinner /><p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading disputes…</p></div>
+                            ) : disputes.length === 0 ? (
+                                <div className="p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">No disputes found</div>
+                            ) : (
+                            <Table>
+                                <TableHeader className="bg-white/5">
+                                    <TableRow className="border-white/5 hover:bg-transparent">
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">ID</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Type</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Description</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Status</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Filed</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12 text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {disputes.map((d) => (
+                                        <TableRow key={d.id} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
+                                            <TableCell className="font-mono text-[10px] text-primary font-bold">{d.id.slice(0, 8)}</TableCell>
+                                            <TableCell><Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[8px] uppercase tracking-widest">{d.type.replace(/_/g, ' ')}</Badge></TableCell>
+                                            <TableCell className="text-xs text-white/60 max-w-xs truncate">{d.description}</TableCell>
+                                            <TableCell><Badge variant={d.status === 'resolved' ? 'default' : 'outline'} className={`text-[8px] uppercase tracking-widest ${d.status === 'open' ? 'border-red-500/30 text-red-400' : d.status === 'resolved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'border-white/20 text-white/60'}`}>{d.status.replace(/_/g, ' ')}</Badge></TableCell>
+                                            <TableCell className="text-[10px] font-bold text-white/20 font-display">{new Date(d.createdAt).toLocaleDateString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end space-x-2">
+                                                    {d.status === 'open' && (
+                                                        <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-amber-500/20 text-amber-400" onClick={() => updateDisputeStatus.mutate({ id: d.id, status: 'under_review' })}>Review</Button>
+                                                    )}
+                                                    {(d.status === 'open' || d.status === 'under_review') && (
+                                                        <>
+                                                            <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-emerald-500/20 text-emerald-400" onClick={() => updateDisputeStatus.mutate({ id: d.id, status: 'resolved' })}>Resolve</Button>
+                                                            <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-red-500/20 text-red-400" onClick={() => updateDisputeStatus.mutate({ id: d.id, status: 'rejected' })}>Reject</Button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            )}
+                        </div>
+                    </div>
+                    )}
+
+                    {/* ═══ USERS TAB ═══ */}
+                    {activeTab === 'users' && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Verified Entities</h3>
+                            <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
+                                {stats ? stats.totalUsers : '—'} TOTAL
+                            </Badge>
+                        </div>
+                        <div className="border border-white/10 bg-black/20 p-12">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="p-6 border border-white/10 bg-white/5 space-y-2">
+                                    <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Total Users</p>
+                                    <span className="text-3xl font-display font-bold">{stats?.totalUsers ?? '—'}</span>
+                                </div>
+                                <div className="p-6 border border-white/10 bg-white/5 space-y-2">
+                                    <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Active Disputes</p>
+                                    <span className="text-3xl font-display font-bold text-amber-400">{stats?.activeDisputes ?? '—'}</span>
+                                </div>
+                                <div className="p-6 border border-white/10 bg-white/5 space-y-2">
+                                    <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Completed Exchanges</p>
+                                    <span className="text-3xl font-display font-bold text-emerald-400">{stats?.completedExchanges ?? '—'}</span>
+                                </div>
+                            </div>
+                            <p className="text-white/20 text-[10px] uppercase tracking-widest mt-8 text-center">Individual user lookup available via search bar</p>
+                        </div>
+                    </div>
+                    )}
+
+                    {/* ═══ LOGS TAB ═══ */}
+                    {activeTab === 'logs' && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">System Logs</h3>
+                            <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
+                                {auditLogs.length} ENTRIES
+                            </Badge>
+                        </div>
+                        <div className="border border-white/10 bg-black/20">
+                            {auditLoading ? (
+                                <div className="p-12 flex flex-col items-center gap-4"><LoadingSpinner /><p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading audit log…</p></div>
+                            ) : auditLogs.length === 0 ? (
+                                <div className="p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">No log entries found</div>
+                            ) : (
+                            <Table>
+                                <TableHeader className="bg-white/5">
+                                    <TableRow className="border-white/5 hover:bg-transparent">
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Timestamp</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Actor</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Action</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Target</TableHead>
+                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Details</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {auditLogs.map((log) => (
+                                        <TableRow key={log.id} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
+                                            <TableCell className="text-[10px] font-mono text-white/40">{new Date(log.timestamp).toLocaleString()}</TableCell>
+                                            <TableCell className="text-xs font-bold uppercase tracking-tight">{log.actorId.slice(0, 8)} <span className="text-white/30">({log.actorRole})</span></TableCell>
+                                            <TableCell><Badge variant="outline" className="border-primary/30 text-primary text-[8px] uppercase tracking-widest">{log.action.replace(/_/g, ' ')}</Badge></TableCell>
+                                            <TableCell className="text-[10px] font-mono text-white/40">{log.targetType}/{log.targetId.slice(0, 8)}</TableCell>
+                                            <TableCell className="text-xs text-white/40 max-w-xs truncate">{log.details ?? '—'}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            )}
+                        </div>
+                    </div>
+                    )}
+
+                    {/* ═══ ACTIVITY TAB ═══ */}
+                    {activeTab === 'activity' && (
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Live Metrics</h3>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="border border-white/10 bg-black/20 p-8 space-y-4">
+                                <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Exchange Pipeline</p>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Total Requests</span><span className="text-lg font-display font-bold">{stats?.totalRequests ?? '—'}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Completed</span><span className="text-lg font-display font-bold text-emerald-400">{stats?.completedExchanges ?? '—'}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Pending Listings</span><span className="text-lg font-display font-bold text-amber-400">{stats?.pendingListings ?? '—'}</span></div>
+                                </div>
+                            </div>
+                            <div className="border border-white/10 bg-black/20 p-8 space-y-4">
+                                <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Trust & Safety</p>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Active Disputes</span><span className="text-lg font-display font-bold text-red-400">{stats?.activeDisputes ?? '—'}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Total Listings</span><span className="text-lg font-display font-bold">{stats?.totalListings ?? '—'}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Verified Users</span><span className="text-lg font-display font-bold text-primary">{stats?.totalUsers ?? '—'}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    )}
                 </section>
             </main>
 

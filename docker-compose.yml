@@ -1,0 +1,62 @@
+# ═══════════════════════════════════════════════════
+# BErozgar — Docker Compose (Development)
+# ═══════════════════════════════════════════════════
+#
+# Usage:
+#   docker-compose up -d        # Start Postgres + API
+#   docker-compose down          # Stop all
+#   docker-compose logs -f api   # Follow API logs
+#
+
+services:
+  # ── PostgreSQL 15 ─────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: berozgar-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: berozgar
+      POSTGRES_PASSWORD: berozgar123
+      POSTGRES_DB: berozgar
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U berozgar -d berozgar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── BErozgar API ──────────────────────────────────
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: development
+    container_name: berozgar-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://berozgar:berozgar123@postgres:5432/berozgar?schema=public
+      JWT_SECRET: dev-secret-change-me-in-production-minimum-32-chars
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_DAYS: 7
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-placeholder}
+      CORS_ORIGIN: http://localhost:5173
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_WINDOW_MS: 60000
+    volumes:
+      - ./server/src:/app/src:ro
+      - ./server/prisma:/app/prisma:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+    driver: local

@@ -1,0 +1,178 @@
+# ═══════════════════════════════════════════════════
+# BErozgar — Deploy Pipeline
+# ═══════════════════════════════════════════════════
+#
+# Triggers: successful CI on main branch push
+# Deploys to VPS via SSH + Docker Compose
+#
+# Flow:
+#   1. Download client dist artifact from CI
+#   2. SSH into VPS → pull latest code + Docker image
+#   3. Run database migrations
+#   4. Rolling restart (api first, then nginx reloads)
+#   5. Health check — rolls back on failure
+#
+# Required GitHub Secrets:
+#   VPS_HOST          — SSH hostname (e.g., berozgar.in)
+#   VPS_USER          — SSH username (e.g., deploy)
+#   VPS_SSH_KEY       — Private SSH key for VPS access
+#   VPS_APP_PATH      — App directory on VPS (e.g., /opt/berozgar)
+#   DEPLOY_ENV_FILE   — Base64-encoded .env.production file
+#
+# Required GitHub Variables (non-secret):
+#   DEPLOY_DOMAIN     — Production domain (default: berozgar.in)
+
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/api
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Download client dist from CI ─────────────
+      - name: Download client artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: client-dist
+          path: dist/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      # ── Deploy via SSH ───────────────────────────
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+
+            APP_DIR="${{ secrets.VPS_APP_PATH || '/opt/berozgar' }}"
+            COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.production"
+            HEALTH_URL="http://localhost:3001/health/ready"
+            DEPLOY_SHA="${{ github.sha }}"
+            DEPLOY_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+            cd "$APP_DIR"
+
+            echo "══════════════════════════════════════"
+            echo "  BErozgar Deploy — $DEPLOY_SHA"
+            echo "  Started: $DEPLOY_TIME"
+            echo "══════════════════════════════════════"
+
+            # ── 1. Snapshot current state for rollback ──
+            PREV_IMAGE=$($COMPOSE images -q api 2>/dev/null || echo "none")
+            echo "→ Previous image: $PREV_IMAGE"
+
+            # ── 2. Pull latest code ─────────────────────
+            echo "→ Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # ── 3. Write env file from secret ───────────
+            # (only if DEPLOY_ENV_FILE secret is set)
+            if [ -n "${DEPLOY_ENV_B64:-}" ]; then
+              echo "→ Writing .env.production from secret..."
+              echo "$DEPLOY_ENV_B64" | base64 -d > .env.production
+            fi
+
+            # ── 4. Pull Docker image from registry ──────
+            echo "→ Pulling Docker image..."
+            docker pull "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" || true
+
+            # ── 5. Run database migrations ──────────────
+            echo "→ Running database migrations..."
+            $COMPOSE run --rm --no-deps api sh -c "npx prisma migrate deploy" || {
+              echo "✗ Migration failed! Aborting deploy."
+              exit 1
+            }
+
+            # ── 6. Rolling restart ──────────────────────
+            echo "→ Restarting services..."
+            $COMPOSE up -d --build --remove-orphans
+
+            # ── 7. Wait for API health ──────────────────
+            echo "→ Waiting for health check..."
+            RETRIES=0
+            MAX_RETRIES=30
+            until curl -sf "$HEALTH_URL" > /dev/null 2>&1; do
+              RETRIES=$((RETRIES + 1))
+              if [ "$RETRIES" -ge "$MAX_RETRIES" ]; then
+                echo "✗ Health check failed after ${MAX_RETRIES} attempts!"
+                echo "→ Rolling back..."
+
+                # Show recent logs for debugging
+                $COMPOSE logs --tail=50 api
+
+                # Rollback: restart with previous image
+                $COMPOSE down
+                if [ "$PREV_IMAGE" != "none" ]; then
+                  docker tag "$PREV_IMAGE" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" 2>/dev/null || true
+                fi
+                git checkout HEAD~1 -- docker-compose.prod.yml 2>/dev/null || true
+                $COMPOSE up -d
+                echo "✗ Deploy ROLLED BACK. Previous version restored."
+                exit 1
+              fi
+              echo "  Attempt $RETRIES/$MAX_RETRIES — waiting 2s..."
+              sleep 2
+            done
+
+            # ── 8. Verify nginx is serving ──────────────
+            echo "→ Verifying nginx..."
+            curl -sf http://localhost:80/health > /dev/null 2>&1 || {
+              echo "⚠ Nginx health check failed (API is healthy, nginx may need a moment)"
+            }
+
+            # ── 9. Clean up old images ──────────────────
+            echo "→ Pruning old Docker images..."
+            docker image prune -f --filter "until=168h" > /dev/null 2>&1 || true
+
+            echo ""
+            echo "══════════════════════════════════════"
+            echo "  ✓ Deploy successful!"
+            echo "  SHA:  $DEPLOY_SHA"
+            echo "  Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "══════════════════════════════════════"
+        envs: DEPLOY_ENV_B64
+        env:
+          DEPLOY_ENV_B64: ${{ secrets.DEPLOY_ENV_FILE }}
+
+      # ── Post-deploy notification ─────────────────
+      - name: Post-deploy summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "### ✅ Deploy Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Branch:** main" >> $GITHUB_STEP_SUMMARY
+            echo "- **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Deploy Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "Check logs for rollback status." >> $GITHUB_STEP_SUMMARY
+          fi

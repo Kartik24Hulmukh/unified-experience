@@ -1,7 +1,10 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import GlitchText from '@/components/GlitchText';
+import AnimatedCounter from '@/components/AnimatedCounter';
+import WordMarquee from '@/components/WordMarquee';
 import essentialsTiffin from '@/assets/essentials-tiffin.jpg';
 import {
   ArrowRight, Utensils, Stethoscope, Pill, Truck,
@@ -9,7 +12,7 @@ import {
   BookOpen, Wifi, AlertTriangle,
 } from 'lucide-react';
 
-gsap.registerPlugin(ScrollTrigger);
+// ScrollTrigger registered in lib/gsap-init.ts
 
 /* ── Data ─────────────────────────────────────────────── */
 
@@ -81,88 +84,17 @@ const scrollingWords = [
   'TIFFIN', 'CLINIC', 'CAMPUS', 'WELLNESS', 'NUTRITION', 'CARE',
 ];
 
-/* ── Reusable Components ─────────────────────────────── */
-
-const ScanlineOverlay = () => (
-  <div className="pointer-events-none fixed inset-0 z-[100]" aria-hidden>
-    <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.03)_2px,rgba(0,0,0,0.03)_4px)]" />
-  </div>
-);
-
-const GlitchText = ({ children, className = '' }: { children: string; className?: string }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ref.current) return;
-    const el = ref.current;
-    const handleEnter = () => {
-      gsap.to(el, { skewX: 2, duration: 0.1, yoyo: true, repeat: 3, ease: 'power4.inOut', onComplete: () => gsap.set(el, { skewX: 0 }) });
-    };
-    el.addEventListener('mouseenter', handleEnter);
-    return () => el.removeEventListener('mouseenter', handleEnter);
-  }, []);
-  return (
-    <div ref={ref} className={`relative group ${className}`}>
-      <span className="relative z-10">{children}</span>
-      <span className="absolute top-0 left-0 text-violet-400/30 z-0 translate-x-[2px] translate-y-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" aria-hidden>{children}</span>
-      <span className="absolute top-0 left-0 text-red-400/20 z-0 -translate-x-[1px] -translate-y-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" aria-hidden>{children}</span>
-    </div>
-  );
-};
-
-const AnimatedCounter = ({ target, duration = 2000 }: { target: number; duration?: number }) => {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const hasAnimated = useRef(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !hasAnimated.current) {
-        hasAnimated.current = true;
-        const start = Date.now();
-        const animate = () => {
-          const elapsed = Date.now() - start;
-          const progress = Math.min(elapsed / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          setCount(Math.floor(eased * target));
-          if (progress < 1) requestAnimationFrame(animate);
-        };
-        requestAnimationFrame(animate);
-      }
-    }, { threshold: 0.5 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target, duration]);
-  return <span ref={ref}>{count}</span>;
-};
-
-/* ── Word Marquee ────────────────────────────────────── */
-
-const WordMarquee = () => {
-  const trackRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!trackRef.current) return;
-    gsap.to(trackRef.current, { xPercent: -50, ease: 'none', duration: 30, repeat: -1 });
-  }, []);
-  return (
-    <div className="w-full overflow-hidden border-y border-white/5 py-6 bg-black/30">
-      <div ref={trackRef} className="flex whitespace-nowrap gap-8" style={{ width: 'max-content' }}>
-        {[...scrollingWords, ...scrollingWords].map((word, i) => (
-          <span key={i} className="text-white/[0.04] font-display text-5xl md:text-7xl font-extrabold uppercase tracking-tight flex items-center gap-8">
-            {word}
-            <span className="w-2 h-2 bg-violet-400/20 rotate-45" />
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-};
+/* ── Reusable Components (imported from @/components) ── */
 
 /* ── Main Page ───────────────────────────────────────── */
 
 const EssentialsPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   /* GSAP Animations */
-  useEffect(() => {
+  // useLayoutEffect for GSAP animations to prevent flash of unstyled content
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal with opacity
       gsap.fromTo('.ess-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.5, duration: 2, ease: 'power3.out' });
@@ -202,13 +134,12 @@ const EssentialsPage = () => {
         scale: 1, opacity: 1, stagger: 0.08, duration: 0.5, ease: 'back.out(1.7)',
         scrollTrigger: { trigger: '.tips-section', start: 'top 80%', toggleActions: 'play none none none' },
       });
-    });
+    }, mainRef);
     return () => ctx.revert();
   }, []);
 
   return (
-    <main id="main-content" className="min-h-screen bg-black text-white overflow-hidden relative">
-      <ScanlineOverlay />
+    <div ref={mainRef} className="min-h-screen bg-black text-white overflow-hidden relative">
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section ref={heroRef} className="relative min-h-screen flex items-end overflow-hidden">
@@ -305,7 +236,7 @@ const EssentialsPage = () => {
       </section>
 
       {/* ═══════════════ WORD MARQUEE ═══════════════ */}
-      <WordMarquee />
+      <WordMarquee words={scrollingWords} duration={30} accentBgClass="bg-violet-400/20" />
 
       {/* ═══════════════ MODULES OVERVIEW ═══════════════ */}
       <section className="py-24 md:py-40 px-8 md:px-16 ess-reveal">
@@ -314,7 +245,7 @@ const EssentialsPage = () => {
             <Wifi className="w-4 h-4 text-violet-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Essential Modules</span>
           </div>
-          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4">
+          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-violet-400/30">
             WHAT WE COVER
           </GlitchText>
           <p className="text-white/30 text-sm font-body max-w-lg mb-16">
@@ -447,7 +378,7 @@ const EssentialsPage = () => {
               <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Pro Tips</span>
               <div className="h-px w-8 bg-white/10" />
             </div>
-            <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4 inline-block">
+            <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4 inline-block" accentColorClass="text-violet-400/30">
               GOOD TO KNOW
             </GlitchText>
             <p className="text-white/25 text-sm font-body max-w-md mx-auto mt-4">
@@ -525,7 +456,7 @@ const EssentialsPage = () => {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 };
 

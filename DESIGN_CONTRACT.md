@@ -1,7 +1,7 @@
 # DESIGN CONTRACT — BErozgar / Campus OS
 
 > **Status:** FROZEN  
-> **Effective:** Immediately  
+fective:** Immediately  
 > **Rule:** No visual, animation, or interaction changes unless the user explicitly requests a design change.
 
 ---

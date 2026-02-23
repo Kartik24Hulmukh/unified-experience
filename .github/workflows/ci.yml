@@ -1,0 +1,227 @@
+# ═══════════════════════════════════════════════════
+# BErozgar — CI Pipeline
+# ═══════════════════════════════════════════════════
+#
+# Triggers: push to main, PRs targeting main
+# Jobs:
+#   1. lint-and-typecheck — ESLint + TypeScript for both client & server
+#   2. test-client       — Vitest (frontend domain/FSM tests)
+#   3. test-server       — Vitest with real Postgres (via service container)
+#   4. build             — Vite production build + server tsc + Docker image
+#
+# All test/lint jobs run in parallel. Build only runs after all pass.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/api
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ── Lint & Type-Check ────────────────────────────
+  lint-and-typecheck:
+    name: Lint & Type-Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install client dependencies
+        run: npm ci
+
+      - name: Install server dependencies
+        run: cd server && npm ci
+
+      - name: Audit client dependencies
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Audit server dependencies
+        run: cd server && npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Lint client
+        run: npm run lint
+
+      - name: Lint server
+        run: cd server && npm run lint
+
+      - name: Type-check client
+        run: npx tsc --noEmit
+
+      - name: Generate Prisma client (for type-check)
+        run: cd server && npx prisma generate
+
+      - name: Type-check server
+        run: cd server && npx tsc --noEmit
+
+  # ── Client Tests ─────────────────────────────────
+  test-client:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npx vitest run --reporter=verbose
+
+  # ── Server Tests ─────────────────────────────────
+  test-server:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: berozgar_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d berozgar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/berozgar_test
+      NODE_ENV: test
+      JWT_SECRET: ci-test-secret-minimum-32-characters-long
+      GOOGLE_CLIENT_ID: ci-test-google-client-id
+      CORS_ORIGIN: http://localhost:5173
+      PORT: 3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: cd server && npm ci
+
+      - name: Generate Prisma client
+        run: cd server && npx prisma generate
+
+      - name: Run database migrations
+        run: cd server && npx prisma migrate deploy
+
+      - name: Run tests
+        run: cd server && npx vitest run --reporter=verbose
+
+  # ── Build & Push Docker Image ────────────────────
+  build:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint-and-typecheck, test-client, test-server]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # ── Client build ─────────────────────────────
+      - name: Install client dependencies
+        run: npm ci
+
+      - name: Build client (Vite)
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: /api
+
+      - name: Upload client artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-dist
+          path: dist/
+          retention-days: 7
+
+      # ── Server build ─────────────────────────────
+      - name: Install server dependencies
+        run: cd server && npm ci
+
+      - name: Generate Prisma client
+        run: cd server && npx prisma generate
+
+      - name: Build server (tsc)
+        run: cd server && npm run build
+
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-dist
+          path: server/dist/
+          retention-days: 7
+
+      # ── Docker image (only on main push) ─────────
+      - name: Set up Docker Buildx
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

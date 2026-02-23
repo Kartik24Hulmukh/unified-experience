@@ -1,8 +1,8 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useLayoutEffect, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
+// ScrollTrigger registered in lib/gsap-init.ts
 
 interface SplitTextProps {
   children: string;
@@ -26,34 +26,29 @@ const SplitText = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
 
-  useEffect(() => {
-    if (!textRef.current) return;
-
+  // Split text into elements using React state instead of DOM manipulation
+  const splitElements = useMemo(() => {
     const text = children;
-    let elements: string[] = [];
-
-    // Split text based on type
+    let parts: string[] = [];
     switch (type) {
       case 'chars':
-        elements = text.split('');
+        parts = text.split('');
         break;
       case 'words':
-        elements = text.split(' ');
+        parts = text.split(' ');
         break;
       case 'lines':
-        elements = text.split('\n');
+        parts = text.split('\n');
         break;
     }
+    return parts;
+  }, [children, type]);
 
-    // Create span elements
-    textRef.current.innerHTML = elements
-      .map((el) => {
-        const content = el === ' ' ? '&nbsp;' : el;
-        return `<span class="split-element inline-block" style="opacity: 0">${content}</span>`;
-      })
-      .join(type === 'words' ? '<span class="inline-block">&nbsp;</span>' : '');
+  useLayoutEffect(() => {
+    if (!textRef.current || !containerRef.current) return;
 
-    const splitElements = textRef.current.querySelectorAll('.split-element');
+    const splitEls = textRef.current.querySelectorAll('.split-element');
+    if (!splitEls.length) return;
 
     // Animation configurations
     const getAnimation = () => {
@@ -88,28 +83,47 @@ const SplitText = ({
 
     const { from, to } = getAnimation();
 
-    if (trigger === 'scroll') {
-      gsap.fromTo(splitElements, from, {
-        ...to,
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top 80%',
-          toggleActions: 'play none none reverse',
-        },
-      });
-    } else if (trigger === 'load') {
-      gsap.fromTo(splitElements, from, to);
-    }
+    // Use gsap.context for proper scoping and cleanup
+    const ctx = gsap.context(() => {
+      if (trigger === 'scroll') {
+        gsap.fromTo(splitEls, from, {
+          ...to,
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: 'top 80%',
+            toggleActions: 'play none none reverse',
+          },
+        });
+      } else if (trigger === 'load') {
+        gsap.fromTo(splitEls, from, to);
+      }
+    }, containerRef);
 
     return () => {
-      ScrollTrigger.getAll().forEach((t) => t.kill());
+      // Revert all GSAP animations and ScrollTriggers in this context
+      ctx.revert();
+      // Reset inline opacity on split elements so text is visible
+      // if GSAP context reverts but component stays mounted (e.g., HMR)
+      if (textRef.current) {
+        const els = textRef.current.querySelectorAll('.split-element');
+        els.forEach(el => {
+          (el as HTMLElement).style.opacity = '1';
+        });
+      }
     };
   }, [children, type, animation, delay, stagger, trigger]);
 
   return (
     <div ref={containerRef} className={className}>
       <span ref={textRef} className="inline-block" style={{ perspective: '1000px' }}>
-        {children}
+        {splitElements.map((el, i) => (
+          <span key={`${el}-${i}`}>
+            {type === 'words' && i > 0 && <span className="inline-block">&nbsp;</span>}
+            <span className="split-element inline-block" style={{ opacity: 0 }}>
+              {el === ' ' ? '\u00A0' : el}
+            </span>
+          </span>
+        ))}
       </span>
     </div>
   );

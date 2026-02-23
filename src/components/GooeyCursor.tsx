@@ -1,38 +1,43 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, memo } from 'react';
 
 interface GooeyCursorProps {
   size?: number;
 }
 
-const GooeyCursor = ({ size = 24 }: GooeyCursorProps) => {
+const GooeyCursor = memo(function GooeyCursor({ size = 24 }: GooeyCursorProps) {
   const cursorRef = useRef<HTMLDivElement>(null);
   const trailRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isHovering, setIsHovering] = useState(false);
+  const isHoveringRef = useRef(false);
+  const rafIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Check if device supports hover (not touch-only)
     const mediaQuery = window.matchMedia('(pointer: fine)');
-    if (!mediaQuery.matches) return;
-
+    
     let mouseX = 0;
     let mouseY = 0;
     let cursorX = 0;
     let cursorY = 0;
     let trailX = 0;
     let trailY = 0;
+    let alive = true;
+    let lastTime = 0;
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      setIsVisible(true);
+      // Use direct DOM opacity instead of React state to avoid re-render
+      if (cursorRef.current) cursorRef.current.style.opacity = '1';
+      if (trailRef.current) trailRef.current.style.opacity = '0.4';
     };
 
-    const handleMouseEnter = () => setIsVisible(true);
-    const handleMouseLeave = () => setIsVisible(false);
+    const handleMouseLeave = () => {
+      if (cursorRef.current) cursorRef.current.style.opacity = '0';
+      if (trailRef.current) trailRef.current.style.opacity = '0';
+    };
 
-    // Detect hoverable elements
-    const handleElementHover = (e: MouseEvent) => {
+    // Detect hoverable elements via pointer delegation (less noisy than mouseover)
+    const handleElementHover = (e: PointerEvent) => {
       const target = e.target as HTMLElement;
       const isInteractive =
         target.tagName === 'A' ||
@@ -42,46 +47,75 @@ const GooeyCursor = ({ size = 24 }: GooeyCursorProps) => {
         target.classList.contains('module-link') ||
         target.closest('.module-link');
 
-      setIsHovering(!!isInteractive);
+      isHoveringRef.current = !!isInteractive;
     };
 
-    const animate = () => {
-      // Smooth follow for main cursor
-      const easingMain = 0.15;
-      cursorX += (mouseX - cursorX) * easingMain;
-      cursorY += (mouseY - cursorY) * easingMain;
+    const animate = (now: number) => {
+      if (!alive) return;
 
-      // Slower follow for trail (gooey effect)
-      const easingTrail = 0.08;
-      trailX += (mouseX - trailX) * easingTrail;
-      trailY += (mouseY - trailY) * easingTrail;
+      // Frame-rate independent damping: normalize to 60fps baseline
+      const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.1) : 1 / 60;
+      lastTime = now;
+      const dt60 = dt * 60; // 1.0 at 60fps
+
+      // Exponential decay damping — consistent at any framerate
+      const dampMain = 1 - Math.pow(1 - 0.15, dt60);
+      const dampTrail = 1 - Math.pow(1 - 0.08, dt60);
+
+      cursorX += (mouseX - cursorX) * dampMain;
+      cursorY += (mouseY - cursorY) * dampMain;
+
+      trailX += (mouseX - trailX) * dampTrail;
+      trailY += (mouseY - trailY) * dampTrail;
+
+      const hovering = isHoveringRef.current;
 
       if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate(${cursorX - size / 2}px, ${cursorY - size / 2}px) scale(${isHovering ? 2 : 1})`;
+        cursorRef.current.style.transform = `translate(${cursorX - size / 2}px, ${cursorY - size / 2}px) scale(${hovering ? 2 : 1})`;
       }
 
       if (trailRef.current) {
-        trailRef.current.style.transform = `translate(${trailX - size * 1.5 / 2}px, ${trailY - size * 1.5 / 2}px) scale(${isHovering ? 1.5 : 1})`;
+        trailRef.current.style.transform = `translate(${trailX - size * 1.5 / 2}px, ${trailY - size * 1.5 / 2}px) scale(${hovering ? 1.5 : 1})`;
       }
 
-      requestAnimationFrame(animate);
+      rafIdRef.current = requestAnimationFrame(animate);
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseenter', handleMouseEnter);
-    document.addEventListener('mouseleave', handleMouseLeave);
-    document.addEventListener('mouseover', handleElementHover);
+    const attach = () => {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseleave', handleMouseLeave);
+      document.addEventListener('pointerover', handleElementHover);
+      rafIdRef.current = requestAnimationFrame(animate);
+    };
 
-    const animationId = requestAnimationFrame(animate);
+    const detach = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('pointerover', handleElementHover);
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+      if (cursorRef.current) cursorRef.current.style.opacity = '0';
+      if (trailRef.current) trailRef.current.style.opacity = '0';
+    };
+
+    // Listen for dynamic pointer capability changes (e.g. tablet dock/undock)
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        attach();
+      } else {
+        detach();
+      }
+    };
+
+    if (mediaQuery.matches) attach();
+    mediaQuery.addEventListener('change', handleMediaChange);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseenter', handleMouseEnter);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      document.removeEventListener('mouseover', handleElementHover);
-      cancelAnimationFrame(animationId);
+      alive = false;
+      detach();
+      mediaQuery.removeEventListener('change', handleMediaChange);
     };
-  }, [size, isHovering]);
+  }, [size]);
 
   return (
     <>
@@ -93,26 +127,26 @@ const GooeyCursor = ({ size = 24 }: GooeyCursorProps) => {
         style={{
           width: size,
           height: size,
-          opacity: isVisible ? 1 : 0,
-          transition: 'opacity 0.3s ease, width 0.3s ease, height 0.3s ease',
+          opacity: 0,
+          transition: 'opacity 0.3s ease',
         }}
         aria-hidden="true"
       />
       {/* Trail blob for gooey effect */}
       <div
-        id="gooey-cursor"
+        id="gooey-cursor-trail"
         ref={trailRef}
         className="cursor-gooey gooey-cursor"
         style={{
           width: size * 1.5,
           height: size * 1.5,
-          opacity: isVisible ? 0.4 : 0,
+          opacity: 0,
           transition: 'opacity 0.4s ease',
         }}
         aria-hidden="true"
       />
     </>
   );
-};
+});
 
 export default GooeyCursor;

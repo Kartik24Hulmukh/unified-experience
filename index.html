@@ -1,25 +1,67 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
+    <meta name="theme-color" content="#00d4aa" />
+    <!-- CSP: lock down resource origins for production -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src  'self' 'unsafe-inline' 'wasm-unsafe-eval';
+        style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src    'self' https://fonts.gstatic.com;
+        img-src     'self' data: blob:;
+        connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com ws://localhost:* http://localhost:*;
+        worker-src  'self' blob:;
+        frame-src   'none';
+        object-src  'none';
+        base-uri    'self';
+      "
+    />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <title>BErozgar — Campus Trust Exchange | MCTRGIT</title>
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    <!-- Non-blocking font loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" />
+    </noscript>
+
+    <meta name="description" content="BErozgar is a student-centric digital ecosystem for MCTRGIT, enabling trust-based campus exchanges, accommodation discovery, academic resource sharing, and daily living support." />
+    <meta name="author" content="BErozgar" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://berozgar.in/" />
+
+    <meta property="og:title" content="BErozgar — Campus Trust Exchange" />
+    <meta property="og:description" content="A student-centric digital ecosystem crafting trust & seamless interactions for campus life at MCTRGIT." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:url" content="https://berozgar.in/" />
+    <meta property="og:image" content="/logo.png" />
+    <meta property="og:site_name" content="BErozgar" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:site" content="@Berozgar" />
+    <meta name="twitter:title" content="BErozgar — Campus Trust Exchange" />
+    <meta name="twitter:description" content="Trust-based campus exchange platform for MCTRGIT students." />
+    <meta name="twitter:image" content="/logo.png" />
+
+    <!-- Ensure light theme before React loads — inline to prevent FOUC -->
+    <script>
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+    </script>
   </head>
 
-  <body>
+  <body style="background-color: #ffffff;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -19,13 +19,17 @@ interface FilterOption {
     count?: number;
 }
 
+interface FilterPayload {
+    price?: number[];
+    categories?: string[];
+}
+
 interface ModuleSearchFilterProps {
     onSearch: (query: string) => void;
-    onFilterChange: (filters: any) => void;
+    onFilterChange: (filters: FilterPayload) => void;
     resultCount: number;
     categories: FilterOption[];
     priceRange: [number, number];
-    moduleColor?: string;
 }
 
 const ModuleSearchFilter = ({
@@ -34,40 +38,52 @@ const ModuleSearchFilter = ({
     resultCount,
     categories,
     priceRange,
-    moduleColor = "#00d4aa"
 }: ModuleSearchFilterProps) => {
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [localPrice, setLocalPrice] = useState([priceRange[0], priceRange[1]]);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const resultsCountRef = useRef<HTMLSpanElement>(null);
+    const gsapCtxRef = useRef<gsap.Context | null>(null);
+
+    // Initialize gsap.context once for lifecycle cleanup
+    useEffect(() => {
+        gsapCtxRef.current = gsap.context(() => {});
+        return () => { gsapCtxRef.current?.revert(); };
+    }, []);
 
     // Animate search input expansion
     useEffect(() => {
-        if (isSearchExpanded) {
-            gsap.to(".search-container", {
-                width: "100%",
-                maxWidth: "400px",
-                duration: 0.6,
-                ease: "power3.out",
-                onComplete: () => searchInputRef.current?.focus()
-            });
-        } else {
-            gsap.to(".search-container", {
-                width: "48px",
-                duration: 0.4,
-                ease: "power3.in"
-            });
-        }
+        const searchEl = document.querySelector('.search-container') as HTMLElement;
+        if (!searchEl) return;
+        gsapCtxRef.current?.add(() => {
+            if (isSearchExpanded) {
+                gsap.to(searchEl, {
+                    width: "100%",
+                    maxWidth: "400px",
+                    duration: 0.6,
+                    ease: "power3.out",
+                    onComplete: () => searchInputRef.current?.focus()
+                });
+            } else {
+                gsap.to(searchEl, {
+                    width: "48px",
+                    duration: 0.4,
+                    ease: "power3.in"
+                });
+            }
+        });
     }, [isSearchExpanded]);
 
     // Animate result count changes
     useEffect(() => {
         if (resultsCountRef.current) {
-            gsap.fromTo(resultsCountRef.current,
-                { scale: 1.5, opacity: 0 },
-                { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }
-            );
+            gsapCtxRef.current?.add(() => {
+                gsap.fromTo(resultsCountRef.current,
+                    { scale: 1.5, opacity: 0 },
+                    { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(2)" }
+                );
+            });
         }
     }, [resultCount]);
 
@@ -86,6 +102,7 @@ const ModuleSearchFilter = ({
                         <button
                             onClick={() => setIsSearchExpanded(!isSearchExpanded)}
                             className="absolute left-0 w-12 h-12 flex items-center justify-center text-white/50 hover:text-white transition-colors z-10"
+                            aria-label={isSearchExpanded ? 'Close search' : 'Open search'}
                         >
                             {isSearchExpanded ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
                         </button>

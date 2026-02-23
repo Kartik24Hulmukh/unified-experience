@@ -1,56 +1,76 @@
 /**
- * FluidMaskCursor — WebGL Navier-Stokes fluid simulation that produces
- * a white-on-black luminance mask for CSS mask-image.
+ * FluidMaskCursor — WebGL Navier-Stokes fluid simulation for hover-reveal masking.
  *
- * Architecture:
- *  1. A SMALL hidden canvas (MASK_RES × MASK_RES) runs the full fluid sim.
- *  2. Every frame the canvas is CLEARED before the display pass so white
- *     pixels never accumulate (the sim state lives in FBOs, not the canvas).
- *  3. The display shader converts dye → white luminance with a threshold.
- *  4. canvas.toDataURL() exports the mask as a tiny PNG data-URL.
- *  5. Parent applies it as CSS mask-image on the reveal layer.
+ * Renders on a hidden 256×256 canvas and exports an inverted luminance mask
+ * via toDataURL at ~30fps. Parent applies this as CSS mask-image on a cover
+ * layer: white = layer visible, black = layer erased (reveals content beneath).
+ *
+ * The fluid sim produces organic, deforming edges with inertia — the mask
+ * follows the cursor with weighted trailing pointers for smooth, delayed motion.
  *
  * Cursor coordinates are mapped from viewport space → [0..1] texcoord
- * using window.innerWidth / innerHeight (NOT the tiny canvas size).
+ * using window.innerWidth / innerHeight (NOT the canvas size).
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 
 interface FluidMaskCursorProps {
   onMaskFrame?: (dataUrl: string) => void;
+  /** When true, pauses the simulation to save resources */
+  paused?: boolean;
 }
 
-/* ─── Fluid config ────────────────────────────────────────────── */
-const MASK_RES         = 256;   // Canvas pixel size — small for fast readback
-const SIM_RESOLUTION   = 64;   // Fluid sim grid
-const DYE_RESOLUTION   = 256;  // Matches canvas for crisp mask
-const DENSITY_DISSIPATION = 4.5;  // ★ Faster fade — cleaner, less persistent trails
-const VELOCITY_DISSIPATION = 3.0; // ★ Smoother velocity decay — gentle glide
-const PRESSURE         = 0.1;
+/* ─── Fluid config — cappen.com-style refined, smooth cursor reveal ─── */
+const MASK_RES         = 256;   // Smooth mask edges
+const SIM_RESOLUTION   = 128;   // Navier-Stokes grid
+const DYE_RESOLUTION   = 256;   // Dye texture resolution
+const DENSITY_DISSIPATION = 0.955; // Gentle fade — trails linger briefly then dissolve
+const VELOCITY_DISSIPATION = 0.96;  // Smooth velocity with natural slowdown
+const PRESSURE         = 0.4;
 const PRESSURE_ITERATIONS = 20;
-const CURL             = 5;    // ★ Minimal curl — controlled organic flow, no chaotic swirls
-const SPLAT_RADIUS     = 0.22; // ★ Smaller radius — tighter, more precise splash
-const SPLAT_FORCE      = 1800; // ★ Much gentler force — smooth glide instead of splatter
+const CURL             = 2;     // Subtle vorticity — smooth edges, minimal turbulence
+const SPLAT_RADIUS     = 0.15;  // Small, refined cursor circle (cappen-style)
+const SPLAT_FORCE      = 800;   // Gentle force — smooth organic spread, never explosive
 const SHADING          = true;
 
-export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
+/* ─── Performance tuning ────────────────────────────────────────── */
+const MASK_EXPORT_INTERVAL = 1000 / 60;  // 60fps export — smooth mask transitions
+
+function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
+  const pausedRef = useRef(paused);
+  const onMaskFrameRef = useRef(onMaskFrame);
+  
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+  
+  useEffect(() => {
+    onMaskFrameRef.current = onMaskFrame;
+  }, [onMaskFrame]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     let alive = true;
+    let pageHidden = document.hidden;
 
-    // ★ Fixed low-res canvas — never changes with viewport
     canvas.width = MASK_RES;
     canvas.height = MASK_RES;
+    
+    // Pause simulation when tab is hidden (saves CPU/GPU)
+    const handleVisibilityChange = () => {
+      pageHidden = document.hidden;
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     /* ─── Pointer state: Weighted trailing system ─── */
+    // 3 trailing pointers with different inertia for organic delay
     const pointers = [
-      { x: 0, y: 0, px: 0, py: 0, mass: 0.5 },   // ★ Smoother primary — less jittery response
-      { x: 0, y: 0, px: 0, py: 0, mass: 0.18 },  // ★ Softer trail — more graceful delayed follow
+      { x: 0, y: 0, px: 0, py: 0, mass: 0.18 },  // Primary — smooth close follow
+      { x: 0, y: 0, px: 0, py: 0, mass: 0.06 },  // Trail — gentle delayed tail
     ];
     let mouseX = 0, mouseY = 0;
     let initialized = false;
@@ -61,12 +81,32 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
       depth: false,
       stencil: false,
       antialias: false,
-      preserveDrawingBuffer: true,   // Needed for toDataURL
+      preserveDrawingBuffer: true,   // Required for toDataURL mask export
     };
     let gl = canvas.getContext('webgl2', params) as WebGL2RenderingContext | null;
     const isWebGL2 = !!gl;
     if (!gl) gl = (canvas.getContext('webgl', params) || canvas.getContext('experimental-webgl', params)) as WebGL2RenderingContext | null;
     if (!gl) return;
+
+    /* ─── WebGL context loss safety net ────────────────────── */
+    let contextLost = false;
+
+    const handleContextLost = (e: Event) => {
+      e.preventDefault(); // Signal browser we intend to restore
+      contextLost = true;
+    };
+
+    const handleContextRestored = () => {
+      // Context restored — the GL state is wiped.
+      // Rather than re-initializing all FBOs/programs (fragile),
+      // we mark alive=false and let React re-mount if needed.
+      // This is the safest path — a lost+restored context still
+      // has the old JS references pointing at deleted GL objects.
+      contextLost = true; // keep paused — dead refs are unsafe
+    };
+
+    canvas.addEventListener('webglcontextlost', handleContextLost);
+    canvas.addEventListener('webglcontextrestored', handleContextRestored);
 
     let halfFloat: any;
     let supportLinearFiltering: any;
@@ -145,7 +185,9 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
       const s = gl!.createShader(type)!;
       gl!.shaderSource(s, source);
       gl!.compileShader(s);
-      if (!gl!.getShaderParameter(s, gl!.COMPILE_STATUS)) console.warn(gl!.getShaderInfoLog(s));
+      if (!gl!.getShaderParameter(s, gl!.COMPILE_STATUS)) {
+        if (import.meta.env.DEV) console.warn(gl!.getShaderInfoLog(s));
+      }
       return s;
     }
 
@@ -154,7 +196,9 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
       gl!.attachShader(p, vs);
       gl!.attachShader(p, fs);
       gl!.linkProgram(p);
-      if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) console.warn(gl!.getProgramInfoLog(p));
+      if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) {
+        if (import.meta.env.DEV) console.warn(gl!.getProgramInfoLog(p));
+      }
       return p;
     }
 
@@ -398,7 +442,7 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
       }
     `);
 
-    /* ── Display shader: output white luminance mask ── */
+    /* ── Display shader: output white luminance mask or colored fluid ── */
     const displaySrc = `
       precision highp float;
       precision highp sampler2D;
@@ -426,17 +470,16 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
           c *= diffuse;
         #endif
 
-        // Convert to luminance
         float lum = dot(c, vec3(0.299, 0.587, 0.114));
 
-        // Smooth fluid edges: wider range = softer feathering
-        //   below 0.02 → 0  (hidden — kills very faint wisps)
-        //   above 0.40 → 1  (fully revealed — much wider gradient)
-        // The wider 0.02..0.40 range creates buttery soft edges.
-        float mask = smoothstep(0.02, 0.40, lum);
-
-        // ★ Output as ALPHA mask.
-        gl_FragColor = vec4(0.0, 0.0, 0.0, mask);
+        // Inverted luminance mask for CSS mask-image:
+        // White (1.0) = cover layer stays VISIBLE (no fluid)
+        // Black (0.0) = cover layer ERASED (fluid present → reveal layer shows)
+        // smoothstep creates soft, morphing edges on the fluid boundary
+        // Wider smoothstep range = softer, more gradual edge falloff
+        float fluidPresence = smoothstep(0.01, 0.35, lum);
+        float mask = 1.0 - fluidPresence;
+        gl_FragColor = vec4(vec3(mask), 1.0);
       }
     `;
 
@@ -688,16 +731,23 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
 
     /* ─── Main loop ────────────────────────────────────── */
     let lastTime = Date.now();
+    let lastExportTime = 0;
 
     function loop() {
       if (!alive) return;
+      
+      // Skip simulation when paused, page is hidden, or WebGL context is lost
+      if (pausedRef.current || pageHidden || contextLost) {
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
+      
       const now = Date.now();
       let dt = (now - lastTime) / 1000;
       dt = Math.min(dt, 0.016666);
       lastTime = now;
 
-      pointers.forEach((p, i) => {
-        // Each follow point has a different weight/mass
+      pointers.forEach((p) => {
         p.x += (mouseX - p.x) * p.mass;
         p.y += (mouseY - p.y) * p.mass;
 
@@ -714,11 +764,10 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
       step(dt);
       render();
 
-      // Export mask every frame — 256×256 canvas.
-      // ★ Use WebP (lossy, fast encode) instead of PNG for smoother frame rate.
-      // Falls back to PNG on browsers without WebP canvas support.
-      if (onMaskFrame) {
-        onMaskFrame(canvas!.toDataURL('image/webp', 0.8));
+      // Export canvas as inverted luminance data URL for CSS mask-image
+      if (alive && onMaskFrameRef.current && (now - lastExportTime >= MASK_EXPORT_INTERVAL)) {
+        lastExportTime = now;
+        onMaskFrameRef.current(canvas!.toDataURL('image/png'));
       }
 
       rafRef.current = requestAnimationFrame(loop);
@@ -760,13 +809,57 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
 
     loop();
 
-    /* ─── Cleanup ──────────────────────────────────────── */
+    /* ─── Cleanup: Dispose ALL WebGL resources ──────────────────────────────────────── */
     return () => {
       alive = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      canvas.removeEventListener('webglcontextlost', handleContextLost);
+      canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+
+      // Dispose FBOs (textures + framebuffers)
+      const disposeFBO = (fbo: { texture?: WebGLTexture; fbo?: WebGLFramebuffer } | null) => {
+        if (!fbo || !gl) return;
+        if (fbo.texture) gl.deleteTexture(fbo.texture);
+        if (fbo.fbo) gl.deleteFramebuffer(fbo.fbo);
+      };
+
+      const disposeDoubleFBO = (doubleFbo: { read?: any; write?: any } | null) => {
+        if (!doubleFbo) return;
+        disposeFBO(doubleFbo.read);
+        disposeFBO(doubleFbo.write);
+      };
+
+      // Dispose all FBOs
+      disposeDoubleFBO(dye);
+      disposeDoubleFBO(velocity);
+      disposeFBO(divergenceFBO);
+      disposeFBO(curlFBO);
+      disposeDoubleFBO(pressureFBO);
+
+      // Dispose all shader programs
+      const programs = [copyProg, clearProg, splatProg, advProg, divProg, curlProg, vortProg, presProg, gradProg];
+      programs.forEach(prog => {
+        if (prog?.program && gl) gl.deleteProgram(prog.program);
+      });
+
+      // Dispose Material programs
+      if (displayMat?.programs && gl) {
+        Object.values(displayMat.programs).forEach((prog) => {
+          if (prog) gl.deleteProgram(prog as WebGLProgram);
+        });
+      }
+
+      // Delete compiled shaders (vertex + all fragment shaders)
+      if (gl && baseVS) gl.deleteShader(baseVS);
+      const fragmentShaders = [copyFS, clearFS, splatFS, advectionFS, divergenceFS, curlFS, vorticityFS, pressureFS, gradSubFS];
+      fragmentShaders.forEach(fs => { if (gl && fs) gl.deleteShader(fs); });
+
+      // Do NOT call loseContext() — it races with Portal3D's shared GPU pipeline.
+      // Deleting all resources above is sufficient; GC handles the rest.
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -776,6 +869,7 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
       ref={canvasRef}
       width={MASK_RES}
       height={MASK_RES}
+      data-fluid-cursor="mask"
       style={{
         position: 'fixed',
         top: 0,
@@ -789,3 +883,5 @@ export default function FluidMaskCursor({ onMaskFrame }: FluidMaskCursorProps) {
     />
   );
 }
+
+export default memo(FluidMaskCursor);

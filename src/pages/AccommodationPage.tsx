@@ -1,12 +1,17 @@
-import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
+import GlitchText from '@/components/GlitchText';
+import AnimatedCounter from '@/components/AnimatedCounter';
+import { useTypewriter } from '@/hooks/useTypewriter';
 import { Search, X, Shield, Lock, Eye, Users, MapPin, ArrowRight, Terminal, Database, Wifi } from 'lucide-react';
 import housingHandover from '@/assets/housing-handover.jpg';
+import { useListings } from '@/hooks/api/useApi';
+import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 
-gsap.registerPlugin(ScrollTrigger);
+// ScrollTrigger registered in lib/gsap-init.ts
 
 /* ── Data ─────────────────────────────────────────────── */
 
@@ -37,91 +42,9 @@ const consoleLines = [
   'READY FOR ACCESS...',
 ];
 
-/* ── Console Typewriter Hook ─────────────────────────── */
+/* ── Console Typewriter Hook (imported from @/hooks/useTypewriter) ── */
 
-const useTypewriter = (lines: string[], speed = 30, lineDelay = 200, startDelay = 1500) => {
-  const [displayedLines, setDisplayedLines] = useState<string[]>([]);
-  const [currentLine, setCurrentLine] = useState(0);
-  const [currentChar, setCurrentChar] = useState(0);
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setStarted(true), startDelay);
-    return () => clearTimeout(timeout);
-  }, [startDelay]);
-
-  useEffect(() => {
-    if (!started) return;
-    if (currentLine >= lines.length) return;
-
-    const line = lines[currentLine];
-
-    if (currentChar <= line.length) {
-      const timeout = setTimeout(() => {
-        setDisplayedLines(prev => {
-          const newLines = [...prev];
-          newLines[currentLine] = line.slice(0, currentChar);
-          return newLines;
-        });
-        setCurrentChar(c => c + 1);
-      }, speed);
-      return () => clearTimeout(timeout);
-    } else {
-      const timeout = setTimeout(() => {
-        setCurrentLine(l => l + 1);
-        setCurrentChar(0);
-      }, lineDelay);
-      return () => clearTimeout(timeout);
-    }
-  }, [started, currentLine, currentChar, lines, speed, lineDelay]);
-
-  return { displayedLines, isComplete: currentLine >= lines.length };
-};
-
-/* ── Glitch Text Component ───────────────────────────── */
-
-const GlitchText = ({ children, className = '' }: { children: string; className?: string }) => {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!ref.current) return;
-    const el = ref.current;
-
-    const handleEnter = () => {
-      gsap.to(el, {
-        skewX: 2,
-        duration: 0.1,
-        yoyo: true,
-        repeat: 3,
-        ease: 'power4.inOut',
-        onComplete: () => gsap.set(el, { skewX: 0 }),
-      });
-    };
-
-    el.addEventListener('mouseenter', handleEnter);
-    return () => el.removeEventListener('mouseenter', handleEnter);
-  }, []);
-
-  return (
-    <div ref={ref} className={`relative group ${className}`}>
-      <span className="relative z-10">{children}</span>
-      <span className="absolute top-0 left-0 text-cyan-400/30 z-0 translate-x-[2px] translate-y-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" aria-hidden>
-        {children}
-      </span>
-      <span className="absolute top-0 left-0 text-red-400/20 z-0 -translate-x-[1px] -translate-y-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" aria-hidden>
-        {children}
-      </span>
-    </div>
-  );
-};
-
-/* ── Scanline Overlay ────────────────────────────────── */
-
-const ScanlineOverlay = () => (
-  <div className="pointer-events-none fixed inset-0 z-[100]" aria-hidden>
-    <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.03)_2px,rgba(0,0,0,0.03)_4px)]" />
-  </div>
-);
+/* ── Glitch Text Component (imported from @/components/GlitchText) ── */
 
 /* ── Data Ticker ─────────────────────────────────────── */
 
@@ -140,13 +63,16 @@ const DataTicker = () => {
 
   useEffect(() => {
     if (!tickerRef.current) return;
-    const el = tickerRef.current;
-    gsap.to(el, {
-      xPercent: -50,
-      ease: 'none',
-      duration: 30,
-      repeat: -1,
-    });
+    const ctx = gsap.context(() => {
+      gsap.to(tickerRef.current!, {
+        xPercent: -50,
+        ease: 'none',
+        duration: 30,
+        repeat: -1,
+      });
+    }, tickerRef);
+    
+    return () => ctx.revert();
   }, []);
 
   return (
@@ -163,57 +89,23 @@ const DataTicker = () => {
   );
 };
 
-/* ── Animated Counter ────────────────────────────────── */
-
-const AnimatedCounter = ({ target, duration = 2000 }: { target: number; duration?: number }) => {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const hasAnimated = useRef(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated.current) {
-          hasAnimated.current = true;
-          const start = Date.now();
-          const animate = () => {
-            const elapsed = Date.now() - start;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.floor(eased * target));
-            if (progress < 1) requestAnimationFrame(animate);
-          };
-          requestAnimationFrame(animate);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target, duration]);
-
-  return <span ref={ref}>{count}</span>;
-};
+/* ── Animated Counter (imported from @/components/AnimatedCounter) ── */
 
 /* ── Main Page ───────────────────────────────────────── */
 
 const AccommodationPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const [activeArea, setActiveArea] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroLoaded, setHeroLoaded] = useState(false);
 
   const { displayedLines, isComplete } = useTypewriter(consoleLines, 25, 150, 800);
 
-  const [items] = useState([
-    { id: 'h1', title: 'Premium Studio Flat', price: '12000', category: 'Near Campus', institution: 'Verified PG' },
-    { id: 'h2', title: 'Shared 2BHK Apartment', price: '8500', category: 'City Center', institution: 'Student Housing' },
-    { id: 'h3', title: 'Single Occupancy Room', price: '6000', category: 'Outer Ring', institution: 'MCTRGIT Internal' },
-    { id: 'h4', title: 'Luxury Boys Hostel', price: '15000', category: 'Near Campus', institution: 'Verified Partner' },
-    { id: 'h5', title: 'Quiet Study Flatmate', price: '4500', category: 'City Center', institution: 'Peer-to-Peer' },
-    { id: 'h6', title: 'Full 3BHK for Students', price: '22000', category: 'Outer Ring', institution: 'Broker Verified' },
-  ]);
+  // Fetch listings from API
+  const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'accommodation' });
+  const items = listingsResponse?.data ?? [];
 
   const filteredItems = useMemo(() => {
     return items.filter(
@@ -228,7 +120,8 @@ const AccommodationPage = () => {
   }, []);
 
   /* GSAP Master Timeline */
-  useEffect(() => {
+  // useLayoutEffect for GSAP animations to prevent flash of unstyled content
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal
       gsap.fromTo('.accom-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.4, duration: 2, ease: 'power3.out' });
@@ -341,14 +234,13 @@ const AccommodationPage = () => {
           },
         }
       );
-    });
+    }, mainRef);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <main id="main-content" className="min-h-screen bg-black text-white overflow-hidden relative">
-      <ScanlineOverlay />
+    <div ref={mainRef} className="min-h-screen bg-black text-white overflow-hidden relative">
 
       {/* ═══════════════ HERO SECTION ═══════════════ */}
       <section ref={heroRef} className="relative min-h-screen flex flex-col justify-between overflow-hidden">
@@ -745,17 +637,25 @@ const AccommodationPage = () => {
             priceRange={[0, 30000]}
           />
 
-          <ListingGrid items={filteredItems} />
+          {isLoading ? (
+            <LoadingSpinner className="py-16" />
+          ) : isError ? (
+            <ErrorFallback error={error} onRetry={() => refetch()} compact />
+          ) : (
+            <>
+              <ListingGrid items={filteredItems} />
 
-          {filteredItems.length === 0 && (
-            <div className="py-24 text-center space-y-6">
-              <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
-                <X className="w-8 h-8 text-white -rotate-45" />
-              </div>
-              <p className="text-white/20 uppercase tracking-[0.4em] font-mono text-[10px]">
-                No accommodation protocols found
-              </p>
-            </div>
+              {filteredItems.length === 0 && (
+                <div className="py-24 text-center space-y-6">
+                  <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                    <X className="w-8 h-8 text-white -rotate-45" />
+                  </div>
+                  <p className="text-white/20 uppercase tracking-[0.4em] font-mono text-[10px]">
+                    No accommodation protocols found
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -877,7 +777,7 @@ const AccommodationPage = () => {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 };
 

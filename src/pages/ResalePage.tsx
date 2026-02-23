@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
@@ -8,8 +8,12 @@ import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
 import resaleTech from '@/assets/resale-tech.jpg';
 import { Plus, X } from 'lucide-react';
+import { useRestriction } from '@/hooks/useRestriction';
+import { toast } from '@/components/ui/use-toast';
+import { useListings } from '@/hooks/api/useApi';
+import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 
-gsap.registerPlugin(ScrollTrigger);
+// ScrollTrigger registered in lib/gsap-init.ts
 
 const categories = [
   { id: 'books', title: 'Engineering Books', count: '150+' },
@@ -22,20 +26,15 @@ const ResalePage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { canPerform } = useRestriction();
+  const canCreateListing = canPerform('CREATE_LISTING');
 
-  // Mock Data
-  const [items] = useState([
-    { id: '1', title: 'Calculus: Early Transcendentals', price: '450', category: 'Books', institution: 'MCTRGIT' },
-    { id: '2', title: 'Casio fx-991EX Classwiz', price: '1200', category: 'Calculators', institution: 'MCTRGIT' },
-    { id: '3', title: 'Engineering Drawing Tool Kit', price: '850', category: 'Instruments', institution: 'MCTRGIT' },
-    { id: '4', title: 'Microprocessor 8085 Kit', price: '2500', category: 'Lab Equipment', institution: 'MCTRGIT' },
-    { id: '5', title: 'Standard Data Book - Heat Transfer', price: '150', category: 'Books', institution: 'MCTRGIT' },
-    { id: '6', title: 'Stepping Motor 12V 1.2A', price: '400', category: 'Lab Equipment', institution: 'MCTRGIT' },
-    { id: '7', title: 'Analog & Digital IC Trainer', price: '3200', category: 'Electronics', institution: 'MCTRGIT' },
-    { id: '8', title: 'Drafter - Professional Series', price: '650', category: 'Instruments', institution: 'MCTRGIT' },
-  ]);
+  // Fetch listings from API
+  const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'resale' });
+  const items = listingsResponse?.data ?? [];
 
   const filteredItems = useMemo(() => {
     return items.filter(item =>
@@ -44,7 +43,8 @@ const ResalePage = () => {
     );
   }, [searchQuery, items]);
 
-  useEffect(() => {
+  // useLayoutEffect for GSAP animations to prevent flash of unstyled content
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Parallax hero image
       gsap.to(imageRef.current, {
@@ -75,13 +75,13 @@ const ResalePage = () => {
           },
         }
       );
-    });
+    }, mainRef);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <main id="main-content" className="min-h-screen bg-portal">
+    <div ref={mainRef} className="min-h-screen bg-portal">
       {/* Hero Section - Full bleed with diagonal split */}
       <section ref={heroRef} className="relative h-screen overflow-hidden">
         {/* Background Image with Parallax */}
@@ -228,15 +228,23 @@ const ResalePage = () => {
             priceRange={[0, 5000]}
           />
 
-          <ListingGrid items={filteredItems} />
+          {isLoading ? (
+            <LoadingSpinner className="py-16" />
+          ) : isError ? (
+            <ErrorFallback error={error} onRetry={() => refetch()} compact />
+          ) : (
+            <>
+              <ListingGrid items={filteredItems} />
 
-          {filteredItems.length === 0 && (
-            <div className="py-24 text-center space-y-6">
-              <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
-                <X className="w-8 h-8 text-white -rotate-45" />
-              </div>
-              <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">Zero Entities Detected in Search Field</p>
-            </div>
+              {filteredItems.length === 0 && (
+                <div className="py-24 text-center space-y-6">
+                  <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                    <X className="w-8 h-8 text-white -rotate-45" />
+                  </div>
+                  <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">Zero Entities Detected in Search Field</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -251,8 +259,19 @@ const ResalePage = () => {
             Join verified MCTRGIT students in creating a sustainable resource exchange ecosystem.
           </p>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-12 py-5 bg-portal-foreground text-portal font-display uppercase tracking-wider text-sm hover:bg-teal-400 transition-colors group relative overflow-hidden"
+            onClick={() => {
+              if (!canCreateListing) {
+                toast({ title: 'Action Unavailable', description: 'Your account is currently restricted from creating listings.', variant: 'destructive' });
+                return;
+              }
+              setIsModalOpen(true);
+            }}
+            disabled={!canCreateListing}
+            className={`px-12 py-5 font-display uppercase tracking-wider text-sm group relative overflow-hidden transition-colors ${
+              canCreateListing
+                ? 'bg-portal-foreground text-portal hover:bg-teal-400'
+                : 'bg-portal-foreground/30 text-portal/50 cursor-not-allowed'
+            }`}
           >
             <span className="relative z-10 flex items-center justify-center">
               List Your First Item <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
@@ -273,7 +292,7 @@ const ResalePage = () => {
           onSuccess={() => setIsModalOpen(false)}
         />
       </ListingFormModal>
-    </main>
+    </div>
   );
 };
 

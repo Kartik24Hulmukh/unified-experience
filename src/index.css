@@ -1,13 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap');
+/* Fonts loaded via <link rel="preload"> in index.html for non-blocking performance */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Lenis smooth scroll ─── */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
 /* Hide global cursor on home page */
 .hide-global-cursor {
-  background-color: #ffffff !important;
-  color: #000000 !important;
+  /* Applied on homepage hero — ensures white bg for cursor blend mode */
 }
 
 .hide-global-cursor #gooey-cursor {
@@ -76,6 +92,28 @@
     --shadow-medium: 0 8px 30px -6px hsl(0 0% 0% / 0.12);
     --shadow-strong: 0 20px 50px -12px hsl(0 0% 0% / 0.25);
 
+    /* ─── Module Accent Tokens ─── */
+    --module-accommodation: 188 94% 53%;  /* cyan-400 */
+    --module-mess: 38 92% 56%;            /* amber-400 */
+    --module-hospital: 152 69% 39%;       /* emerald-400 */
+    --module-academics: 263 70% 58%;      /* violet-400 */
+    --module-essentials: 263 70% 58%;     /* violet-400 */
+    --module-resale: 195 100% 50%;        /* matches --primary */
+    --module-emergency: 0 84% 60%;        /* red-500 */
+
+    /* ─── Z-Index Scale ─── */
+    --z-base: 1;
+    --z-overlay: 10;
+    --z-hero-content: 10;
+    --z-reveal-mask: 14;
+    --z-portal: 20;
+    --z-modules: 30;
+    --z-nav: 40;
+    --z-auth-portal: 50;
+    --z-page-transition: 60;
+    --z-cursor: 70;
+    --z-scanline: 100;
+
     /* Sidebar - keep defaults */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -136,14 +174,12 @@
   }
 
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
-    /* Critical: White background for cursor blend mode */
-    background-color: #ffffff !important;
     overflow-x: hidden;
   }
 
@@ -209,9 +245,9 @@
     color: hsl(var(--portal-foreground));
   }
 
-  /* Smooth transitions */
+  /* Smooth transitions — explicit properties to avoid layout thrash */
   .transition-smooth {
-    transition: all 0.6s var(--transition-smooth);
+    transition: transform 0.6s var(--transition-smooth), opacity 0.6s var(--transition-smooth), color 0.6s var(--transition-smooth);
   }
 
   /* Gooey cursor styles */
@@ -401,15 +437,6 @@
 
 .glitch-toast {
   animation: toast-glitch 0.3s cubic-bezier(.25, .46, .45, .94) both;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 
 /* HUD System Animations */

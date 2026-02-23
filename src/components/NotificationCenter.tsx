@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCircle2, MessageSquare, ShieldAlert, X } from 'lucide-react';
-import gsap from 'gsap';
+import { useState, memo } from 'react';
+import { Bell, CheckCircle2, MessageSquare, ShieldAlert } from 'lucide-react';
 import {
     Popover,
     PopoverContent,
@@ -19,7 +18,7 @@ interface Notification {
     isRead: boolean;
 }
 
-const NotificationCenter = ({ isDark }: { isDark: boolean }) => {
+const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark: boolean }) {
     const [notifications, setNotifications] = useState<Notification[]>([
         {
             id: '1',
@@ -74,7 +73,7 @@ const NotificationCenter = ({ isDark }: { isDark: boolean }) => {
     return (
         <Popover onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
-                <button className="relative group">
+                <button className="relative group" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}>
                     <div className={`p-2 transition-all duration-300 ${isOpen ? 'rotate-12' : 'group-hover:-rotate-12'}`}>
                         <Bell className={`w-6 h-6 ${isDark ? 'text-portal-foreground' : 'text-foreground'} ${unreadCount > 0 ? 'animate-pulse' : 'opacity-60'}`} />
                     </div>
@@ -113,7 +112,7 @@ const NotificationCenter = ({ isDark }: { isDark: boolean }) => {
                         {notifications.map((notif, i) => (
                             <div
                                 key={notif.id}
-                                className={`p-6 border-b border-white/5 hover:bg-white/5 transition-all duration-300 group cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}
+                                className={`relative p-6 border-b border-white/5 hover:bg-white/5 transition-all duration-300 group cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}
                             >
                                 <div className="flex gap-4">
                                     <div className="mt-1">
@@ -148,6 +147,6 @@ const NotificationCenter = ({ isDark }: { isDark: boolean }) => {
             </PopoverContent>
         </Popover>
     );
-};
+});
 
 export default NotificationCenter;

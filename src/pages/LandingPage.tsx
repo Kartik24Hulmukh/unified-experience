@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { useAuth } from '@/contexts/AuthContext';
+import { safeNavigate } from '@/lib/utils';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
 
@@ -16,7 +17,9 @@ const Portal3D = lazy(() => import('@/components/Portal3D'));
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const hasRedirected = useRef(false);
 
   /* Refs */
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,8 +40,17 @@ const LandingPage = () => {
 
   const [loadComplete, setLoadComplete] = useState(false);
 
-  /* ── Loading sequence ── */
+  /* ── Auto-redirect authenticated users to /home ── */
   useEffect(() => {
+    if (isAuthenticated && !authLoading && !hasRedirected.current) {
+      hasRedirected.current = true;
+      safeNavigate(navigate, location.pathname, '/home');
+    }
+  }, [isAuthenticated, authLoading, navigate, location.pathname]);
+
+  /* ── Loading sequence ── */
+  // useLayoutEffect for GSAP animations to prevent flash of unstyled content
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         onComplete: () => setLoadComplete(true),
@@ -49,7 +61,7 @@ const LandingPage = () => {
         { val: 0 },
         {
           val: 100,
-          duration: 2.4,
+          duration: 1.0,
           ease: 'power2.inOut',
           onUpdate: function () {
             if (counterRef.current) {
@@ -65,7 +77,7 @@ const LandingPage = () => {
         barRef.current,
         {
           scaleX: 1,
-          duration: 2.4,
+          duration: 1.0,
           ease: 'power2.inOut',
         },
         0
@@ -74,79 +86,79 @@ const LandingPage = () => {
       // Loader exit — slide up
       tl.to(loaderRef.current, {
         yPercent: -100,
-        duration: 1.0,
+        duration: 0.5,
         ease: 'power4.inOut',
       });
 
       // Content reveal — stagger from bottom
       tl.fromTo(
         navBrandRef.current,
-        { opacity: 0, y: -20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' },
-        '-=0.4'
+        { opacity: 0, y: -12 },
+        { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' },
+        '-=0.2'
       );
 
       tl.fromTo(
         navStatusRef.current,
-        { opacity: 0, y: -20 },
-        { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' },
-        '-=0.5'
+        { opacity: 0, y: -12 },
+        { opacity: 1, y: 0, duration: 0.35, ease: 'power3.out' },
+        '-=0.3'
       );
 
       // Line 1: BUILDING
       tl.fromTo(
         line1Ref.current,
-        { yPercent: 120, opacity: 0 },
-        { yPercent: 0, opacity: 1, duration: 0.9, ease: 'power4.out' },
-        '-=0.3'
+        { yPercent: 80, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.5, ease: 'power4.out' },
+        '-=0.2'
       );
 
-      // Line 2: TOMORROW
+      // Line 2: CAMPUS
       tl.fromTo(
         line2Ref.current,
-        { yPercent: 120, opacity: 0 },
-        { yPercent: 0, opacity: 1, duration: 0.9, ease: 'power4.out' },
-        '-=0.6'
+        { yPercent: 80, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.5, ease: 'power4.out' },
+        '-=0.35'
       );
 
-      // Line 3: TODAY
+      // Line 3: TRUST
       tl.fromTo(
         line3Ref.current,
-        { yPercent: 120, opacity: 0 },
-        { yPercent: 0, opacity: 1, duration: 0.9, ease: 'power4.out' },
-        '-=0.6'
+        { yPercent: 80, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.5, ease: 'power4.out' },
+        '-=0.35'
       );
 
       // Portal logo
       tl.fromTo(
         portalContainerRef.current,
-        { scale: 0.6, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 1.0, ease: 'power3.out' },
-        '-=0.5'
+        { scale: 0.7, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 0.5, ease: 'power3.out' },
+        '-=0.3'
       );
 
       // Tagline
       tl.fromTo(
         taglineRef.current,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' },
-        '-=0.4'
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' },
+        '-=0.25'
       );
 
       // CTA
       tl.fromTo(
         ctaRef.current,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' },
-        '-=0.3'
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' },
+        '-=0.2'
       );
 
       // Meta corners
       tl.fromTo(
         [metaLeftRef.current, metaRightRef.current],
         { opacity: 0 },
-        { opacity: 1, duration: 0.5, ease: 'power2.out' },
-        '-=0.4'
+        { opacity: 1, duration: 0.3, ease: 'power2.out' },
+        '-=0.2'
       );
     }, containerRef);
 
@@ -157,23 +169,28 @@ const LandingPage = () => {
   useEffect(() => {
     if (!loadComplete || !portalContainerRef.current) return;
 
-    const float = gsap.to(portalContainerRef.current, {
-      y: -12,
-      duration: 3,
-      ease: 'sine.inOut',
-      yoyo: true,
-      repeat: -1,
-    });
+    const ctx = gsap.context(() => {
+      gsap.to(portalContainerRef.current!, {
+        y: -12,
+        duration: 3,
+        ease: 'sine.inOut',
+        yoyo: true,
+        repeat: -1,
+      });
+    }, portalContainerRef);
 
-    return () => { float.kill(); };
+    return () => ctx.revert();
   }, [loadComplete]);
 
   /* ── CTA handler ── */
   const handleEnter = () => {
+    if (hasRedirected.current) return; // Prevent navigation if already redirected
+    
     if (isAuthenticated) {
-      navigate('/home');
+      hasRedirected.current = true;
+      safeNavigate(navigate, location.pathname, '/home', { replace: false });
     } else {
-      navigate('/login', { state: { from: '/home' } });
+      safeNavigate(navigate, location.pathname, '/login', { replace: false });
     }
   };
 
@@ -190,11 +207,11 @@ const LandingPage = () => {
         <div className="flex items-baseline gap-1 mb-8">
           <span
             ref={counterRef}
-            className="text-white font-display text-[8rem] md:text-[12rem] leading-none font-bold tracking-tighter"
+            className="text-white font-display text-[5rem] md:text-[8rem] leading-none font-bold tracking-tighter"
           >
             0
           </span>
-          <span className="text-white/30 font-display text-4xl md:text-6xl font-bold">%</span>
+          <span className="text-white/30 font-display text-3xl md:text-4xl font-bold">%</span>
         </div>
 
         {/* Progress bar */}
@@ -341,9 +358,9 @@ const LandingPage = () => {
         />
 
         {/* ── Ambient glow ── */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none"
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
           style={{
-            background: 'radial-gradient(circle, rgba(0,191,255,0.04) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(0,191,255,0.025) 0%, transparent 70%)',
           }}
         />
       </div>

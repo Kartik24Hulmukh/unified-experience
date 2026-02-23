@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect, useLayoutEffect, memo, Component, type ReactNode, type ErrorInfo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -11,12 +11,82 @@ import * as THREE from 'three';
 const BODY_DEPTH = 0.18;
 const RIM_DEPTH = 0.22;
 
-const ShieldLogo = () => {
+// Clamped DPR for resize stability (max 2)
+const CLAMPED_DPR: [number, number] = [1, 2];
+
+/* ─── Lightweight error boundary for WebGL Canvas ──────────────── */
+interface WebGLGuardState { hasError: boolean }
+class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, WebGLGuardState> {
+  state: WebGLGuardState = { hasError: false };
+  static getDerivedStateFromError(): WebGLGuardState { return { hasError: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    // eslint-disable-next-line no-console
+    console.warn('[Portal3D] WebGL crashed — showing fallback', error, info);
+  }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
+/** Static CSS-only shield placeholder shown when WebGL context fails */
+const ShieldFallback = () => (
+  <div style={{
+    width: '100%', height: '100%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  }}>
+    <div style={{
+      width: 120, height: 140,
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+      clipPath: 'polygon(50% 0%, 100% 25%, 100% 65%, 50% 100%, 0% 65%, 0% 25%)',
+      opacity: 0.7,
+    }} />
+  </div>
+);
+
+// Dispose all Three.js resources in a scene
+const disposeScene = (scene: THREE.Scene) => {
+  scene.traverse((object) => {
+    if (object instanceof THREE.Mesh) {
+      if (object.geometry) {
+        object.geometry.dispose();
+      }
+      if (object.material) {
+        if (Array.isArray(object.material)) {
+          object.material.forEach((mat) => mat.dispose());
+        } else {
+          object.material.dispose();
+        }
+      }
+    }
+  });
+};
+
+// Component to handle cleanup on unmount — uses useLayoutEffect
+// to dispose before the browser paints the next frame
+const SceneCleanup = () => {
+  const { gl, scene } = useThree();
+
+  useLayoutEffect(() => {
+    return () => {
+      // Dispose all scene objects
+      disposeScene(scene);
+      // Dispose the WebGL renderer
+      gl.dispose();
+      // Note: do NOT call gl.forceContextLoss() here —
+      // it races with PageTransition overlapping canvases
+    };
+  }, [gl, scene]);
+
+  return null;
+};
+
+const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current: number } }) => {
   const groupRef = useRef<THREE.Group>(null);
   const autoAngle = useRef(0);
   const mouse = useRef({ x: 0, y: 0 });
+  const targetScale = useRef(new THREE.Vector3(1, 1, 1));
   const { pointer } = useThree();
-  const [hovered, setHovered] = useState(false);
+  const hovered = useRef(false);
 
   const geos = useMemo(() => {
     const W = 0.78, HT = 0.88, HB = 1.0;
@@ -91,27 +161,59 @@ const ShieldLogo = () => {
     };
   }, []);
 
+  // Dispose geometries on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      geos.body.dispose();
+      geos.rim.dispose();
+      geos.orange.dispose();
+      geos.green.dispose();
+      geos.blue.dispose();
+    };
+  }, [geos]);
+
   useFrame((_state, delta) => {
     if (!groupRef.current) return;
     const g = groupRef.current;
 
-    mouse.current.x += (pointer.x - mouse.current.x) * 0.03;
-    mouse.current.y += (pointer.y - mouse.current.y) * 0.03;
+    // Frame-rate independent damping: normalize lerp factors to 60fps baseline.
+    // At 60fps delta≈0.0167, so dt60≈1. At 144fps dt60≈0.42, at 30fps dt60≈2.
+    const dt60 = delta * 60;
+    // Clamp to avoid spiral on tab-switch (delta can spike)
+    const dtClamped = Math.min(dt60, 3);
 
-    // Gentle continuous rotation
-    autoAngle.current += delta * (hovered ? 0.08 : 0.25);
+    // Frame-rate independent exponential decay: 1 - (1-factor)^dt
+    const damp = (factor: number) => 1 - Math.pow(1 - factor, dtClamped);
 
-    const tY = autoAngle.current + (hovered ? mouse.current.x * 0.6 : 0);
-    const tX = hovered
+    mouse.current.x += (pointer.x - mouse.current.x) * damp(0.03);
+    mouse.current.y += (pointer.y - mouse.current.y) * damp(0.03);
+
+    // Scroll-driven rotation — cappen.com style cinematic momentum
+    // Base rotation accelerates as user scrolls, creating an immersive zoom feel
+    const h = hovered.current;
+    const scrollP = scrollProgressRef?.current ?? 0;
+    const baseSpeed = h ? 0.08 : 0.25;
+    // Scroll amplifies rotation: 1x at top → 4x at full scroll (exponential ramp)
+    const scrollBoost = scrollP * scrollP * 3.5;
+    autoAngle.current += delta * (baseSpeed + scrollBoost);
+
+    const tY = autoAngle.current + (h ? mouse.current.x * 0.6 : 0);
+    // Scroll adds progressive X-axis tilt for dramatic depth perspective
+    const scrollTilt = scrollP * 0.15;
+    const tX = h
       ? -mouse.current.y * 0.25
-      : Math.sin(_state.clock.elapsedTime * 0.3) * 0.04;
+      : Math.sin(_state.clock.elapsedTime * 0.3) * 0.04 + scrollTilt;
 
-    g.rotation.y += (tY - g.rotation.y) * 0.035;
-    g.rotation.x += (tX - g.rotation.x) * 0.035;
-    g.position.y = Math.sin(_state.clock.elapsedTime * 0.35) * 0.015;
+    // Lerp factor increases with scroll for snappier response during zoom
+    const lerpFactor = damp(0.035 + scrollP * 0.04);
+    g.rotation.y += (tY - g.rotation.y) * lerpFactor;
+    g.rotation.x += (tX - g.rotation.x) * lerpFactor;
+    // Subtle floating bob — dampens as scroll progresses (shield stabilizes during zoom)
+    g.position.y = Math.sin(_state.clock.elapsedTime * 0.35) * 0.015 * (1 - scrollP * 0.8);
 
-    const s = hovered ? 1.05 : 1.0;
-    g.scale.lerp(new THREE.Vector3(s, s, s), 0.04);
+    const s = h ? 1.05 : 1.0;
+    targetScale.current.set(s, s, s);
+    g.scale.lerp(targetScale.current, damp(0.04));
   });
 
   // Extrude goes z: 0→depth. Offset mesh by -depth/2 to center at z=0.
@@ -127,8 +229,8 @@ const ShieldLogo = () => {
   return (
     <group
       ref={groupRef}
-      onPointerOver={() => setHovered(true)}
-      onPointerOut={() => setHovered(false)}
+      onPointerOver={() => { hovered.current = true; }}
+      onPointerOut={() => { hovered.current = false; }}
     >
       {/* ─── Shield body (offset so centered at z=0) ─── */}
       <mesh geometry={geos.body} position={[0, 0, bodyZ]}>
@@ -255,26 +357,56 @@ const ShieldLogo = () => {
       </mesh>
     </group>
   );
-};
+});
+
+// Display name for debugging
+ShieldLogo.displayName = 'ShieldLogo';
 
 interface Portal3DProps {
   className?: string;
+  scrollProgressRef?: { current: number };
 }
 
-const Portal3D = ({ className = '' }: Portal3DProps) => (
-  <div className={`w-full h-full ${className}`} style={{ cursor: 'grab' }}>
-    <Canvas
-      camera={{ position: [0, 0, 3.5], fov: 40 }}
-      gl={{ antialias: true, alpha: true, toneMapping: THREE.NoToneMapping }}
-      style={{ background: 'transparent' }}
+const Portal3D = memo(({ className = '', scrollProgressRef }: Portal3DProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // R3F Canvas handles resize internally via its own ResizeObserver.
+  // The old manual resize handler was a no-op wrapped in debounce that
+  // leaked timer references. Removed entirely — R3F's `resize` prop handles it.
+
+  return (
+    <div 
+      ref={containerRef}
+      className={`w-full h-full ${className}`} 
+      style={{ cursor: 'grab' }}
     >
-      <ambientLight intensity={4} />
-      <directionalLight position={[3, 4, 5]} intensity={3} />
-      <directionalLight position={[-3, -2, -5]} intensity={1.5} />
-      <pointLight position={[0, 0, 4]} intensity={2} color="#fff5e0" />
-      <ShieldLogo />
-    </Canvas>
-  </div>
-);
+      <WebGLErrorBoundary fallback={<ShieldFallback />}>
+        <Canvas
+          camera={{ position: [0, 0, 3.5], fov: 40 }}
+          gl={{ 
+            antialias: true, 
+            alpha: true, 
+            toneMapping: THREE.NoToneMapping,
+            powerPreference: 'high-performance',
+            preserveDrawingBuffer: false,
+          }}
+          dpr={CLAMPED_DPR}
+          style={{ background: 'transparent' }}
+          resize={{ debounce: 100, scroll: false }}
+        >
+          <SceneCleanup />
+          <ambientLight intensity={4} />
+          <directionalLight position={[3, 4, 5]} intensity={3} />
+          <directionalLight position={[-3, -2, -5]} intensity={1.5} />
+          <pointLight position={[0, 0, 4]} intensity={2} color="#fff5e0" />
+          <ShieldLogo scrollProgressRef={scrollProgressRef} />
+        </Canvas>
+      </WebGLErrorBoundary>
+    </div>
+  );
+});
+
+// Display name for debugging
+Portal3D.displayName = 'Portal3D';
 
 export default Portal3D;

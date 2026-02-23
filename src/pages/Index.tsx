@@ -2,8 +2,7 @@ import MasterExperience from '@/components/MasterExperience';
 
 const Index = () => {
   return (
-    <main id="main-content" className="relative bg-background">
-
+    <div className="relative" style={{ backgroundColor: '#ffffff' }}>
       {/* Unified Master Experience - Hero + Portal Transition + Modules */}
       <MasterExperience />
 
@@ -67,7 +66,7 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </main>
+    </div>
   );
 };
 

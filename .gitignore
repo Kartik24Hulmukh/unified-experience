@@ -12,6 +12,23 @@ dist
 dist-ssr
 *.local
 
+# Environment files (contain secrets)
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.*.local
+
+# SSL certificates (generated or provisioned)
+nginx/certs/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

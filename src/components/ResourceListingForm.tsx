@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Upload, Shield, CheckCircle2, ArrowRight } from "lucide-react";
+import logger from "@/lib/logger";
 
 import SplitText from "@/components/SplitText";
 import LivePreviewCard from "@/components/LivePreviewCard";
@@ -30,6 +31,10 @@ import {
     createListingMachine,
     InvalidTransitionError,
 } from '@/lib/fsm';
+import { useRestriction } from '@/hooks/useRestriction';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCreateListing } from '@/hooks/api/useApi';
+import { evaluateAndFlag } from '@/services/fraudService';
 
 const listingSchema = z.object({
     title: z.string().min(5, { message: "Title must be at least 5 characters" }).max(50),
@@ -50,6 +55,17 @@ interface ListingFormProps {
 const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }: ListingFormProps) => {
     const [step, setStep] = useState(1);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const { canPerform } = useRestriction();
+    const { user } = useAuth();
+    const createListing = useCreateListing();
+    const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Cleanup timeout on unmount to prevent setState on unmounted component
+    useEffect(() => {
+        return () => {
+            if (successTimerRef.current) clearTimeout(successTimerRef.current);
+        };
+    }, []);
 
     const form = useForm<z.infer<typeof listingSchema>>({
         resolver: zodResolver(listingSchema),
@@ -62,11 +78,22 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
         },
     });
 
-    const watchAll = form.watch();
+    const [watchTitle, watchPrice, watchCategory, watchDescription] = form.watch(['title', 'price', 'category', 'description']);
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                toast({ title: "Invalid File", description: "Only JPEG, PNG, and WebP images are allowed.", variant: "destructive" });
+                return;
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                toast({ title: "File Too Large", description: "Image must be under 5 MB.", variant: "destructive" });
+                return;
+            }
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result as string);
@@ -76,14 +103,21 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
     };
 
     async function onSubmit(values: z.infer<typeof listingSchema>) {
+        // Domain guard: restriction check before FSM transition
+        if (!canPerform('CREATE_LISTING')) {
+            toast({
+                title: "Action Unavailable",
+                description: "Your account is currently restricted from creating listings.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         // Domain: draft → pending_review
         try {
             const machine = createListingMachine();
             const submitted = machine.send('SUBMIT');
-            console.log(
-                `[ListingFSM] ${machine.state} → ${submitted.state}`,
-                values,
-            );
+            logger.debug('ListingFSM', `${machine.state} → ${submitted.state}`);
         } catch (err) {
             if (err instanceof InvalidTransitionError) {
                 toast({
@@ -96,13 +130,44 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
             throw err;
         }
 
-        toast({
-            title: "Protocol Initialized",
-            description: "Listing submitted for admin verification.",
-        });
-        setTimeout(() => {
-            onSuccess();
-        }, 2000);
+        // Fraud heuristic evaluation (post-transition, fire-and-forget)
+        if (user) {
+            evaluateAndFlag(
+                user.id,
+                {
+                    recentListings: 1,
+                    recentCancellations: 0,
+                    recentDisputes: 0,
+                    accountAgeDays: 30,
+                },
+                'LISTING_CREATED',
+            );
+        }
+
+        // Actually persist the listing via API
+        try {
+            await createListing.mutateAsync({
+                title: values.title,
+                price: values.price,
+                category: values.category,
+                module: moduleName.toLowerCase(),
+                description: values.description,
+            });
+
+            toast({
+                title: "Listing Submitted",
+                description: "Your listing has been submitted for admin review. It will appear once approved.",
+            });
+            successTimerRef.current = setTimeout(() => {
+                onSuccess();
+            }, 1500);
+        } catch (err) {
+            toast({
+                title: "Submission Failed",
+                description: "Could not create your listing. Please try again.",
+                variant: "destructive",
+            });
+        }
     }
 
     return (
@@ -240,7 +305,7 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
                                     <FormLabel className="text-white/40 uppercase tracking-widest text-[9px] font-bold">Asset Visualization</FormLabel>
                                     <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-white/10 hover:border-primary/50 transition-colors cursor-pointer group bg-black/20">
                                         {imagePreview ? (
-                                            <img src={imagePreview} alt="Upload" className="w-full h-full object-contain p-4 grayscale group-hover:grayscale-0 transition-all" />
+                                            <img src={imagePreview} alt="Upload" className="w-full h-full object-contain p-4 grayscale group-hover:grayscale-0 transition-all" loading="lazy" />
                                         ) : (
                                             <div className="flex flex-col items-center space-y-4">
                                                 <Upload className="w-12 h-12 text-white/20 group-hover:text-primary transition-all duration-500" />
@@ -311,7 +376,12 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
                                     </Button>
                                     <Button
                                         type="submit"
-                                        className="h-14 rounded-none bg-primary hover:bg-teal-400 text-black font-bold relative overflow-hidden group transition-all duration-500"
+                                        disabled={!canPerform('CREATE_LISTING')}
+                                        className={`h-14 rounded-none font-bold relative overflow-hidden group transition-all duration-500 ${
+                                            canPerform('CREATE_LISTING')
+                                                ? 'bg-primary hover:bg-teal-400 text-black'
+                                                : 'bg-primary/30 text-black/50 cursor-not-allowed'
+                                        }`}
                                     >
                                         <span className="relative z-10 flex items-center">
                                             MANIFEST LISTING <CheckCircle2 className="ml-2 w-4 h-4" />
@@ -327,13 +397,13 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
 
             {/* Right Column: Live Preview */}
             <div className="hidden lg:flex flex-1 justify-center relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent blur-3xl opacity-30" />
+                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-30" />
                 <LivePreviewCard
                     data={{
-                        title: watchAll.title,
-                        price: watchAll.price,
-                        category: watchAll.category,
-                        description: watchAll.description,
+                        title: watchTitle,
+                        price: watchPrice,
+                        category: watchCategory,
+                        description: watchDescription,
                         image: imagePreview
                     }}
                 />

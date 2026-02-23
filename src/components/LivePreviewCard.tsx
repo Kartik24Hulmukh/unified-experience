@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useLayoutEffect, memo } from 'react';
 import gsap from 'gsap';
 import { Shield, Sparkles } from 'lucide-react';
 
@@ -12,41 +12,53 @@ interface LivePreviewCardProps {
     };
 }
 
-const LivePreviewCard = ({ data }: LivePreviewCardProps) => {
+const LivePreviewCard = memo(function LivePreviewCard({ data }: LivePreviewCardProps) {
     const cardRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
+    // useLayoutEffect for GSAP-based tilt effect
+    useLayoutEffect(() => {
         if (!cardRef.current) return;
+
+        const card = cardRef.current;
+        const ctx = gsap.context(() => {}, card);
 
         // Tilt effect on mouse move
         const handleMouseMove = (e: MouseEvent) => {
             const { clientX, clientY } = e;
-            const { left, top, width, height } = cardRef.current!.getBoundingClientRect();
+            const { left, top, width, height } = card.getBoundingClientRect();
             const x = (clientX - left) / width - 0.5;
             const y = (clientY - top) / height - 0.5;
 
-            gsap.to(cardRef.current, {
-                rotateY: x * 15,
-                rotateX: -y * 15,
-                transformPerspective: 1000,
-                duration: 0.5,
+            ctx.add(() => {
+                gsap.to(card, {
+                    rotateY: x * 15,
+                    rotateX: -y * 15,
+                    transformPerspective: 1000,
+                    duration: 0.5,
+                    overwrite: true,
+                });
             });
         };
 
         const handleMouseLeave = () => {
-            gsap.to(cardRef.current, {
-                rotateY: 0,
-                rotateX: 0,
-                duration: 0.5,
+            ctx.add(() => {
+                gsap.to(card, {
+                    rotateY: 0,
+                    rotateX: 0,
+                    duration: 0.5,
+                    overwrite: true,
+                });
             });
         };
 
-        window.addEventListener('mousemove', handleMouseMove);
-        cardRef.current.addEventListener('mouseleave', handleMouseLeave);
+        // Scope mousemove to the card only (not entire window)
+        card.addEventListener('mousemove', handleMouseMove);
+        card.addEventListener('mouseleave', handleMouseLeave);
 
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            if (cardRef.current) cardRef.current.removeEventListener('mouseleave', handleMouseLeave);
+            card.removeEventListener('mousemove', handleMouseMove);
+            card.removeEventListener('mouseleave', handleMouseLeave);
+            ctx.revert();
         };
     }, []);
 
@@ -71,6 +83,7 @@ const LivePreviewCard = ({ data }: LivePreviewCardProps) => {
                             src={data.image}
                             alt="Preview"
                             className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
+                            loading="lazy"
                         />
                     ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center space-y-4 opacity-20">
@@ -119,6 +132,6 @@ const LivePreviewCard = ({ data }: LivePreviewCardProps) => {
             </p>
         </div>
     );
-};
+});
 
 export default LivePreviewCard;

@@ -1,4 +1,5 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useLayoutEffect, memo } from 'react';
+import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ExternalLink, Shield } from 'lucide-react';
 
@@ -13,32 +14,35 @@ interface ListingItem {
 
 interface ListingGridProps {
     items: ListingItem[];
-    moduleColor?: string;
 }
 
-const ListingGrid = ({ items, moduleColor = "#00d4aa" }: ListingGridProps) => {
+const ListingGrid = memo(function ListingGrid({ items }: ListingGridProps) {
     const gridRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (!gridRef.current) return;
+    // useLayoutEffect for GSAP animations to prevent flash of unstyled content
+    useLayoutEffect(() => {
+        if (!gridRef.current || items.length === 0) return;
 
-        // Clean up existing animations
-        gsap.killTweensOf('.listing-card-entry');
+        const ctx = gsap.context(() => {
+            // Staggered entry for grid items — scoped via querySelectorAll
+            const cards = gridRef.current?.querySelectorAll('.listing-card-entry');
+            if (!cards?.length) return;
+            gsap.fromTo(
+                cards,
+                { opacity: 0, y: 30, rotateX: 10 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    rotateX: 0,
+                    stagger: 0.08,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    clearProps: "all"
+                }
+            );
+        }, gridRef);
 
-        // Staggered entry for grid items
-        gsap.fromTo(
-            '.listing-card-entry',
-            { opacity: 0, y: 30, rotateX: 10 },
-            {
-                opacity: 1,
-                y: 0,
-                rotateX: 0,
-                stagger: 0.08,
-                duration: 0.8,
-                ease: "power3.out",
-                clearProps: "all"
-            }
-        );
+        return () => ctx.revert();
     }, [items]);
 
     return (
@@ -46,15 +50,24 @@ const ListingGrid = ({ items, moduleColor = "#00d4aa" }: ListingGridProps) => {
             ref={gridRef}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 md:px-0"
         >
+            {items.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                    <div className="w-16 h-16 border border-white/10 rotate-45 flex items-center justify-center mb-6">
+                        <div className="w-4 h-4 bg-white/10" />
+                    </div>
+                    <p className="text-white/40 text-sm font-bold uppercase tracking-widest">No listings found</p>
+                </div>
+            )}
             {items.map((item) => (
-                <div
+                <Link
                     key={item.id}
-                    className="listing-card-entry group relative aspect-[4/5] bg-white/5 border border-white/10 overflow-hidden cursor-pointer"
+                    to={`/listing/${item.id}`}
+                    className="listing-card-entry group relative aspect-[4/5] bg-white/5 border border-white/10 overflow-hidden cursor-pointer block"
                 >
                     {/* Image Layer */}
                     <div className="absolute inset-0 grayscale group-hover:grayscale-0 transition-all duration-700 overflow-hidden">
                         {item.image ? (
-                            <img src={item.image} alt={item.title} className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700" />
+                            <img src={item.image} alt={item.title} className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700 transform-gpu" loading="lazy" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-black/40">
                                 <div className="w-16 h-16 border border-white/10 rotate-45 flex items-center justify-center">
@@ -71,7 +84,7 @@ const ListingGrid = ({ items, moduleColor = "#00d4aa" }: ListingGridProps) => {
                     {/* Content Layer */}
                     <div className="absolute inset-0 p-6 flex flex-col justify-between">
                         <div className="flex justify-between items-start">
-                            <span className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-bold uppercase tracking-widest text-primary">
+                            <span className="px-3 py-1 bg-black/70 border border-white/10 text-[9px] font-bold uppercase tracking-widest text-primary">
                                 {item.category}
                             </span>
                             <div className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -107,10 +120,10 @@ const ListingGrid = ({ items, moduleColor = "#00d4aa" }: ListingGridProps) => {
                     <div className="absolute inset-0 border-2 border-primary opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none" />
                     <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 -translate-y-4 group-hover:translate-x-0 group-hover:-translate-y-0" />
                     <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-4 translate-y-4 group-hover:translate-x-0 group-hover:-translate-y-0" />
-                </div>
+                </Link>
             ))}
         </div>
     );
-};
+});
 
 export default ListingGrid;

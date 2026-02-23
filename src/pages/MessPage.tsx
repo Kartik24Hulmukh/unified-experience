@@ -1,8 +1,14 @@
-import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
+import { useListings } from '@/hooks/api/useApi';
+import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
+import GlitchText from '@/components/GlitchText';
+import AnimatedCounter from '@/components/AnimatedCounter';
+import FaqItem from '@/components/FaqItem';
+import WordMarquee from '@/components/WordMarquee';
 const messHero = '/Mess.png';
 import {
   Search, X, ArrowRight, Star, Clock, Utensils, Leaf,
@@ -10,7 +16,7 @@ import {
   MapPin, Truck, ShieldCheck, Heart
 } from 'lucide-react';
 
-gsap.registerPlugin(ScrollTrigger);
+// ScrollTrigger registered in lib/gsap-init.ts
 
 /* ── Data ─────────────────────────────────────────────── */
 
@@ -165,133 +171,21 @@ const scrollingWords = [
   'NUTRITION', 'AFFORDABLE', 'HYGIENIC', 'VERIFIED',
 ];
 
-/* ── Reusable Components ─────────────────────────────── */
-
-const ScanlineOverlay = () => (
-  <div className="pointer-events-none fixed inset-0 z-[100]" aria-hidden>
-    <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.03)_2px,rgba(0,0,0,0.03)_4px)]" />
-  </div>
-);
-
-const GlitchText = ({ children, className = '' }: { children: string; className?: string }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ref.current) return;
-    const el = ref.current;
-    const handleEnter = () => {
-      gsap.to(el, { skewX: 2, duration: 0.1, yoyo: true, repeat: 3, ease: 'power4.inOut', onComplete: () => gsap.set(el, { skewX: 0 }) });
-    };
-    el.addEventListener('mouseenter', handleEnter);
-    return () => el.removeEventListener('mouseenter', handleEnter);
-  }, []);
-  return (
-    <div ref={ref} className={`relative group ${className}`}>
-      <span className="relative z-10">{children}</span>
-      <span className="absolute top-0 left-0 text-amber-400/30 z-0 translate-x-[2px] translate-y-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" aria-hidden>{children}</span>
-      <span className="absolute top-0 left-0 text-red-400/20 z-0 -translate-x-[1px] -translate-y-[1px] opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" aria-hidden>{children}</span>
-    </div>
-  );
-};
-
-const AnimatedCounter = ({ target, duration = 2000, suffix = '' }: { target: number; duration?: number; suffix?: string }) => {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  const hasAnimated = useRef(false);
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !hasAnimated.current) {
-        hasAnimated.current = true;
-        const start = Date.now();
-        const animate = () => {
-          const elapsed = Date.now() - start;
-          const progress = Math.min(elapsed / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          setCount(Math.floor(eased * target));
-          if (progress < 1) requestAnimationFrame(animate);
-        };
-        requestAnimationFrame(animate);
-      }
-    }, { threshold: 0.5 });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target, duration]);
-  return <span ref={ref}>{count}{suffix}</span>;
-};
-
-/* ── FAQ Accordion Item ──────────────────────────────── */
-
-const FaqItem = ({ q, a, index }: { q: string; a: string; index: number }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!contentRef.current) return;
-    gsap.to(contentRef.current, {
-      height: isOpen ? 'auto' : 0,
-      opacity: isOpen ? 1 : 0,
-      duration: 0.4,
-      ease: 'power3.out',
-    });
-  }, [isOpen]);
-
-  return (
-    <div className="border-b border-white/5 group">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-6 md:py-8 text-left hover:bg-white/[0.01] transition-colors px-2"
-      >
-        <div className="flex items-center gap-4 md:gap-6">
-          <span className="text-[10px] font-mono text-amber-400/40 tracking-widest">
-            {String(index + 1).padStart(2, '0')}
-          </span>
-          <h3 className="text-white font-display text-base md:text-xl font-bold uppercase group-hover:text-amber-400/90 transition-colors">
-            {q}
-          </h3>
-        </div>
-        <div className={`w-8 h-8 border border-white/10 flex items-center justify-center transition-all duration-300 ${isOpen ? 'bg-amber-400/10 border-amber-400/30 rotate-180' : ''}`}>
-          <ChevronDown className="w-4 h-4 text-white/40" />
-        </div>
-      </button>
-      <div ref={contentRef} className="overflow-hidden" style={{ height: 0, opacity: 0 }}>
-        <p className="text-white/40 text-sm font-body leading-relaxed pb-6 md:pb-8 pl-10 md:pl-16 pr-12 max-w-2xl">
-          {a}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-/* ── Word Marquee ────────────────────────────────────── */
-
-const WordMarquee = () => {
-  const trackRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!trackRef.current) return;
-    gsap.to(trackRef.current, { xPercent: -50, ease: 'none', duration: 25, repeat: -1 });
-  }, []);
-  return (
-    <div className="w-full overflow-hidden border-y border-white/5 py-6 bg-black/30">
-      <div ref={trackRef} className="flex whitespace-nowrap gap-8" style={{ width: 'max-content' }}>
-        {[...scrollingWords, ...scrollingWords].map((word, i) => (
-          <span key={i} className="text-white/[0.04] font-display text-5xl md:text-7xl font-extrabold uppercase tracking-tight flex items-center gap-8">
-            {word}
-            <span className="w-2 h-2 bg-amber-400/20 rotate-45" />
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-};
+/* ── Reusable Components (imported from @/components) ── */
 
 /* ── Main Page ───────────────────────────────────────── */
 
 const MessPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'mess' });
+  const apiItems = listingsResponse?.data ?? [];
+
   const filteredItems = useMemo(() => {
-    const listItems = messServices.map(s => ({
+    const listItems = apiItems.map((s: any) => ({
       id: s.id,
       title: s.title,
       price: s.price,
@@ -303,14 +197,15 @@ const MessPage = () => {
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [searchQuery, apiItems]);
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   /* GSAP Animations */
-  useEffect(() => {
+  // useLayoutEffect for GSAP animations to prevent flash of unstyled content
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal + parallax
       gsap.fromTo('.mess-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 2, ease: 'power3.out' });
@@ -352,13 +247,12 @@ const MessPage = () => {
         y: 0, opacity: 1, stagger: 0.15, duration: 0.8, ease: 'power3.out',
         scrollTrigger: { trigger: '.pricing-grid', start: 'top 80%', toggleActions: 'play none none none' },
       });
-    });
+    }, mainRef);
     return () => ctx.revert();
   }, []);
 
   return (
-    <main id="main-content" className="min-h-screen bg-black text-white overflow-hidden relative">
-      <ScanlineOverlay />
+    <div ref={mainRef} className="min-h-screen bg-black text-white overflow-hidden relative">
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section ref={heroRef} className="relative min-h-screen flex items-end overflow-hidden">
@@ -464,7 +358,7 @@ const MessPage = () => {
       </section>
 
       {/* ═══════════════ WORD MARQUEE ═══════════════ */}
-      <WordMarquee />
+      <WordMarquee words={scrollingWords} accentBgClass="bg-amber-400/20" />
 
       {/* ═══════════════ nvg8-STYLE FUN FACT / VALUE PROP ═══════════════ */}
       <section className="py-24 md:py-40 px-8 md:px-16 mess-reveal">
@@ -526,7 +420,7 @@ const MessPage = () => {
             <Flame className="w-4 h-4 text-amber-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Trust Architecture</span>
           </div>
-          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4">
+          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-amber-400/30">
             WHY TRUST US
           </GlitchText>
           <p className="text-white/30 text-sm font-body max-w-lg mb-16">
@@ -566,7 +460,7 @@ const MessPage = () => {
               <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Pricing Matrix</span>
               <div className="h-px w-8 bg-white/10" />
             </div>
-            <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4 inline-block">
+            <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4 inline-block" accentColorClass="text-amber-400/30">
               MEAL PLANS
             </GlitchText>
             <p className="text-white/25 text-sm font-body max-w-md mx-auto mt-4">
@@ -633,7 +527,7 @@ const MessPage = () => {
             <Search className="w-4 h-4 text-amber-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Service Database</span>
           </div>
-          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4">
+          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-amber-400/30">
             BROWSE SERVICES
           </GlitchText>
 
@@ -649,15 +543,26 @@ const MessPage = () => {
             priceRange={[0, 5000]}
           />
 
-          <ListingGrid items={filteredItems} />
-
-          {filteredItems.length === 0 && (
-            <div className="py-24 text-center space-y-6">
-              <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
-                <X className="w-8 h-8 text-white -rotate-45" />
-              </div>
-              <p className="text-white/20 uppercase tracking-[0.4em] font-mono text-[10px]">No food services found</p>
+          {isLoading ? (
+            <div className="py-16 flex flex-col items-center gap-4">
+              <LoadingSpinner />
+              <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading mess services…</p>
             </div>
+          ) : isError ? (
+            <ErrorFallback error={error} onRetry={refetch} compact />
+          ) : (
+            <>
+              <ListingGrid items={filteredItems} />
+
+              {filteredItems.length === 0 && (
+                <div className="py-24 text-center space-y-6">
+                  <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                    <X className="w-8 h-8 text-white -rotate-45" />
+                  </div>
+                  <p className="text-white/20 uppercase tracking-[0.4em] font-mono text-[10px]">No food services found</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -669,13 +574,13 @@ const MessPage = () => {
             <ChefHat className="w-4 h-4 text-amber-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">You Ask, We Answer</span>
           </div>
-          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-12">
+          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-12" accentColorClass="text-amber-400/30">
             COMMON QUESTIONS
           </GlitchText>
 
           <div className="border-t border-white/5">
             {faqs.map((faq, i) => (
-              <FaqItem key={i} q={faq.q} a={faq.a} index={i} />
+              <FaqItem key={i} q={faq.q} a={faq.a} index={i} accentTextClass="text-amber-400/40" accentHoverClass="group-hover:text-amber-400/90" accentButtonClass="bg-amber-400/10 border-amber-400/30" />
             ))}
           </div>
         </div>
@@ -740,7 +645,7 @@ const MessPage = () => {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 };
 

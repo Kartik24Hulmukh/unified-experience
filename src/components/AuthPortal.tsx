@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 
 interface AuthPortalProps {
@@ -10,33 +10,34 @@ const AuthPortal = ({ children }: AuthPortalProps) => {
     const portalRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
+    // useLayoutEffect prevents FOUC — sets initial clip/opacity before paint
+    useLayoutEffect(() => {
         if (!containerRef.current || !portalRef.current || !contentRef.current) return;
 
-        const tl = gsap.timeline();
+        const ctx = gsap.context(() => {
+            const tl = gsap.timeline();
 
-        // Reset initial states
-        gsap.set(portalRef.current, { scale: 0.5, borderRadius: '50%', opacity: 0 });
-        gsap.set(contentRef.current, { opacity: 0, y: 50 });
+            // Reset initial states — use clipPath instead of borderRadius for GPU compositing
+            gsap.set(portalRef.current!, { scale: 0.5, clipPath: 'circle(50%)', opacity: 0 });
+            gsap.set(contentRef.current!, { opacity: 0, y: 50 });
 
-        // Portal expansion animation
-        tl.to(portalRef.current, {
-            scale: 1,
-            borderRadius: '0%',
-            opacity: 1,
-            duration: 1.2,
-            ease: 'power4.inOut',
-        })
-            .to(contentRef.current, {
+            // Portal expansion animation
+            tl.to(portalRef.current!, {
+                scale: 1,
+                clipPath: 'inset(0%)',
                 opacity: 1,
-                y: 0,
-                duration: 0.8,
-                ease: 'power3.out',
-            }, '-=0.4');
+                duration: 1.2,
+                ease: 'power4.inOut',
+            })
+                .to(contentRef.current!, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                }, '-=0.4');
+        }, containerRef);
 
-        return () => {
-            tl.kill();
-        };
+        return () => ctx.revert();
     }, []);
 
     return (

@@ -34,6 +34,10 @@ export interface StudentProfileData {
   valueCirculated: number;   // ₹ amount
   activeListings: number;
   reputation: number;        // 0–100
+  /** Raw metrics for trust computation */
+  cancelledRequests: number;
+  disputesCount: number;
+  adminFlags: number;
 }
 
 /**
@@ -89,6 +93,9 @@ export const DEFAULT_STUDENT_DATA: StudentProfileData = {
   valueCirculated: 0,
   activeListings: 0,
   reputation: 0,
+  cancelledRequests: 0,
+  disputesCount: 0,
+  adminFlags: 0,
 };
 
 export const DEFAULT_ADMIN_DATA: AdminProfileData = {

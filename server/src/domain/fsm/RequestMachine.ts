@@ -66,6 +66,7 @@ export const RequestDefinition: MachineDefinition<
     accepted: {
       SCHEDULE: 'meeting_scheduled',
       CANCEL: 'cancelled',
+      DISPUTE: 'disputed',
     },
     declined: {
       RETRY: 'idle',
@@ -73,6 +74,7 @@ export const RequestDefinition: MachineDefinition<
     meeting_scheduled: {
       CONFIRM: 'completed',
       CANCEL: 'cancelled',
+      DISPUTE: 'disputed',
     },
     completed: {
       DISPUTE: 'disputed',

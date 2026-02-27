@@ -525,8 +525,9 @@ export function useUpdateRequestEvent() {
     mutationFn: ({ id, event, idempotencyKey }: { id: string; event: string; idempotencyKey?: string }) =>
       api.patch<ApiResponse<ExchangeRequest>>(`/requests/${id}/event`, { event, idempotencyKey }),
     onMutate: async ({ id, event }) => {
-      // Cancel in-flight queries
+      // EXCH-UI-02: cancel BOTH list and detail queries to prevent in-flight overwrites
       await queryClient.cancelQueries({ queryKey: queryKeys.requests.all });
+      await queryClient.cancelQueries({ queryKey: queryKeys.requests.detail(id) });
 
       // Snapshot for rollback
       const previousRequests = queryClient.getQueryData(queryKeys.requests.all);
@@ -541,10 +542,15 @@ export function useUpdateRequestEvent() {
         CANCEL: 'cancelled',
         WITHDRAW: 'withdrawn',
         DISPUTE: 'disputed',
+        // EXCH-UI-01: RESOLVE was missing — admin resolve left UI stuck in 'disputed'
+        RESOLVE: 'resolved',
       };
       const optimisticStatus = optimisticStatusMap[event];
 
       if (optimisticStatus) {
+        const now = new Date().toISOString();
+
+        // Apply to list cache
         queryClient.setQueriesData<ApiResponse<ExchangeRequest[]>>(
           { queryKey: queryKeys.requests.all },
           (old) => {
@@ -552,9 +558,18 @@ export function useUpdateRequestEvent() {
             return {
               ...old,
               data: old.data.map((r) =>
-                r.id === id ? { ...r, status: optimisticStatus, updatedAt: new Date().toISOString() } : r,
+                r.id === id ? { ...r, status: optimisticStatus, updatedAt: now } : r,
               ),
             };
+          },
+        );
+
+        // EXCH-UI-04: also apply to the detail cache
+        queryClient.setQueryData<ApiResponse<ExchangeRequest>>(
+          queryKeys.requests.detail(id),
+          (old) => {
+            if (!old?.data) return old;
+            return { ...old, data: { ...old.data, status: optimisticStatus, updatedAt: now } };
           },
         );
       }
@@ -570,9 +585,11 @@ export function useUpdateRequestEvent() {
         queryClient.setQueryData(queryKeys.requests.detail(id), context.previousDetail);
       }
     },
-    onSettled: () => {
+    onSettled: (_data, _err, { id }) => {
       // Always reconcile with server state
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
+      // EXCH-UI-03: also invalidate the detail query
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.listings.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.profile });
     },

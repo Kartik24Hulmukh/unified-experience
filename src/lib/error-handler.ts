@@ -44,8 +44,8 @@ const ERROR_MESSAGES: Record<ApiErrorCode, { title: string; description: string 
     description: 'Please check your input and try again.',
   },
   CONFLICT: {
-    title: 'Conflict',
-    description: 'This action conflicts with existing data.',
+    title: 'Status Outdated',
+    description: 'The request status has changed since you opened this page. Please refresh.',
   },
   RATE_LIMITED: {
     title: 'Too Many Requests',
@@ -86,10 +86,10 @@ export function handleApiError(error: unknown, options: HandleErrorOptions = {})
     error instanceof ApiError
       ? error
       : new ApiError(
-          error instanceof Error ? error.message : 'Unknown error',
-          'UNKNOWN',
-          0,
-        );
+        error instanceof Error ? error.message : 'Unknown error',
+        'UNKNOWN',
+        0,
+      );
 
   // Log for debugging
   logger.error(context, `${apiError.code}: ${apiError.message}`, {
@@ -108,8 +108,14 @@ export function handleApiError(error: unknown, options: HandleErrorOptions = {})
   }
 
   // 401 — Auto-logout (session expired)
+  // AUTH-SESSION-04: idempotent guard — the api-client's handleTokenRefresh
+  // already calls clearSession() when refresh fails. Without this guard,
+  // both layers clear the session, causing double BroadcastChannel 'logout'
+  // events and duplicate "Session Expired" toasts.
   if (apiError.code === 'UNAUTHORIZED') {
-    sessionManager.clearSession();
+    if (sessionManager.isAuthenticated()) {
+      sessionManager.clearSession();
+    }
     if (!silent) {
       toast.error(ERROR_MESSAGES.UNAUTHORIZED.title, {
         description: ERROR_MESSAGES.UNAUTHORIZED.description,

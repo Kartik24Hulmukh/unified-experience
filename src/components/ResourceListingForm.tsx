@@ -291,7 +291,11 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
 
                                 <Button
                                     type="button"
-                                    onClick={() => setStep(2)}
+                                    onClick={async () => {
+                                        // UX-07: validate Step 1 fields before advancing
+                                        const isValid = await form.trigger(['title', 'category', 'price', 'description']);
+                                        if (isValid) setStep(2);
+                                    }}
                                     className="w-full bg-white hover:bg-primary text-black font-bold h-14 rounded-none group transition-all duration-500"
                                 >
                                     NEXT PHASE <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1" />
@@ -377,11 +381,10 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
                                     <Button
                                         type="submit"
                                         disabled={!canPerform('CREATE_LISTING')}
-                                        className={`h-14 rounded-none font-bold relative overflow-hidden group transition-all duration-500 ${
-                                            canPerform('CREATE_LISTING')
+                                        className={`h-14 rounded-none font-bold relative overflow-hidden group transition-all duration-500 ${canPerform('CREATE_LISTING')
                                                 ? 'bg-primary hover:bg-teal-400 text-black'
                                                 : 'bg-primary/30 text-black/50 cursor-not-allowed'
-                                        }`}
+                                            }`}
                                     >
                                         <span className="relative z-10 flex items-center">
                                             MANIFEST LISTING <CheckCircle2 className="ml-2 w-4 h-4" />

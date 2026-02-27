@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { safeNavigate } from '@/lib/utils';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
+const SplashCursor = lazy(() => import('@/components/SplashCursor'));
 
 /* ──────────────────────────────────────────────────
    BErozgar Landing / Splash Page
@@ -185,7 +186,7 @@ const LandingPage = () => {
   /* ── CTA handler ── */
   const handleEnter = () => {
     if (hasRedirected.current) return; // Prevent navigation if already redirected
-    
+
     if (isAuthenticated) {
       hasRedirected.current = true;
       safeNavigate(navigate, location.pathname, '/home', { replace: false });
@@ -196,6 +197,22 @@ const LandingPage = () => {
 
   return (
     <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-[#050505] select-none">
+      {/* ═══════════════════════════════════════════
+           SPLASH CURSOR — WebGL fluid simulation
+           ═══════════════════════════════════════════ */}
+      <Suspense fallback={null}>
+        <SplashCursor
+          SIM_RESOLUTION={256}
+          DYE_RESOLUTION={768}
+          DENSITY_DISSIPATION={2.5}
+          VELOCITY_DISSIPATION={2.5}
+          PRESSURE={0.6}
+          CURL={20}
+          SPLAT_RADIUS={0.15}
+          SPLAT_FORCE={6500}
+          COLOR_UPDATE_SPEED={50}
+        />
+      </Suspense>
       {/* ═══════════════════════════════════════════
           LOADER OVERLAY 
           ═══════════════════════════════════════════ */}
@@ -306,7 +323,7 @@ const LandingPage = () => {
           <div ref={ctaRef} className="mt-10 md:mt-14 opacity-0">
             <button
               onClick={handleEnter}
-              className="group relative px-12 py-5 border border-white/20 uppercase font-display text-sm tracking-[0.4em] text-white/80 transition-all duration-600 hover:border-white/60 hover:tracking-[0.6em] cursor-pointer overflow-hidden"
+              className="group relative px-12 py-5 border-2 border-white/20 uppercase font-display text-sm tracking-[0.4em] text-white/80 transition-all duration-600 hover:border-white/60 hover:tracking-[0.6em] cursor-pointer overflow-hidden"
             >
               <span className="relative z-10 flex items-center gap-4 transition-colors duration-500 group-hover:text-black">
                 ENTER CAMPUS OS

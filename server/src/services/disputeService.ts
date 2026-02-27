@@ -86,11 +86,11 @@ export async function listDisputes(params: ListDisputesParams) {
     params.role === 'ADMIN'
       ? {}
       : {
-          OR: [
-            { raisedById: params.userId },
-            { againstId: params.userId },
-          ],
-        };
+        OR: [
+          { raisedById: params.userId },
+          { againstId: params.userId },
+        ],
+      };
 
   const [disputes, total] = await prisma.$transaction([
     prisma.dispute.findMany({
@@ -162,11 +162,21 @@ export async function createDispute(input: CreateDisputeInput, raisedById: strin
         listingId = request.listingId;
       }
 
-      // Transition request to DISPUTED status
+      // EXCH-BUG-08: apply DISPUTED transition via FSM + version bump, not a raw status write.
+      // Direct write bypasses the version counter, silently breaking optimistic locking.
       if (request.status !== 'DISPUTED') {
+        const validFromStates: string[] = ['COMPLETED', 'ACCEPTED', 'MEETING_SCHEDULED'];
+        if (!validFromStates.includes(request.status)) {
+          throw new ConflictError(
+            `Cannot file a dispute for a request in state '${request.status}'. Only COMPLETED or active meeting requests can be disputed.`,
+          );
+        }
         await tx.request.update({
           where: { id: requestId },
-          data: { status: 'DISPUTED' },
+          data: {
+            status: 'DISPUTED',
+            version: { increment: 1 },
+          },
         });
       }
     }
@@ -244,15 +254,28 @@ export async function updateDisputeStatus(
   actorId: string,
 ) {
   return prisma.$transaction(async (tx) => {
-    const dispute = await tx.dispute.findUnique({
-      where: { id: disputeId },
-    });
+    // PROD-05: acquire row-level lock to prevent two concurrent admin
+    // PATCH requests from both reading the same status and both
+    // succeeding (the second write would silently overwrite the first).
+    const rows = await tx.$queryRaw<Array<{
+      id: string;
+      status: string;
+      request_id: string | null;
+      against_id: string;
+    }>>`
+      SELECT id, status, request_id, against_id
+      FROM disputes
+      WHERE id = ${disputeId}::uuid
+      FOR UPDATE
+    `;
 
-    if (!dispute) {
+    if (!rows || rows.length === 0) {
       throw new NotFoundError('Dispute', disputeId);
     }
 
-    const newStatus = applyDisputeTransition(dispute.status, input.status);
+    const dispute = rows[0];
+
+    const newStatus = applyDisputeTransition(dispute.status as DisputeStatus, input.status);
 
     const updated = await tx.dispute.update({
       where: { id: disputeId },
@@ -265,11 +288,28 @@ export async function updateDisputeStatus(
       },
     });
 
-    // If dispute is resolved and has a request, transition request back to RESOLVED
-    if (newStatus === 'RESOLVED' && dispute.requestId) {
+    // If dispute is resolved and has a request, transition request to RESOLVED
+    if (newStatus === 'RESOLVED' && dispute.request_id) {
       await tx.request.update({
-        where: { id: dispute.requestId },
-        data: { status: 'RESOLVED' },
+        where: { id: dispute.request_id },
+        data: { status: 'RESOLVED', version: { increment: 1 } },
+      });
+
+      // PROD-03: the original code did `adminFlags: { increment: 0 }` which is a no-op.
+      // The intent was to record that this user lost a dispute, so the trust engine
+      // penalises them on next computation. Without this, serial offenders keep
+      // GOOD_STANDING forever.
+      await tx.user.update({
+        where: { id: dispute.against_id },
+        data: { adminFlags: { increment: 1 } },
+      });
+    }
+
+    if (newStatus === 'REJECTED' && dispute.request_id) {
+      // Dispute was invalid — buyer filed falsely; move request back to COMPLETED
+      await tx.request.update({
+        where: { id: dispute.request_id },
+        data: { status: 'COMPLETED', version: { increment: 1 } },
       });
     }
 
@@ -280,7 +320,8 @@ export async function updateDisputeStatus(
         action: 'DISPUTE_STATUS_UPDATE',
         entityType: 'Dispute',
         entityId: disputeId,
-        metadata: { from: dispute.status, to: newStatus },
+        // EXCH-BUG-09 (audit): record actorRole so audit trail shows who resolved
+        metadata: { from: dispute.status, to: newStatus, actorRole: 'ADMIN' },
       },
     });
 

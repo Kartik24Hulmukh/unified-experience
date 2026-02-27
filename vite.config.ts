@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     server: {
-      host: "::",
+      host: true,
       port: 8080,
       hmr: {
         overlay: false,
@@ -53,10 +53,10 @@ export default defineConfig(({ mode }) => {
       }),
     },
     esbuild: {
-      // Strip console.log/debug/info and debugger in production builds
+      // Strip console.log/debug/info/warn and debugger in production builds
       ...(isProd && {
         drop: ['debugger'],
-        pure: ['console.log', 'console.debug', 'console.info'],
+        pure: ['console.log', 'console.debug', 'console.info', 'console.warn'],
       }),
     },
   };

@@ -23,6 +23,9 @@ const SplitText = ({
   stagger = 0.03,
   trigger = 'scroll',
 }: SplitTextProps) => {
+  // Empty guard — avoid rendering invisible zero-width characters
+  if (!children || !children.trim()) return null;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
 
@@ -119,7 +122,12 @@ const SplitText = ({
         {splitElements.map((el, i) => (
           <span key={`${el}-${i}`}>
             {type === 'words' && i > 0 && <span className="inline-block">&nbsp;</span>}
-            <span className="split-element inline-block" style={{ opacity: 0 }}>
+            {/* split-text-char class + data-split-text attr: targeted by index.css reduced-motion reset */}
+            <span
+              className="split-element split-text-char inline-block"
+              data-split-text
+              style={{ opacity: 0 }}
+            >
               {el === ' ' ? '\u00A0' : el}
             </span>
           </span>

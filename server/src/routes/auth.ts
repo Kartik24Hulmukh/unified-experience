@@ -143,17 +143,21 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /** POST /logout — revoke refresh token & clear cookie */
-  app.post('/logout', async (request, reply) => {
-    const token =
-      (request.cookies as Record<string, string | undefined>)?.[REFRESH_COOKIE.NAME];
+  app.post(
+    '/logout',
+    { preHandler: authenticate },
+    async (request, reply) => {
+      const token =
+        (request.cookies as Record<string, string | undefined>)?.[REFRESH_COOKIE.NAME];
 
-    if (token) {
-      await authService.logout(token);
+      if (token) {
+        await authService.logout(token, request.userId);
+      }
+
+      clearRefreshCookie(reply);
+      return reply.status(200).send({ message: 'Logged out' });
     }
-
-    clearRefreshCookie(reply);
-    return reply.status(200).send({ message: 'Logged out' });
-  });
+  );
 
   /** GET /me — current authenticated user */
   app.get(

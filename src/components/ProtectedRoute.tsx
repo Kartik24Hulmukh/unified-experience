@@ -45,7 +45,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   // Use hardcoded white bg to prevent black flash in dark theme
   if (!isHydrated || isLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white">
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" role="status" aria-label="Loading">
           <span className="sr-only">Loading…</span>
         </div>

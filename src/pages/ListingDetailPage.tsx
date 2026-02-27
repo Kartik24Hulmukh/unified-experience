@@ -24,15 +24,17 @@ const ListingDetailPage = () => {
     const listing = listingResponse?.data;
 
     useLayoutEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current || !listing) return;
         const ctx = gsap.context(() => {
-            gsap.fromTo('.detail-content', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 0.1 });
+            // Explicit initial state prevents FOUC on Strict Mode double-invocation
+            gsap.set('.detail-content', { y: 30, opacity: 0 });
+            gsap.to('.detail-content', { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', delay: 0.1 });
         }, containerRef);
         return () => ctx.revert();
     }, [listing]);
 
     const handleRequestExchange = () => {
-        if (!id) return;
+        if (!id || createRequest.isPending || requestSent) return;
         createRequest.mutate(
             { listingId: id, message: message || undefined },
             {
@@ -161,9 +163,10 @@ const ListingDetailPage = () => {
                                     <Shield className="w-5 h-5 text-emerald-400 -rotate-45" />
                                 </div>
                                 <p className="text-emerald-400 font-bold uppercase text-sm tracking-widest">Request Sent Successfully</p>
-                                <p className="text-white/40 text-xs">The seller will review your request and respond.</p>
-                                <Link to="/profile" className="inline-block mt-4 text-primary text-[10px] uppercase font-bold tracking-widest hover:underline">
-                                    View My Requests →
+                                <p className="text-white/40 text-xs">The seller will review your request and get back to you.</p>
+                                {/* UX-09: /profile had no requests section — link to /resale to continue browsing */}
+                                <Link to="/resale" className="inline-block mt-4 text-primary text-[10px] uppercase font-bold tracking-widest hover:underline">
+                                    ← Back to Listings
                                 </Link>
                             </div>
                         ) : (

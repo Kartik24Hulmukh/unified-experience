@@ -19,7 +19,7 @@ export async function registerCors(app: FastifyInstance): Promise<void> {
       'X-Idempotency-Key',
       'X-CSRF-Token',
     ],
-    exposedHeaders: ['X-Request-Id'],
+    exposedHeaders: ['X-Request-Id', 'Retry-After', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
     maxAge: 86400, // 24h preflight cache
   });
 }

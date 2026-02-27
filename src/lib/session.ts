@@ -224,6 +224,8 @@ class SessionManager {
       // Best effort
     }
 
+    // AUTH-RACE-02: broadcast 'logout' so all tabs clear their in-memory tokens
+    // and CSRF state. The AuthContext subscriber handles clearCsrfToken().
     this.broadcast('logout');
     this.emit('logout', null);
   }
@@ -246,12 +248,14 @@ class SessionManager {
 
     const refreshIn = expiry - Date.now() - getExpiryBuffer();
     if (refreshIn <= 0) {
-      // Already expired or about to — trigger refresh immediately
+      // Already expired or about to — broadcast session-expired to all tabs
+      this.broadcast('session-expired');
       this.emit('session-expired', this.getUser());
       return;
     }
 
     this.refreshTimer = setTimeout(() => {
+      // Proactive refresh signal: emit locally so AuthContext can call /auth/refresh
       this.emit('token-refresh', this.getUser());
     }, refreshIn);
   }
@@ -265,7 +269,7 @@ class SessionManager {
 
   /* ── Multi-Tab Sync ── */
 
-  private broadcast(type: 'login' | 'logout') {
+  private broadcast(type: 'login' | 'logout' | 'session-expired') {
     try {
       this.channel?.postMessage({ type, timestamp: Date.now() });
     } catch {
@@ -276,13 +280,15 @@ class SessionManager {
   private handleBroadcast = (event: MessageEvent) => {
     const { type } = event.data || {};
 
-    if (type === 'logout') {
-      // Another tab logged out
+    if (type === 'logout' || type === 'session-expired') {
+      // Another tab logged out or session expired
       this.accessToken = null;
       this.clearRefreshTimer();
       this.emit('logout', null);
     } else if (type === 'login') {
       // Another tab logged in — reload user from storage
+      // Note: no access token in memory here; first API call will auto-refresh
+      // via the shared httpOnly refresh cookie.
       const user = this.getUser();
       if (user) {
         this.emit('login', user);

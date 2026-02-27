@@ -51,7 +51,7 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
 
   // Rate Limiting
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
 });
 

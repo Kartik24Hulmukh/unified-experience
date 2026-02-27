@@ -14,7 +14,7 @@ const APP_VERSION = process.env.npm_package_version ?? '1.0.0';
 
 export async function healthRoutes(app: FastifyInstance): Promise<void> {
   /** GET /health — full health report */
-  app.get('/health', async (_request, reply) => {
+  app.get('/health', async (request, reply) => {
     let database = 'disconnected';
     const stores: Record<string, number> = {};
 
@@ -22,17 +22,22 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
       await prisma.$queryRaw`SELECT 1`;
       database = 'connected';
 
-      // Gather store counts in parallel
-      const [users, listings, requests, disputes] = await Promise.all([
-        prisma.user.count(),
-        prisma.listing.count(),
-        prisma.request.count(),
-        prisma.dispute.count(),
-      ]);
-      stores.users = users;
-      stores.listings = listings;
-      stores.requests = requests;
-      stores.disputes = disputes;
+      // PROD-08: store counts are business-sensitive metrics. Only expose
+      // in development mode to prevent information disclosure.
+      const query = request.query as Record<string, string>;
+      const isDevVerbose = APP_VERSION && process.env.NODE_ENV !== 'production';
+      if (isDevVerbose && query.verbose === 'true') {
+        const [users, listings, requests, disputes] = await Promise.all([
+          prisma.user.count(),
+          prisma.listing.count(),
+          prisma.request.count(),
+          prisma.dispute.count(),
+        ]);
+        stores.users = users;
+        stores.listings = listings;
+        stores.requests = requests;
+        stores.disputes = disputes;
+      }
     } catch {
       // DB is down — return degraded status but don't crash
     }
@@ -44,7 +49,7 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
       version: APP_VERSION,
       uptime: process.uptime(),
       database,
-      stores,
+      ...(Object.keys(stores).length > 0 ? { stores } : {}),
       timestamp: new Date().toISOString(),
     });
   });

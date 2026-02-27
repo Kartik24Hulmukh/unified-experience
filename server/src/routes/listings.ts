@@ -9,6 +9,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
+import { idempotency } from '@/middleware/idempotency';
 import { validate } from '@/middleware/validate';
 import { createListingSchema, updateListingStatusSchema } from '@/shared/validation';
 import { apiData, apiPage } from '@/shared/response';
@@ -40,7 +41,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/listings',
     {
-      preHandler: authenticate,
+      preHandler: [authenticate, idempotency],
       preValidation: validate(createListingSchema),
     },
     async (request, reply) => {
@@ -56,7 +57,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     '/listings/:id/status',
     {
-      preHandler: authenticate,
+      preHandler: [authenticate, idempotency],
       preValidation: validate(updateListingStatusSchema),
     },
     async (request, reply) => {

@@ -32,8 +32,18 @@ export function clearCsrfToken() {
   csrfToken = null;
 }
 
-/** Get current CSRF token */
+/** Get current CSRF token — reads from the _csrf cookie to stay in sync
+ *  with the server's double-submit cookie pattern. Falls back to in-memory
+ *  token (set by login/verify-otp) if the cookie isn't readable yet. */
 export function getCsrfToken(): string | null {
+  // AUTH-SESSION-03: read the _csrf cookie directly so the X-CSRF-Token
+  // header always matches what the browser will send as the cookie.
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)_csrf=([^;]+)/);
+    if (match?.[1]) return decodeURIComponent(match[1]);
+  } catch {
+    // SSR or cookie access blocked — fall through
+  }
   return csrfToken;
 }
 
@@ -141,6 +151,10 @@ async function handleTokenRefresh(): Promise<string> {
 
   isRefreshing = true;
 
+  // AUTH-BUG-03: track whether clearSession has been called to prevent the
+  // double-broadcast race (both !response.ok and catch() both called clearSession).
+  let sessionCleared = false;
+
   try {
     // No need to check for a refresh token — it's an httpOnly cookie
     // sent automatically with credentials: 'include'. If there's no
@@ -157,6 +171,7 @@ async function handleTokenRefresh(): Promise<string> {
 
     if (!response.ok) {
       // Refresh failed → full logout
+      sessionCleared = true;
       sessionManager.clearSession();
       throw new ApiError('Session expired', 'UNAUTHORIZED', 401);
     }
@@ -170,7 +185,10 @@ async function handleTokenRefresh(): Promise<string> {
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Token refresh failed');
     processRefreshQueue(error, null);
-    sessionManager.clearSession();
+    // AUTH-BUG-03: only clear if not already cleared above
+    if (!sessionCleared) {
+      sessionManager.clearSession();
+    }
     throw err;
   } finally {
     isRefreshing = false;
@@ -202,8 +220,9 @@ async function request<T>(
   const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
     (fetchConfig.method || 'GET').toUpperCase(),
   );
-  if (isStateChanging && csrfToken) {
-    headers.set('X-CSRF-Token', csrfToken);
+  const currentCsrf = getCsrfToken();
+  if (isStateChanging && currentCsrf) {
+    headers.set('X-CSRF-Token', currentCsrf);
   }
 
   // Timeout via AbortController
@@ -227,25 +246,43 @@ async function request<T>(
         const newToken = await handleTokenRefresh();
         headers.set('Authorization', `Bearer ${newToken}`);
 
-        const retryResponse = await fetch(url, {
-          ...fetchConfig,
-          headers,
-          body: body !== undefined ? JSON.stringify(body) : undefined,
-          credentials: 'include',
-        });
-
-        if (!retryResponse.ok) {
-          const errorBody = await retryResponse.json().catch(() => ({}));
-          throw new ApiError(
-            errorBody.message || errorBody.error || retryResponse.statusText,
-            statusToCode(retryResponse.status),
-            retryResponse.status,
-            errorBody.details,
-          );
+        // AUTH-BUG-02: re-read CSRF cookie for state-changing retries
+        const retryCsrf = getCsrfToken();
+        if (isStateChanging && retryCsrf) {
+          headers.set('X-CSRF-Token', retryCsrf);
         }
 
-        const retryData = await retryResponse.json();
-        return retryData as T;
+        // AUTH-BUG-01: create a fresh AbortController for the retry, so the
+        // original timeout signal (already consumed) doesn't immediately abort.
+        const retryController = new AbortController();
+        const retryTimeoutId = setTimeout(() => retryController.abort(), timeout);
+
+        try {
+          const retryResponse = await fetch(url, {
+            ...fetchConfig,
+            headers,
+            body: body !== undefined ? JSON.stringify(body) : undefined,
+            credentials: 'include',
+            signal: retryController.signal,
+          });
+          clearTimeout(retryTimeoutId);
+
+          if (!retryResponse.ok) {
+            const errorBody = await retryResponse.json().catch(() => ({}));
+            throw new ApiError(
+              errorBody.message || errorBody.error || retryResponse.statusText,
+              statusToCode(retryResponse.status),
+              retryResponse.status,
+              errorBody.details,
+            );
+          }
+
+          if (retryResponse.status === 204) return undefined as T;
+          const retryData = await retryResponse.json();
+          return retryData as T;
+        } finally {
+          clearTimeout(retryTimeoutId);
+        }
       } catch (refreshErr) {
         // Refresh failed — propagate as 401
         throw refreshErr instanceof ApiError

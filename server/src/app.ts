@@ -95,7 +95,8 @@ export async function buildApp() {
     if (fastifyErr.validation) {
       const details: Record<string, string[]> = {};
       for (const v of fastifyErr.validation) {
-        const key = (v as any).instancePath?.replace('/', '') || '_root';
+        // IMPROVED: handle nested paths and ensure consistent key for frontend mapping
+        const key = (v as any).instancePath?.replace(/^\//, '').replace(/\//g, '.') || v.params?.missingProperty || '_root';
         if (!details[key]) details[key] = [];
         details[key].push(v.message ?? 'Invalid');
       }
@@ -114,8 +115,9 @@ export async function buildApp() {
 
     // Rate limit errors from @fastify/rate-limit
     if (fastifyErr.statusCode === 429) {
+      // SEC-LEAK-01: never forward internal error.message for 429 — use static text
       return reply.status(429).send({
-        error: error.message,
+        error: 'Too many requests',
         code: 'RATE_LIMIT_EXCEEDED',
       });
     }
@@ -127,27 +129,20 @@ export async function buildApp() {
   });
 
   // ── Routes ──────────────────────────────────────
+  // ── Routes ──────────────────────────────────────
   // Health checks (no prefix, no auth)
   await app.register(healthRoutes);
 
   // API routes under /api prefix
   await app.register(
     async (api) => {
-      // Idempotency middleware for mutation routes
-      api.addHook('preHandler', async (request, reply) => {
-        if (request.method === 'POST' || request.method === 'PATCH') {
-          await idempotency(request, reply);
-        }
-      });
-
-      // Cache responses for idempotent requests (must be onSend, not preHandler)
+      // NOTE: authenticate and idempotency are applied at the route level.
+      // onSend remains global to catch all marked responses.
       api.addHook('onSend', async (request, reply, payload) => {
-        if (request.method === 'POST' || request.method === 'PATCH') {
-          return idempotencyCacheResponse(request, reply, payload as string | Buffer | null);
-        }
-        return payload;
+        return idempotencyCacheResponse(request, reply, payload as string | Buffer | null);
       });
 
+      // Register routes
       await api.register(authRoutes, { prefix: '/auth' });
       await api.register(listingRoutes, { prefix: '/' });
       await api.register(requestRoutes, { prefix: '/' });

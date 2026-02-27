@@ -29,15 +29,27 @@ const DANGEROUS_PATTERNS = [
 
 /**
  * Sanitize a single string value — strips dangerous HTML patterns.
- * Returns the cleaned string.
+ * SEC-XSS-01: runs iteratively until stable (max 5 passes).
+ * A single pass cannot handle double-wrapped payloads like:
+ *   <<script>script>alert(1)<</script>/script>
+ * which after one strip becomes <script>alert(1)</script>.
  */
 export function sanitizeString(input: string): string {
   let result = input;
-  for (const pattern of DANGEROUS_PATTERNS) {
-    result = result.replace(pattern, '');
-  }
-  // Also encode remaining angle brackets in suspicious positions
-  result = result.replace(/<(\/?[a-zA-Z])/g, '&lt;$1');
+  let previous: string;
+  let passes = 0;
+  const MAX_PASSES = 5;
+
+  do {
+    previous = result;
+    for (const pattern of DANGEROUS_PATTERNS) {
+      result = result.replace(pattern, '');
+    }
+    // Encode any remaining angle-bracket tags in suspicious positions
+    result = result.replace(/<(\/?[a-zA-Z])/g, '&lt;$1');
+    passes++;
+  } while (result !== previous && passes < MAX_PASSES);
+
   return result;
 }
 
@@ -79,9 +91,25 @@ function sanitizeBody(request: FastifyRequest): void {
    Plugin
    ═══════════════════════════════════════════════════ */
 
+/**
+ * Sanitize URL query parameters.
+ * SEC-XSS-02: the original sanitizer only sanitized JSON body.
+ * XSS payloads in query strings (e.g. ?category=<script>...) passed through.
+ */
+function sanitizeQuery(request: FastifyRequest): void {
+  if (request.query && typeof request.query === 'object') {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(request.query as Record<string, unknown>)) {
+      sanitized[key] = sanitizeValue(val);
+    }
+    (request as any).query = sanitized;
+  }
+}
+
 async function sanitizePlugin(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', async (request) => {
     sanitizeBody(request);
+    sanitizeQuery(request);
   });
 }
 

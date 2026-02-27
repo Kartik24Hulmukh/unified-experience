@@ -43,13 +43,25 @@ const VerificationPage = () => {
         }
     }, [isAuthenticated, authLoading, navigate, location.pathname]);
 
+    // Single interval on mount — setter callback handles stopping at 0
+    // Avoids the chained re-registration bug where a new interval was created
+    // every time timeLeft changed (old and new intervals both running).
     useEffect(() => {
-        if (timeLeft <= 0) return;
         const timer = setInterval(() => {
-            setTimeLeft((prev) => prev - 1);
+            setTimeLeft((prev) => {
+                if (prev <= 1) { clearInterval(timer); return 0; }
+                return prev - 1;
+            });
         }, 1000);
         return () => clearInterval(timer);
-    }, [timeLeft]);
+    }, []);
+
+    // Guard: if no pending signup data and not authenticated, redirect to signup
+    useEffect(() => {
+        if (!pendingData && !isAuthenticated && !authLoading) {
+            navigate('/signup', { replace: true });
+        }
+    }, [pendingData, isAuthenticated, authLoading, navigate]);
 
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
@@ -66,9 +78,15 @@ const VerificationPage = () => {
             });
             // Navigation is handled by the useEffect watching isAuthenticated
         } catch (err) {
+            const msg = err instanceof Error ? err.message : '';
+            // AUTH-UX-01: distinguish expired OTP from wrong OTP so the user
+            // knows whether to resend or just retype.
+            const isExpired = /expired|expir/i.test(msg);
             toast({
-                title: "Verification Failed",
-                description: "Invalid code or no pending registration found.",
+                title: isExpired ? "Code Expired" : "Verification Failed",
+                description: isExpired
+                    ? "Your code has expired. Click \"Resend Code\" to get a new one."
+                    : "Invalid or incorrect code. Please check and try again.",
                 variant: "destructive",
             });
             setIsLoading(false);
@@ -85,10 +103,10 @@ const VerificationPage = () => {
             return;
         }
         try {
-            await api.post('/auth/signup', {
-                fullName: pendingData.fullName,
+            // AUTH-UX-02: use the dedicated resend endpoint (not /auth/signup).
+            // Calling signup again hits the 3/min rate limit and returns 409 Conflict.
+            await api.post('/auth/resend-otp', {
                 email: pendingData.email,
-                password: pendingData.password,
             }, { skipAuth: true });
             setTimeLeft(120);
             toast({

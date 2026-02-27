@@ -138,9 +138,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Validate the session server-side
+    const controller = new AbortController();
     (async () => {
       try {
-        const response = await api.get<AuthMeResponse>('/auth/me');
+        const response = await api.get<AuthMeResponse>('/auth/me', { signal: controller.signal });
         const { user, trust, restriction } = response;
 
         // Update sessionManager's user data with server truth
@@ -155,7 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           trust,
           restriction,
         });
-      } catch {
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
         // Session invalid — clear everything
         sessionManager.clearSession();
         clearCsrfToken();
@@ -163,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ ...INITIAL_STATE, isHydrated: true });
       }
     })();
+    return () => controller.abort();
   }, []);
 
   // Listen for session events (multi-tab sync, token refresh, etc.)
@@ -177,15 +180,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isHydrated: true,
         }));
       } else if (event === 'logout' || event === 'session-expired') {
+        // AUTH-RACE-02: clear CSRF token and monitoring identity when another
+        // tab logs out or when the token expiry fires — not just on user-initiated logout.
+        clearCsrfToken();
+        clearMonitoringUser();
         setState({
           ...INITIAL_STATE,
           isHydrated: true,
         });
+      } else if (event === 'token-refresh') {
+        // AUTH-SESSION-02: proactively refresh the access token before expiry.
+        // SessionManager emits this event ~60s before the JWT expires.
+        // Without this handler the token would silently expire, causing the
+        // next API call to trigger a 401 → handleTokenRefresh → flash of error.
+        api.post<{ accessToken: string }>('/auth/refresh', undefined, { skipAuth: true })
+          .then((res) => {
+            sessionManager.setTokens(res.accessToken);
+          })
+          .catch(() => {
+            // Refresh cookie expired or revoked — full logout
+            sessionManager.clearSession();
+            clearCsrfToken();
+            clearMonitoringUser();
+            setState({ ...INITIAL_STATE, isHydrated: true });
+          });
       }
     });
 
     return unsubscribe;
   }, []);
+
 
   const login = useCallback(async (email: string, password: string) => {
     setState((prev) => ({ ...prev, isLoading: true }));
@@ -282,7 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     // Fire-and-forget server logout
-    api.post('/auth/logout', undefined, { skipAuth: true }).catch(() => {});
+    api.post('/auth/logout', undefined, { skipAuth: true }).catch(() => { });
     sessionManager.clearSession();
     clearCsrfToken();
     clearMonitoringUser();

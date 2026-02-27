@@ -7,8 +7,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // ═══════════════════════════════════════════════════
@@ -75,7 +75,7 @@ enum DisputeType {
 // ═══════════════════════════════════════════════════
 
 model User {
-  id                 String         @id @default(uuid()) @db.Uuid
+  id                 String         @id @default(uuid())
   googleId           String?        @unique @map("google_id")
   email              String         @unique
   fullName           String         @map("full_name")
@@ -121,15 +121,15 @@ model User {
 // ═══════════════════════════════════════════════════
 
 model RefreshToken {
-  id              String    @id @default(uuid()) @db.Uuid
-  token           String    @unique @db.VarChar(64) // SHA-256 hex hash
-  userId          String    @map("user_id") @db.Uuid
+  id              String    @id @default(uuid())
+  token           String    @unique// SHA-256 hex hash
+  userId          String    @map("user_id")
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt       DateTime  @map("expires_at")
   revokedAt       DateTime? @map("revoked_at")
-  replacedByToken String?   @map("replaced_by_token") @db.VarChar(64)
+  replacedByToken String?   @map("replaced_by_token")
   userAgent       String?   @map("user_agent")
-  ipAddress       String?   @map("ip_address") @db.VarChar(45)
+  ipAddress       String?   @map("ip_address")
   createdAt       DateTime  @default(now()) @map("created_at")
 
   @@index([token])
@@ -142,13 +142,14 @@ model RefreshToken {
 // ═══════════════════════════════════════════════════
 
 model Otp {
-  id        String    @id @default(uuid()) @db.Uuid
+  id        String    @id @default(uuid())
   email     String
   code      String
-  userId    String?   @map("user_id") @db.Uuid
+  userId    String?   @map("user_id")
   user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
+  attempts  Int       @default(0)
   createdAt DateTime  @default(now()) @map("created_at")
 
   @@index([email, code])
@@ -160,14 +161,14 @@ model Otp {
 // ═══════════════════════════════════════════════════
 
 model Listing {
-  id          String        @id @default(uuid()) @db.Uuid
-  ownerId     String        @map("owner_id") @db.Uuid
+  id          String        @id @default(uuid())
+  ownerId     String        @map("owner_id")
   owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   title       String
   description String?
   category    String?
   module      String?       // Academic module / course code
-  price       Decimal       @default(0) @db.Decimal(12, 2)
+  price       Decimal       @default(0)
   status      ListingStatus @default(DRAFT)
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -189,12 +190,12 @@ model Listing {
 // ═══════════════════════════════════════════════════
 
 model Request {
-  id        String        @id @default(uuid()) @db.Uuid
-  listingId String        @map("listing_id") @db.Uuid
+  id        String        @id @default(uuid())
+  listingId String        @map("listing_id")
   listing   Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyerId   String        @map("buyer_id") @db.Uuid
+  buyerId   String        @map("buyer_id")
   buyer     User          @relation("BuyerRequests", fields: [buyerId], references: [id])
-  sellerId  String        @map("seller_id") @db.Uuid
+  sellerId  String        @map("seller_id")
   seller    User          @relation("SellerRequests", fields: [sellerId], references: [id])
   status    RequestStatus @default(IDLE)
   version   Int           @default(0) // Optimistic locking counter
@@ -217,14 +218,14 @@ model Request {
 // ═══════════════════════════════════════════════════
 
 model Dispute {
-  id          String        @id @default(uuid()) @db.Uuid
-  requestId   String?       @map("request_id") @db.Uuid
+  id          String        @id @default(uuid())
+  requestId   String?       @map("request_id")
   request     Request?      @relation(fields: [requestId], references: [id])
-  listingId   String?       @map("listing_id") @db.Uuid
+  listingId   String?       @map("listing_id")
   listing     Listing?      @relation("DisputeListing", fields: [listingId], references: [id])
-  raisedById  String        @map("raised_by") @db.Uuid
+  raisedById  String        @map("raised_by")
   raisedBy    User          @relation("RaisedDisputes", fields: [raisedById], references: [id])
-  againstId   String        @map("against_id") @db.Uuid
+  againstId   String        @map("against_id")
   against     User          @relation("AgainstDisputes", fields: [againstId], references: [id])
   type        DisputeType
   description String
@@ -243,14 +244,14 @@ model Dispute {
 // ═══════════════════════════════════════════════════
 
 model AuditLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  actorId    String   @map("actor_id") @db.Uuid
+  id         String   @id @default(uuid())
+  actorId    String   @map("actor_id")
   actor      User     @relation("AuditActor", fields: [actorId], references: [id])
   action     String
   entityType String?  @map("entity_type")
-  entityId   String?  @map("entity_id") @db.Uuid
+  entityId   String?  @map("entity_id")
   actorRole  String?  @map("actor_role")
-  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  ipAddress  String?  @map("ip_address")
   metadata   Json?
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -267,9 +268,9 @@ model AuditLog {
 // ═══════════════════════════════════════════════════
 
 model IdempotencyKey {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String   @id @default(uuid())
   key            String   @unique
-  userId         String   @map("user_id") @db.Uuid
+  userId         String   @map("user_id")
   responseStatus Int      @map("response_status")
   responseBody   Json     @map("response_body")
   expiresAt      DateTime @map("expires_at")

@@ -157,6 +157,8 @@ const PageTransition = ({ children }: PageTransitionProps) => {
         timelineRef.current = null;
       }
       ctx.revert();
+      // ISSUE-04 fix: always unlock navigation on cleanup — idempotent, safe to call twice
+      unlockNavigation();
       // Safety: ensure container is always visible after cleanup
       if (container) {
         container.style.opacity = '1';
@@ -177,7 +179,7 @@ const PageTransition = ({ children }: PageTransitionProps) => {
       displayLocationRef.current = location.pathname;
       return;
     }
-    
+
     // Only trigger transition if the route actually changed
     if (location.pathname !== displayLocationRef.current && !isTransitioning) {
       lockNavigation(2000);
@@ -201,7 +203,8 @@ const PageTransition = ({ children }: PageTransitionProps) => {
           transform: 'scaleY(0)',
           transformOrigin: 'top',
           backgroundColor: '#0a0a0a',
-          willChange: 'transform',
+          // PERF-07: no static willChange — avoids idle GPU layer promotion.
+          // GSAP manages will-change internally during the animation.
         }}
       >
         {/* Subtle center label during transition */}
@@ -216,7 +219,7 @@ const PageTransition = ({ children }: PageTransitionProps) => {
           </div>
         </div>
       </div>
-      
+
       {/* Page content */}
       <div
         ref={containerRef}

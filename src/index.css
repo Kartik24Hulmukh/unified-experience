@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 /* ─── Lenis smooth scroll ─── */
-html.lenis, html.lenis body {
+html.lenis,
+html.lenis body {
   height: auto;
 }
 
@@ -93,13 +94,20 @@ html.lenis, html.lenis body {
     --shadow-strong: 0 20px 50px -12px hsl(0 0% 0% / 0.25);
 
     /* ─── Module Accent Tokens ─── */
-    --module-accommodation: 188 94% 53%;  /* cyan-400 */
-    --module-mess: 38 92% 56%;            /* amber-400 */
-    --module-hospital: 152 69% 39%;       /* emerald-400 */
-    --module-academics: 263 70% 58%;      /* violet-400 */
-    --module-essentials: 263 70% 58%;     /* violet-400 */
-    --module-resale: 195 100% 50%;        /* matches --primary */
-    --module-emergency: 0 84% 60%;        /* red-500 */
+    --module-accommodation: 188 94% 53%;
+    /* cyan-400 */
+    --module-mess: 38 92% 56%;
+    /* amber-400 */
+    --module-hospital: 152 69% 39%;
+    /* emerald-400 */
+    --module-academics: 263 70% 58%;
+    /* violet-400 */
+    --module-essentials: 263 70% 58%;
+    /* violet-400 */
+    --module-resale: 195 100% 50%;
+    /* matches --primary */
+    --module-emergency: 0 84% 60%;
+    /* red-500 */
 
     /* ─── Z-Index Scale ─── */
     --z-base: 1;
@@ -111,8 +119,8 @@ html.lenis, html.lenis body {
     --z-nav: 40;
     --z-auth-portal: 50;
     --z-page-transition: 60;
-    --z-cursor: 70;
-    --z-scanline: 100;
+    --z-cursor: 90;
+    --z-scanline: 80;
 
     /* Sidebar - keep defaults */
     --sidebar-background: 0 0% 98%;
@@ -505,6 +513,7 @@ html.lenis, html.lenis body {
    ═══════════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -553,6 +562,7 @@ html.lenis, html.lenis body {
   /* Make sure all text is immediately visible */
   .split-text-char,
   .split-text-word,
+  .split-element,
   [data-split-text] {
     opacity: 1 !important;
     transform: none !important;

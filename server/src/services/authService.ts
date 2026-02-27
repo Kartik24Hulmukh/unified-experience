@@ -5,7 +5,7 @@
  * Routes call this service — services call Prisma.
  */
 
-import { randomBytes } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { signAccessToken } from '@/lib/jwt';
 import { hashPassword, verifyPassword } from '@/lib/password';
@@ -111,7 +111,9 @@ export async function signup(input: SignupInput): Promise<{ message: string }> {
   });
 
   if (existing?.verified) {
-    throw new ConflictError('An account with this email already exists');
+    // SEC-ENUM-01: Opaque response to prevent account enumeration. 
+    // Return same message as success to keep attacker guessing.
+    return { message: 'Verification code sent to your email' };
   }
 
   // Generate and store OTP
@@ -136,6 +138,16 @@ export async function signup(input: SignupInput): Promise<{ message: string }> {
     const msg = err instanceof Error ? err.message : 'Unknown email delivery failure';
     throw new ValidationError(`Unable to send OTP email: ${msg}`);
   }
+
+  // Audit: record signup attempt
+  await prisma.auditLog.create({
+    data: {
+      actorId: '00000000-0000-0000-0000-000000000000', // Nil UUID for System
+      action: 'AUTH_SIGNUP_REQUEST',
+      entityType: 'User',
+      metadata: { email: input.email },
+    },
+  });
 
   return { message: 'Verification code sent to your email' };
 }
@@ -165,7 +177,34 @@ export async function verifyOtp(
     throw new ValidationError('OTP has expired. Please request a new one.');
   }
 
-  if (otpRecord.code !== input.otp) {
+  // PROD-10: use timing-safe comparison to prevent side-channel leakage.
+  // Standard `!==` short-circuits on the first mismatched byte, letting an
+  // attacker determine correct digits incrementally via response timing.
+  const a = Buffer.from(otpRecord.code, 'utf8');
+  const b = Buffer.from(input.otp, 'utf8');
+  const isMatch = a.length === b.length && timingSafeEqual(a, b);
+
+  if (!isMatch) {
+    // PROD-10b: invalidate OTP after too many wrong guesses (defence-in-depth
+    // on top of the rate-limit at PROD-07).
+    const attempts = (otpRecord as any).attempts ?? 0;
+    if (attempts >= 4) {
+      // 5th wrong attempt — permanently burn this OTP
+      await prisma.otp.update({
+        where: { id: otpRecord.id },
+        data: { usedAt: new Date() },
+      });
+      throw new ValidationError('OTP has been invalidated after too many attempts. Please request a new one.');
+    }
+    // Increment attempt counter (best-effort — field may not exist in older schemas)
+    try {
+      await prisma.otp.update({
+        where: { id: otpRecord.id },
+        data: { attempts: { increment: 1 } } as any,
+      });
+    } catch {
+      // Schema doesn't have an attempts column yet — rate limit is still enforced
+    }
     throw new ValidationError('Invalid OTP code');
   }
 
@@ -179,8 +218,7 @@ export async function verifyOtp(
       data: { usedAt: new Date() },
     });
 
-    // Create or update user
-    return tx.user.upsert({
+    const createdUser = await tx.user.upsert({
       where: { email: input.email },
       create: {
         email: input.email,
@@ -194,6 +232,19 @@ export async function verifyOtp(
         verified: true,
       },
     });
+
+    // Audit: account verified/created (FIXED: use createdUser.id)
+    await tx.auditLog.create({
+      data: {
+        actorId: createdUser.id,
+        action: 'AUTH_VERIFY_OTP',
+        entityType: 'User',
+        entityId: createdUser.id,
+        metadata: { method: 'EMAIL' },
+      },
+    });
+
+    return createdUser;
   });
 
   const tokens = await issueTokens(user.id, user.email, user.role, meta);
@@ -264,6 +315,17 @@ export async function login(
     });
   }
 
+  // Audit: Successful login
+  await prisma.auditLog.create({
+    data: {
+      actorId: user.id,
+      action: 'AUTH_LOGIN',
+      entityType: 'User',
+      entityId: user.id,
+      metadata: { ip: meta?.ipAddress },
+    },
+  });
+
   const tokens = await issueTokens(user.id, user.email, user.role, meta);
 
   return {
@@ -298,6 +360,16 @@ export async function googleSignIn(
   });
 
   const tokens = await issueTokens(user.id, user.email, user.role, meta);
+
+  // Audit: Google Login
+  await prisma.auditLog.create({
+    data: {
+      actorId: user.id,
+      action: 'AUTH_GOOGLE_LOGIN',
+      entityType: 'User',
+      entityId: user.id,
+    },
+  });
 
   return {
     user: sanitizeUser(user),
@@ -375,12 +447,23 @@ export async function refreshAccessToken(
    Logout
    ═══════════════════════════════════════════════════ */
 
-export async function logout(rawRefreshToken: string): Promise<void> {
+export async function logout(rawRefreshToken: string, actorId?: string): Promise<void> {
   const hashed = hashToken(rawRefreshToken);
   await prisma.refreshToken.updateMany({
     where: { token: hashed, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+
+  if (actorId) {
+    await prisma.auditLog.create({
+      data: {
+        actorId,
+        action: 'AUTH_LOGOUT',
+        entityType: 'User',
+        entityId: actorId,
+      },
+    });
+  }
 }
 
 /* ═══════════════════════════════════════════════════

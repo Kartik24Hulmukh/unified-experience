@@ -406,14 +406,12 @@ const ProfilePage = () => {
   const { userId: targetUserId } = useParams<{ userId: string }>();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Admin drilldown state
   const [drilldownView, setDrilldownView] = useState<AdminStudentView | null>(null);
   const [drilldownLoading, setDrilldownLoading] = useState(false);
   const [drilldownError, setDrilldownError] = useState<string | null>(null);
 
   const isAdminDrilldown = !!targetUserId && user?.role === 'admin';
 
-  // Fetch student profile when admin navigates to /profile/:userId
   useEffect(() => {
     if (!isAdminDrilldown || !user) return;
 
@@ -426,10 +424,7 @@ const ProfilePage = () => {
         const response = await api.get<{ data: AdminStudentView }>(`/admin/users/${targetUserId}`);
         const view = response.data;
         if (cancelled) return;
-
-        // Audit: log that admin viewed this profile (fire-and-forget)
         logAdminAction(user.id, targetUserId, 'VIEW_PROFILE');
-
         setDrilldownView(view);
       } catch (err) {
         if (cancelled) return;
@@ -445,20 +440,16 @@ const ProfilePage = () => {
     return () => { cancelled = true; };
   }, [isAdminDrilldown, targetUserId, user]);
 
-  // Entrance animation (matching AdminPage pattern)
-  // useLayoutEffect prevents FOUC — sets initial state before paint
+  // Animate child elements, not the container, to prevent FOUC on Strict Mode double-invoke (ISSUE-08)
   useLayoutEffect(() => {
     const loading = isAdminDrilldown ? drilldownLoading : isLoading;
     if (!containerRef.current || loading) return;
-    
+
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        containerRef.current,
-        { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' },
-      );
+      gsap.set('.profile-content', { y: 20, opacity: 0 });
+      gsap.to('.profile-content', { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' });
     }, containerRef);
-    
+
     return () => ctx.revert();
   }, [isLoading, drilldownLoading, isAdminDrilldown]);
 
@@ -482,10 +473,13 @@ const ProfilePage = () => {
 
     return (
       <div className="min-h-screen bg-portal text-white">
-        <div ref={containerRef} className="max-w-6xl mx-auto px-6 md:px-12 py-24 space-y-12">
-          <AdminDrilldownView view={drilldownView} />
+        <div ref={containerRef} className="max-w-6xl mx-auto px-6 md:px-12 py-24">
+          <div className="profile-content space-y-12">
+            <AdminDrilldownView view={drilldownView} />
+          </div>
         </div>
-        <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[100] bg-[length:100%_2px,3px_100%]" />
+        {/* Scanlines — z below cursor: --z-scanline: 80, --z-cursor: 90 (ISSUE-12) */}
+        <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[var(--z-scanline)] bg-[length:100%_2px,3px_100%]" />
       </div>
     );
   }
@@ -528,43 +522,45 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-portal text-white">
-      <div ref={containerRef} className="max-w-6xl mx-auto px-6 md:px-12 py-24 space-y-12">
-        {/* Identity Header */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
-              <User className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-4xl md:text-5xl font-display font-bold uppercase italic leading-none">
-                <SplitText trigger="load">{profile.identity.fullName.toUpperCase()}</SplitText>
-              </h1>
-              <div className="flex items-center space-x-3 mt-2">
-                <Badge variant="outline" className="border-primary/30 text-primary text-[9px] font-bold tracking-widest px-3 py-1">
-                  {roleConfig.label.toUpperCase()}
-                </Badge>
-                <span className="text-white/20 text-[10px] font-bold tracking-widest uppercase">
-                  {profile.identity.email}
-                </span>
+      <div ref={containerRef} className="max-w-6xl mx-auto px-6 md:px-12 py-24">
+        <div className="profile-content space-y-12">
+          {/* Identity Header */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
+                <User className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-4xl md:text-5xl font-display font-bold uppercase italic leading-none">
+                  <SplitText trigger="load">{profile.identity.fullName.toUpperCase()}</SplitText>
+                </h1>
+                <div className="flex items-center space-x-3 mt-2">
+                  <Badge variant="outline" className="border-primary/30 text-primary text-[9px] font-bold tracking-widest px-3 py-1">
+                    {roleConfig.label.toUpperCase()}
+                  </Badge>
+                  <span className="text-white/20 text-[10px] font-bold tracking-widest uppercase">
+                    {profile.identity.email}
+                  </span>
+                </div>
               </div>
             </div>
+            <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.4em]">
+              BErozgar Campus Identity — {profile.identity.verified ? 'Verified' : 'Unverified'}
+            </p>
           </div>
-          <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.4em]">
-            BErozgar Campus Identity — {profile.identity.verified ? 'Verified' : 'Unverified'}
-          </p>
+
+          <div className="border-t border-white/5" />
+
+          {/* Role-specific sections — conditional rendering */}
+          {profile.role === 'student' && <StudentSections profile={profile} />}
+          {profile.role === 'admin' && <AdminSections profile={profile} />}
         </div>
-
-        <div className="border-t border-white/5" />
-
-        {/* Role-specific sections — conditional rendering */}
-        {profile.role === 'student' && <StudentSections profile={profile} />}
-        {profile.role === 'admin' && <AdminSections profile={profile} />}
       </div>
 
-      {/* Institutional Scanlines (matching AdminPage) */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[100] bg-[length:100%_2px,3px_100%]" />
+      {/* Scanlines — z below cursor: --z-scanline: 80, --z-cursor: 90 (ISSUE-12) */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[var(--z-scanline)] bg-[length:100%_2px,3px_100%]" />
     </div>
   );
 };
 
-export default ProfilePage;
+export default ProfilePage;

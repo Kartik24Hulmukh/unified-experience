@@ -309,13 +309,15 @@ export async function recoverStaleTransactions() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   return prisma.$transaction(async (tx) => {
-    // Expire stale sent requests
+    // PROD-04: bump version alongside status change so any concurrent
+    // optimistic lock held by a user racing against expiry will correctly
+    // conflict instead of silently overwriting the EXPIRED status.
     const expiredRequests = await tx.request.updateMany({
       where: {
         status: 'SENT',
         updatedAt: { lt: sevenDaysAgo },
       },
-      data: { status: 'EXPIRED' },
+      data: { status: 'EXPIRED', version: { increment: 1 } },
     });
 
     // Revoke expired refresh tokens
@@ -330,6 +332,20 @@ export async function recoverStaleTransactions() {
     // Clean expired idempotency keys
     const deletedKeys = await tx.idempotencyKey.deleteMany({
       where: { expiresAt: { lt: new Date() } },
+    });
+
+    // Audit: Maintenance Run
+    await tx.auditLog.create({
+      data: {
+        actorId: '00000000-0000-0000-0000-000000000000',
+        action: 'SYSTEM_RECOVERY',
+        entityType: 'System',
+        metadata: {
+          expiredRequests: expiredRequests.count,
+          revokedTokens: revokedTokens.count,
+          deletedIdempotencyKeys: deletedKeys.count,
+        },
+      },
     });
 
     return {

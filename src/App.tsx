@@ -13,6 +13,7 @@ import PageTransition from "./components/PageTransition";
 import SkipToContent from "./components/SkipToContent";
 import { FullPageLoader } from "./components/FallbackUI";
 import { handleApiError } from "@/lib/error-handler";
+import { ApiError } from "@/lib/api-client";
 import { trackPageView } from "@/lib/monitoring";
 
 // Lazy-load heavy global decorations — not needed for first paint
@@ -36,11 +37,20 @@ const MessPage = lazy(() => import('./pages/MessPage'));
 const HospitalPage = lazy(() => import('./pages/HospitalPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
+const SplashTestPage = lazy(() => import('./pages/SplashTestPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
+      // AUTH-SESSION-01: never retry 401/403 — the api-client already
+      // handles token refresh. Retrying auth errors causes triple-logout
+      // broadcasts, duplicate toasts, and cache thrashing.
+      retry: (failureCount, error) => {
+        if (error instanceof ApiError && (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN')) {
+          return false;
+        }
+        return failureCount < 2;
+      },
       staleTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
     },
@@ -110,35 +120,36 @@ const App = () => (
                   <PageTransition>
                     <Suspense fallback={<FullPageLoader />}>
                       <Routes>
-                      {/* Public routes */}
-                      <Route path="/" element={<RouteErrorBoundary name="Landing"><LandingPage /></RouteErrorBoundary>} />
-                      <Route path="/login" element={<RouteErrorBoundary name="Login"><LoginPage /></RouteErrorBoundary>} />
-                      <Route path="/signup" element={<RouteErrorBoundary name="Signup"><SignupPage /></RouteErrorBoundary>} />
-                      <Route path="/verify" element={<RouteErrorBoundary name="Verify"><VerificationPage /></RouteErrorBoundary>} />
+                        {/* Public routes */}
+                        <Route path="/" element={<RouteErrorBoundary name="Landing"><LandingPage /></RouteErrorBoundary>} />
+                        <Route path="/login" element={<RouteErrorBoundary name="Login"><LoginPage /></RouteErrorBoundary>} />
+                        <Route path="/signup" element={<RouteErrorBoundary name="Signup"><SignupPage /></RouteErrorBoundary>} />
+                        <Route path="/verify" element={<RouteErrorBoundary name="Verify"><VerificationPage /></RouteErrorBoundary>} />
+                        <Route path="/splash-test" element={<SplashTestPage />} />
 
-                      {/* Post-login home — MasterExperience + modules */}
-                      <Route path="/home" element={<ProtectedRoute><RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary></ProtectedRoute>} />
+                        {/* Post-login home — MasterExperience + modules */}
+                        <Route path="/home" element={<ProtectedRoute><RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary></ProtectedRoute>} />
 
-                      {/* Protected module routes — require authentication */}
-                      <Route path="/resale" element={<ProtectedRoute><RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary></ProtectedRoute>} />
-                      <Route path="/listing/:id" element={<ProtectedRoute><RouteErrorBoundary name="ListingDetail"><ListingDetailPage /></RouteErrorBoundary></ProtectedRoute>} />
-                      <Route path="/accommodation" element={<ProtectedRoute><RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary></ProtectedRoute>} />
-                      <Route path="/essentials" element={<ProtectedRoute><RouteErrorBoundary name="Essentials"><EssentialsPage /></RouteErrorBoundary></ProtectedRoute>} />
-                      <Route path="/academics" element={<ProtectedRoute><RouteErrorBoundary name="Academics"><AcademicsPage /></RouteErrorBoundary></ProtectedRoute>} />
-                      <Route path="/mess" element={<ProtectedRoute><RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary></ProtectedRoute>} />
-                      <Route path="/hospital" element={<ProtectedRoute><RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        {/* Protected module routes — require authentication */}
+                        <Route path="/resale" element={<ProtectedRoute><RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/listing/:id" element={<ProtectedRoute><RouteErrorBoundary name="ListingDetail"><ListingDetailPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/accommodation" element={<ProtectedRoute><RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/essentials" element={<ProtectedRoute><RouteErrorBoundary name="Essentials"><EssentialsPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/academics" element={<ProtectedRoute><RouteErrorBoundary name="Academics"><AcademicsPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/mess" element={<ProtectedRoute><RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/hospital" element={<ProtectedRoute><RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary></ProtectedRoute>} />
 
-                      {/* Profile — any authenticated user */}
-                      <Route path="/profile" element={<ProtectedRoute><RouteErrorBoundary name="Profile"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />
+                        {/* Profile — any authenticated user */}
+                        <Route path="/profile" element={<ProtectedRoute><RouteErrorBoundary name="Profile"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />
 
-                      {/* Admin drilldown — admin views a student profile (read-only) */}
-                      <Route path="/profile/:userId" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="AdminDrilldown"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />
+                        {/* Admin drilldown — admin views a student profile (read-only) */}
+                        <Route path="/profile/:userId" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="AdminDrilldown"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />
 
-                      {/* Admin — restricted to admin role */}
-                      <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="Admin"><AdminPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        {/* Admin — restricted to admin role */}
+                        <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="Admin"><AdminPage /></RouteErrorBoundary></ProtectedRoute>} />
 
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
                     </Suspense>
                   </PageTransition>
                 </main>

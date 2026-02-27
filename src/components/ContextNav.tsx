@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useTheme } from 'next-themes';
 import { Sun, Moon, LogOut } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { isNavigationLocked, lockNavigation, safeNavigate } from '@/lib/utils';
 import { useScrollTriggerCleanup } from '@/hooks/useScrollTriggerCleanup';
@@ -19,13 +20,10 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Home', path: '/home', number: '00' },
-  { label: 'Resale', path: '/resale', number: '01' },
+  { label: 'Academics', path: '/academics', number: '01' },
   { label: 'Accommodation', path: '/accommodation', number: '02' },
   { label: 'Essentials', path: '/essentials', number: '03' },
-  { label: 'Academics', path: '/academics', number: '04' },
-  { label: 'Mess', path: '/mess', number: '05' },
-  { label: 'Hospital', path: '/hospital', number: '06' },
-  { label: 'Profile', path: '/profile', number: '07' },
+  { label: 'Resale', path: '/resale', number: '04' },
 ];
 
 const ContextNav = memo(function ContextNav() {
@@ -41,6 +39,8 @@ const ContextNav = memo(function ContextNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  // UX-02: invalidate all cached queries on logout to prevent stale data leakage
+  const queryClient = useQueryClient();
 
   // Kill ScrollTriggers when leaving animated pages (runs on all routes)
   useScrollTriggerCleanup();
@@ -50,7 +50,7 @@ const ContextNav = memo(function ContextNav() {
   const isHomepage = location.pathname === '/home';
 
   // Pages with dark backgrounds need light nav text immediately
-  const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics', '/mess', '/hospital'];
+  const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics'];
   const isDarkBgPage = darkBgPages.includes(location.pathname);
 
   // Track scroll position and update nav style
@@ -75,9 +75,9 @@ const ContextNav = memo(function ContextNav() {
           sectionLabelRef.current.textContent =
             progress < 0.06 ? 'Welcome' : progress < 0.5 ? 'Explore' : 'Discover';
         }
-        // Nav visibility on homepage hero
+        // Nav remains fully visible on homepage
         if (isHomepage && navRef.current) {
-          navRef.current.style.opacity = progress < 0.06 ? '0' : '1';
+          navRef.current.style.opacity = '1';
         }
 
         // Only trigger React re-render for dark mode threshold crossing
@@ -97,33 +97,18 @@ const ContextNav = memo(function ContextNav() {
     };
   }, [isDarkBgPage, isHomepage]);
 
-  // gsap.context for menu animation lifecycle
-  const gsapCtxRef = useRef<gsap.Context | null>(null);
-  useEffect(() => {
-    gsapCtxRef.current = gsap.context(() => {});
-    return () => { gsapCtxRef.current?.revert(); };
-  }, []);
-
-  // Animate menu open/close
-  const menuTweenRef = useRef<gsap.core.Tween | null>(null);
+  // Animate menu open/close with automatic lifecycle management
   useEffect(() => {
     if (!menuRef.current) return;
 
-    // Kill any in-flight menu animation to prevent state overlap
-    if (menuTweenRef.current) {
-      menuTweenRef.current.kill();
-      menuTweenRef.current = null;
-    }
-
-    gsapCtxRef.current?.add(() => {
+    const ctx = gsap.context(() => {
       if (isMenuOpen) {
-        menuTweenRef.current = gsap.fromTo(
+        gsap.fromTo(
           menuRef.current!,
           { clipPath: 'circle(0% at calc(100% - 40px) 40px)' },
           { clipPath: 'circle(150% at calc(100% - 40px) 40px)', duration: 0.8, ease: 'power3.inOut' }
         );
 
-        // Stagger nav items — scoped to menu overlay only
         const menuNavItems = menuRef.current!.querySelectorAll('.nav-item');
         gsap.fromTo(
           menuNavItems,
@@ -131,13 +116,15 @@ const ContextNav = memo(function ContextNav() {
           { opacity: 1, x: 0, stagger: 0.1, delay: 0.3, duration: 0.6, ease: 'power3.out' }
         );
       } else {
-        menuTweenRef.current = gsap.to(menuRef.current!, {
+        gsap.to(menuRef.current!, {
           clipPath: 'circle(0% at calc(100% - 40px) 40px)',
           duration: 0.6,
           ease: 'power3.inOut',
         });
       }
     });
+
+    return () => ctx.revert();
   }, [isMenuOpen]);
 
   // Guard against rapid navigation clicks during page transitions
@@ -158,20 +145,21 @@ const ContextNav = memo(function ContextNav() {
   }, [location.pathname]);
 
   // Safe logout with navigation guard
+  // UX-01: redirect to /login (not /) — users expect the login screen after logout,
+  // not the animated landing splash which looks like a crash.
+  // UX-02: clear React Query cache to prevent stale private data on shared devices.
   const handleLogout = useCallback(() => {
     if (isNavigationLocked()) return;
+    queryClient.clear(); // UX-02: wipe all cached queries
     logout();
-    safeNavigate(navigate, location.pathname, '/', { replace: true });
-  }, [logout, navigate, location.pathname]);
+    safeNavigate(navigate, location.pathname, '/login', { replace: true });
+  }, [logout, navigate, location.pathname, queryClient]);
 
   // ── Early return AFTER all hooks ──
   if (isAuthPage || isLandingPage) return null;
 
-  // During the hero phase on homepage the duplicated nav elements
-  // inside the splash layers provide the visual. The REAL nav stays
-  // fully interactive (pointer-events: auto) but with transparent
-  // background/text so clicks on Menu, Logo etc. still work.
-  const initialHide = isHomepage;
+  // During the hero phase on homepage, the splash effect handles masking
+  // The REAL nav stays fully interactive and visible.
 
   return (
     <>
@@ -181,9 +169,8 @@ const ContextNav = memo(function ContextNav() {
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isDark ? 'text-portal-foreground' : 'text-foreground'
           }`}
         style={{
-          opacity: initialHide ? 0 : 1,
-          pointerEvents: 'auto',  // ★ Always clickable — even when visually hidden during splash
-          transition: 'opacity 0.4s ease',
+          pointerEvents: 'auto',  // ★ Always clickable
+          transition: 'opacity 0.4s ease, color 0.4s ease',
         }}
       >
         <div className="flex items-center justify-between px-6 md:px-12 py-6">
@@ -215,19 +202,25 @@ const ContextNav = memo(function ContextNav() {
           <div className="flex items-center gap-4 md:gap-6">
             {/* Auth Action */}
             {isAuthenticated ? (
-              <div className="flex items-center gap-3">
-                <span className={`hidden md:inline text-[10px] uppercase tracking-widest opacity-60 font-body ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}>
-                  {user?.fullName?.split(' ')[0] || 'User'}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className={`p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
-                  aria-label="Logout"
-                  title="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
+              <Link
+                to="/profile"
+                onClick={(e) => handleNavClick(e, '/profile')}
+                className="group relative flex items-center gap-3 cursor-pointer"
+              >
+                <div className="hidden lg:flex flex-col items-end">
+                  <span className="text-[8px] uppercase tracking-[0.2em] opacity-40 font-mono">
+                    Identity
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">
+                    {user?.fullName?.split(' ')[0] || 'Profile'}
+                  </span>
+                </div>
+                <div className={`relative w-8 h-8 rounded-full border border-current flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:border-[#a3ff12] ${isDark ? 'border-portal-foreground' : 'border-foreground'}`}>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${isDark ? 'bg-portal-foreground text-portal' : 'bg-black text-white'}`}>
+                    {user?.fullName?.[0] || 'U'}
+                  </div>
+                </div>
+              </Link>
             ) : (
               <Link
                 to="/login"

@@ -27,8 +27,10 @@ const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const EXEMPT_PATHS = new Set([
   '/api/auth/login',
   '/api/auth/signup',
+  '/api/auth/verify-otp',  // AUTH-SESSION-05: called before session exists (no CSRF cookie yet)
   '/api/auth/google',
   '/api/auth/refresh',
+  '/api/auth/logout',      // AUTH-SESSION-06: teardown must always succeed
   '/health',
 ]);
 
@@ -37,9 +39,9 @@ function generateToken(): string {
 }
 
 async function csrfPlugin(app: FastifyInstance): Promise<void> {
-  // In development, CSRF is optional — skip enforcement but still set cookies
-  // so the frontend can be tested with the header workflow.
-  const enforce = env.NODE_ENV === 'production';
+  // SEC-CSRF-01: enforce in all non-development environments.
+  // Previously was limited to 'production' only, leaving staging servers wide open.
+  const enforce = env.NODE_ENV !== 'development';
 
   // Set CSRF cookie on every response if not already present
   app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -65,7 +67,23 @@ async function csrfPlugin(app: FastifyInstance): Promise<void> {
       const cookieToken = request.cookies[CSRF_COOKIE];
       const headerToken = request.headers[CSRF_HEADER] as string | undefined;
 
-      if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+      // SEC-CSRF-03: explicit emptiness check before any comparison
+      if (!cookieToken || !headerToken) {
+        return reply.status(403).send({
+          error: 'CSRF validation failed',
+          code: 'CSRF_INVALID',
+          message: 'Missing or invalid CSRF token. Include X-CSRF-Token header.',
+        });
+      }
+
+      // SEC-CSRF-02: timing-safe comparison prevents timing side-channel leaks
+      const cookieBuf = Buffer.from(cookieToken);
+      const headerBuf = Buffer.from(headerToken);
+      const tokensMatch =
+        cookieBuf.length === headerBuf.length &&
+        crypto.timingSafeEqual(cookieBuf, headerBuf);
+
+      if (!tokensMatch) {
         return reply.status(403).send({
           error: 'CSRF validation failed',
           code: 'CSRF_INVALID',

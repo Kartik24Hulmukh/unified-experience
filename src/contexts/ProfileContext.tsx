@@ -42,27 +42,27 @@ const ProfileContext = createContext<ProfileContextType | null>(null);
    ═══════════════════════════════════════════════════ */
 
 /**
- * Derives trust level for student profiles.
- * Admin profiles pass through unchanged.
- * Trust is computed dynamically — never stored permanently.
+ * Enriches student profiles if necessary.
+ * Trust is already computed on the backend for /profile and /auth/me,
+ * but this serves as a safety net if a legacy path is used.
  */
-function attachTrustIfStudent(profile: Profile): Profile {
+function enrichProfile(profile: Profile): Profile {
   if (!isStudentProfile(profile)) return profile;
 
-  // If trust already present from API, use it
-  if (profile.trust) return profile;
+  // If trust is missing (shouldn't happen with new API), we use the data in the profile
+  if (!profile.trust) {
+    profile.trust = computeTrust({
+      completedExchanges: profile.data.exchangesCompleted,
+      cancelledRequests: profile.data.cancelledRequests,
+      disputes: profile.data.disputesCount,
+      adminFlags: profile.data.adminFlags,
+      accountAgeDays: Math.floor(
+        (Date.now() - new Date(profile.identity.joinedAt).getTime()) / 86_400_000,
+      ),
+    });
+  }
 
-  const trust = computeTrust({
-    completedExchanges: profile.data.exchangesCompleted,
-    cancelledRequests: 0,   // TODO: supply from backend when available
-    disputes: 0,            // TODO: supply from backend when available
-    adminFlags: 0,          // TODO: supply from backend when available
-    accountAgeDays: Math.floor(
-      (Date.now() - new Date(profile.identity.joinedAt).getTime()) / 86_400_000,
-    ),
-  });
-
-  return { ...profile, trust };
+  return profile;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -104,7 +104,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const enriched = attachTrustIfStudent(profile);
+        const enriched = enrichProfile(profile);
         setState({ profile: enriched, isLoading: false, error: null });
       } catch (err) {
         if (cancelled) return;
@@ -139,7 +139,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const enriched = attachTrustIfStudent(profile);
+      const enriched = enrichProfile(profile);
       setState({ profile: enriched, isLoading: false, error: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to refresh profile';

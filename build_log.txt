@@ -1,0 +1,95 @@
+﻿[36mvite v5.4.19 [32mbuilding for production...[36m[39m
+transforming...
+node.exe : Browserslist: 
+browsers data (caniuse-lite) 
+is 8 months old. Please run:
+At C:\Program 
+Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (Browsersl  
+  ist: b...ld. Please run::   
+ String) [], RemoteExcepti    
+on
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+  npx 
+update-browserslist-db@latest
+  Why you should do it 
+regularly: https://github.com/
+browserslist/update-db#readme
+[32mΓ£ô[39m 38 modules transformed.
+[31mx[39m Build failed in 
+5.32s
+[31merror during build:
+[31m[vite:esbuild] Transform 
+failed with 1 error:
+C:/Users/SANDIP/Desktop/Unifie
+d-Experience/unified-experienc
+e/src/pages/AdminPage.tsx:273:
+29: ERROR: Expected ")" but 
+found "className"[31m
+file: [36mC:/Users/SANDIP/Des
+ktop/Unified-Experience/unifie
+d-experience/src/pages/AdminPa
+ge.tsx:273:29[31m
+[33m
+[33mExpected ")" but found 
+"className"[33m
+271|                          
+</div>
+272|  
+273|                          
+<div className="border 
+border-white/10 bg-black/20">
+   |                          
+     ^
+274|                          
+    {pendingLoading ? (
+275|                          
+        <div className="p-12 
+flex flex-col items-center 
+gap-4">
+[31m
+    at failureErrorWithLog (C:
+\Users\SANDIP\Desktop\Unified-
+Experience\unified-experience\
+node_modules\esbuild\lib\main.
+js:1472:15)
+    at C:\Users\SANDIP\Desktop
+\Unified-Experience\unified-ex
+perience\node_modules\esbuild\
+lib\main.js:755:50
+    at 
+responseCallbacks.<computed> (
+C:\Users\SANDIP\Desktop\Unifie
+d-Experience\unified-experienc
+e\node_modules\esbuild\lib\mai
+n.js:622:9)
+    at handleIncomingPacket (C
+:\Users\SANDIP\Desktop\Unified
+-Experience\unified-experience
+\node_modules\esbuild\lib\main
+.js:677:12)
+    at Socket.readFromStdout (
+C:\Users\SANDIP\Desktop\Unifie
+d-Experience\unified-experienc
+e\node_modules\esbuild\lib\mai
+n.js:600:7)
+    at Socket.emit 
+(node:events:518:28)
+    at addChunk (node:internal
+/streams/readable:561:12)
+    at 
+readableAddChunkPushByteMode (
+node:internal/streams/readable
+:512:3)
+    at Readable.push (node:int
+ernal/streams/readable:392:5)
+    at Pipe.onStreamRead (node
+:internal/stream_base_commons:
+189:23)[39m

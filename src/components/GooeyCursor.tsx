@@ -4,147 +4,122 @@ interface GooeyCursorProps {
   size?: number;
 }
 
-const GooeyCursor = memo(function GooeyCursor({ size = 24 }: GooeyCursorProps) {
-  const cursorRef = useRef<HTMLDivElement>(null);
-  const trailRef = useRef<HTMLDivElement>(null);
-  const isHoveringRef = useRef(false);
-  const rafIdRef = useRef<number | null>(null);
+const GooeyCursor = memo(function GooeyCursor({ size = 50 }: GooeyCursorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const blobsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    // Check if device supports hover (not touch-only)
     const mediaQuery = window.matchMedia('(pointer: fine)');
-    
-    let mouseX = 0;
-    let mouseY = 0;
-    let cursorX = 0;
-    let cursorY = 0;
-    let trailX = 0;
-    let trailY = 0;
+
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
     let alive = true;
-    let lastTime = 0;
+
+    // We'll use 5 blobs for the liquid trail
+    const numBlobs = 5;
+    const followers = Array.from({ length: numBlobs }, () => ({ x: mouseX, y: mouseY, vx: 0, vy: 0 }));
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
-      // Use direct DOM opacity instead of React state to avoid re-render
-      if (cursorRef.current) cursorRef.current.style.opacity = '1';
-      if (trailRef.current) trailRef.current.style.opacity = '0.4';
+      if (containerRef.current) containerRef.current.style.opacity = '1';
     };
 
     const handleMouseLeave = () => {
-      if (cursorRef.current) cursorRef.current.style.opacity = '0';
-      if (trailRef.current) trailRef.current.style.opacity = '0';
+      if (containerRef.current) containerRef.current.style.opacity = '0';
     };
 
-    // Detect hoverable elements via pointer delegation (less noisy than mouseover)
-    const handleElementHover = (e: PointerEvent) => {
-      const target = e.target as HTMLElement;
-      const isInteractive =
-        target.tagName === 'A' ||
-        target.tagName === 'BUTTON' ||
-        target.closest('a') ||
-        target.closest('button') ||
-        target.classList.contains('module-link') ||
-        target.closest('.module-link');
-
-      isHoveringRef.current = !!isInteractive;
-    };
-
-    const animate = (now: number) => {
+    const animate = () => {
       if (!alive) return;
 
-      // Frame-rate independent damping: normalize to 60fps baseline
-      const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.1) : 1 / 60;
-      lastTime = now;
-      const dt60 = dt * 60; // 1.0 at 60fps
+      followers.forEach((f, i) => {
+        if (i === 0) {
+          // Snappy lead blob
+          f.x += (mouseX - f.x) * 0.4;
+          f.y += (mouseY - f.y) * 0.4;
+        } else {
+          // Physics-based trailing blobs for liquid string effect
+          const target = followers[i - 1];
+          const dx = target.x - f.x;
+          const dy = target.y - f.y;
 
-      // Exponential decay damping — consistent at any framerate
-      const dampMain = 1 - Math.pow(1 - 0.15, dt60);
-      const dampTrail = 1 - Math.pow(1 - 0.08, dt60);
+          f.vx += dx * 0.18;
+          f.vy += dy * 0.18;
+          f.vx *= 0.65; // Friction
+          f.vy *= 0.65;
 
-      cursorX += (mouseX - cursorX) * dampMain;
-      cursorY += (mouseY - cursorY) * dampMain;
+          f.x += f.vx;
+          f.y += f.vy;
+        }
 
-      trailX += (mouseX - trailX) * dampTrail;
-      trailY += (mouseY - trailY) * dampTrail;
+        const el = blobsRef.current[i];
+        if (el) {
+          // The scale drops off to make the tail thinner
+          const scale = 1 - (i * 0.15);
+          el.style.transform = `translate(${f.x - size / 2}px, ${f.y - size / 2}px) scale(${scale})`;
+        }
+      });
 
-      const hovering = isHoveringRef.current;
-
-      if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate(${cursorX - size / 2}px, ${cursorY - size / 2}px) scale(${hovering ? 2 : 1})`;
-      }
-
-      if (trailRef.current) {
-        trailRef.current.style.transform = `translate(${trailX - size * 1.5 / 2}px, ${trailY - size * 1.5 / 2}px) scale(${hovering ? 1.5 : 1})`;
-      }
-
-      rafIdRef.current = requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
     };
 
     const attach = () => {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseleave', handleMouseLeave);
-      document.addEventListener('pointerover', handleElementHover);
-      rafIdRef.current = requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
     };
 
     const detach = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
-      document.removeEventListener('pointerover', handleElementHover);
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-      if (cursorRef.current) cursorRef.current.style.opacity = '0';
-      if (trailRef.current) trailRef.current.style.opacity = '0';
-    };
-
-    // Listen for dynamic pointer capability changes (e.g. tablet dock/undock)
-    const handleMediaChange = (e: MediaQueryListEvent) => {
-      if (e.matches) {
-        attach();
-      } else {
-        detach();
-      }
     };
 
     if (mediaQuery.matches) attach();
-    mediaQuery.addEventListener('change', handleMediaChange);
+    mediaQuery.addEventListener('change', (e) => (e.matches ? attach() : detach()));
 
     return () => {
       alive = false;
       detach();
-      mediaQuery.removeEventListener('change', handleMediaChange);
     };
   }, [size]);
 
   return (
     <>
-      {/* Main cursor blob */}
       <div
-        id="gooey-cursor"
-        ref={cursorRef}
-        className="cursor-gooey gooey-cursor"
+        ref={containerRef}
+        className="fixed inset-0 pointer-events-none z-[9999] opacity-0 transition-opacity duration-300"
         style={{
-          width: size,
-          height: size,
-          opacity: 0,
-          transition: 'opacity 0.3s ease',
+          filter: 'url(#gooey-cursor-filter)',
+          mixBlendMode: 'difference',
         }}
-        aria-hidden="true"
-      />
-      {/* Trail blob for gooey effect */}
-      <div
-        id="gooey-cursor-trail"
-        ref={trailRef}
-        className="cursor-gooey gooey-cursor"
-        style={{
-          width: size * 1.5,
-          height: size * 1.5,
-          opacity: 0,
-          transition: 'opacity 0.4s ease',
-        }}
-        aria-hidden="true"
-      />
+      >
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            ref={el => blobsRef.current[i] = el}
+            className="absolute rounded-full bg-white will-change-transform"
+            style={{
+              width: size,
+              height: size,
+            }}
+          />
+        ))}
+      </div>
+
+      <svg style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}>
+        <defs>
+          <filter id="gooey-cursor-filter">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 25 -10"
+              result="goo"
+            />
+            <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+          </filter>
+        </defs>
+      </svg>
     </>
   );
 });

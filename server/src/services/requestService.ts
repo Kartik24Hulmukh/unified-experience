@@ -93,11 +93,11 @@ export async function listRequests(params: ListRequestsParams) {
     params.role === 'ADMIN'
       ? {}
       : {
-          OR: [
-            { buyerId: params.userId },
-            { sellerId: params.userId },
-          ],
-        };
+        OR: [
+          { buyerId: params.userId },
+          { sellerId: params.userId },
+        ],
+      };
 
   const [requests, total] = await prisma.$transaction([
     prisma.request.findMany({
@@ -150,9 +150,18 @@ export async function getRequest(id: string, userId: string, role: string) {
    Create Request
    ═══════════════════════════════════════════════════ */
 
+import { getCurrentUser } from '@/services/authService';
+
 export async function createRequest(input: CreateRequestInput, buyerId: string) {
+  // SEC-GOV-01: Enforce RestrictionEngine
+  const trust = await getCurrentUser(buyerId);
+  if (trust.restriction.isRestricted) {
+    throw new ForbiddenError(`Action restricted: ${trust.restriction.reasons.join(' ')}`);
+  }
+
   return prisma.$transaction(async (tx) => {
     // Verify listing exists and is approved
+    // Acquisition-time check is okay for existence, but status must be locked atomically.
     const listing = await tx.listing.findUnique({
       where: { id: input.listingId },
     });
@@ -161,16 +170,37 @@ export async function createRequest(input: CreateRequestInput, buyerId: string) 
       throw new NotFoundError('Listing', input.listingId);
     }
 
-    if (listing.status !== 'APPROVED' && listing.status !== 'INTEREST_RECEIVED') {
-      throw new ConflictError('Listing is not available for requests');
-    }
-
     if (listing.ownerId === buyerId) {
       throw new ConflictError('You cannot request your own listing');
     }
 
-    // Application-level partial unique check (race-safe inside tx):
-    // No active (non-terminal) request for same listing + buyer
+    // EXCH-RACE-01: Atomic Lock.
+    // We update the status ONLY IF it is still APPROVED. 
+    // This prevents two buyers from hitting the same listing at the exact same millisecond.
+    const [updatedCount] = await Promise.all([
+      tx.listing.updateMany({
+        where: {
+          id: input.listingId,
+          status: 'APPROVED'
+        },
+        data: { status: 'INTEREST_RECEIVED' },
+      }),
+    ]);
+
+    // If the listing wasn't APPROVED, it means someone else already requested it 
+    // or it's in a different terminal state.
+    if (updatedCount.count === 0 && listing.status === 'APPROVED') {
+      throw new ConflictError('Listing was just taken by another user. Status outdated.');
+    }
+
+    // If it was already INTEREST_RECEIVED, that's okay (multiple interests allowed for some models, 
+    // but here we check if a transaction is already in progress). 
+    if (listing.status !== 'APPROVED' && listing.status !== 'INTEREST_RECEIVED') {
+      throw new ConflictError('Listing is not available for requests');
+    }
+
+    // EXCH-RACE-02: Application-level check for buyer duality.
+    // No active (non-terminal) request for same listing + buyer.
     const existing = await tx.request.findFirst({
       where: {
         listingId: input.listingId,
@@ -181,14 +211,6 @@ export async function createRequest(input: CreateRequestInput, buyerId: string) 
 
     if (existing) {
       throw new ConflictError('You already have an active request for this listing');
-    }
-
-    // Update listing status to INTEREST_RECEIVED if first request
-    if (listing.status === 'APPROVED') {
-      await tx.listing.update({
-        where: { id: input.listingId },
-        data: { status: 'INTEREST_RECEIVED' },
-      });
     }
 
     const req = await tx.request.create({
@@ -224,6 +246,44 @@ export async function createRequest(input: CreateRequestInput, buyerId: string) 
    Update Request Event (FSM Transition)
    ═══════════════════════════════════════════════════ */
 
+/* ─── Role-to-event permission matrix ──────────────────────────────────────
+   EXCH-BUG-05: without this, a buyer can ACCEPT (seller-only) and a seller
+   can WITHDRAW (buyer-only). The FSM will reject the state change, BUT the
+   audit log would still record a forbidden attempt under the wrong actor.
+   Better to fail at the authorization gate, not inside the FSM.
+────────────────────────────────────────────────────────────────────────── */
+const BUYER_ONLY_EVENTS = new Set<string>(['SEND', 'WITHDRAW', 'DISPUTE']);
+const SELLER_ONLY_EVENTS = new Set<string>(['ACCEPT', 'DECLINE']);
+const EITHER_PARTY_EVENTS = new Set<string>(['SCHEDULE', 'CONFIRM', 'CANCEL']);
+const ADMIN_ONLY_EVENTS = new Set<string>(['RESOLVE', 'EXPIRE']);
+
+function authorizeEvent(
+  event: string,
+  actorId: string,
+  actorRole: string,
+  buyerId: string,
+  sellerId: string,
+): void {
+  if (actorRole === 'ADMIN') return; // admins bypass role restrictions
+
+  if (ADMIN_ONLY_EVENTS.has(event)) {
+    throw new ForbiddenError(`Event '${event}' is restricted to administrators`);
+  }
+
+  const isBuyer = actorId === buyerId;
+  const isSeller = actorId === sellerId;
+
+  if (BUYER_ONLY_EVENTS.has(event) && !isBuyer) {
+    throw new ForbiddenError(`Event '${event}' can only be performed by the buyer`);
+  }
+  if (SELLER_ONLY_EVENTS.has(event) && !isSeller) {
+    throw new ForbiddenError(`Event '${event}' can only be performed by the seller`);
+  }
+  if (EITHER_PARTY_EVENTS.has(event) && !isBuyer && !isSeller) {
+    throw new ForbiddenError('You are not a party to this request');
+  }
+}
+
 export async function updateRequestEvent(
   requestId: string,
   input: UpdateRequestEventInput,
@@ -231,6 +291,11 @@ export async function updateRequestEvent(
   actorRole: string,
 ) {
   return prisma.$transaction(async (tx) => {
+    // PROD-06: removed service-level idempotency check. It used the raw
+    // `idempotencyKey` while the middleware uses `${userId}:${key}` as the
+    // composite key — they never matched, making this check dead code.
+    // The middleware's onSend hook handles replay correctly at the HTTP layer.
+
     // 1. Acquire row-level lock with FOR UPDATE to prevent concurrent transitions
     const rows = await tx.$queryRaw<Array<{
       id: string;
@@ -264,6 +329,9 @@ export async function updateRequestEvent(
       throw new ForbiddenError('You do not have access to this request');
     }
 
+    // EXCH-BUG-05: role-level event authorization (before FSM, so audit log is clean)
+    authorizeEvent(input.event, actorId, actorRole, row.buyer_id, row.seller_id);
+
     // 4. Apply FSM event → new status
     const newStatus = applyRequestEvent(row.status as RequestStatus, input.event);
 
@@ -288,17 +356,47 @@ export async function updateRequestEvent(
         data: { status: 'COMPLETED' },
       });
 
-      await tx.user.update({
-        where: { id: row.seller_id },
+      // EXCH-BUG-02: increment BOTH parties' completedExchanges counters.
+      await tx.user.updateMany({
+        where: { id: { in: [row.seller_id, row.buyer_id] } },
         data: { completedExchanges: { increment: 1 } },
       });
     }
 
-    if (newStatus === 'CANCELLED') {
-      await tx.user.update({
-        where: { id: row.buyer_id },
-        data: { cancelledRequests: { increment: 1 } },
+    if (newStatus === 'ACCEPTED') {
+      // EXCH-BUG-06: When a request is accepted, the listing MUST move to IN_TRANSACTION.
+      // This prevents other users from interacting with it until it's finished or cancelled.
+      await tx.listing.update({
+        where: { id: row.listing_id },
+        data: { status: 'IN_TRANSACTION' },
       });
+    }
+
+    if (newStatus === 'CANCELLED' || newStatus === 'WITHDRAWN' || newStatus === 'DECLINED') {
+      // EXCH-BUG-03: attribute CANCEL to the actor
+      if (newStatus === 'CANCELLED') {
+        await tx.user.update({
+          where: { id: actorId },
+          data: { cancelledRequests: { increment: 1 } },
+        });
+      }
+
+      // EXCH-BUG-04 (Safe Version): Check if any OTHER active (non-terminal)
+      // requests exist for this listing before reverting to APPROVED.
+      const activeCount = await tx.request.count({
+        where: {
+          listingId: row.listing_id,
+          id: { not: requestId },
+          status: { notIn: TERMINAL_STATUSES },
+        },
+      });
+
+      if (activeCount === 0) {
+        await tx.listing.update({
+          where: { id: row.listing_id },
+          data: { status: 'APPROVED' },
+        });
+      }
     }
 
     // 7. Audit log
@@ -308,9 +406,12 @@ export async function updateRequestEvent(
         action: 'REQUEST_EVENT',
         entityType: 'Request',
         entityId: requestId,
-        metadata: { event: input.event, from: row.status, to: newStatus },
+        metadata: { event: input.event, from: row.status, to: newStatus, actorRole },
       },
     });
+
+    // PROD-06 (part B): removed service-level idempotency store — the middleware's
+    // onSend hook handles this with the correct composite key format.
 
     return updated;
   });

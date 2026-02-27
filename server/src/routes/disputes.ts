@@ -9,6 +9,7 @@
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
 import { authorize } from '@/middleware/authorize';
+import { idempotency } from '@/middleware/idempotency';
 import { validate } from '@/middleware/validate';
 import { createDisputeSchema, updateDisputeStatusSchema } from '@/shared/validation';
 import { apiData, apiPage } from '@/shared/response';
@@ -35,7 +36,7 @@ export async function disputeRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/disputes',
     {
-      preHandler: authenticate,
+      preHandler: [authenticate, idempotency],
       preValidation: validate(createDisputeSchema),
     },
     async (request, reply) => {
@@ -51,7 +52,7 @@ export async function disputeRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     '/disputes/:id/status',
     {
-      preHandler: [authenticate, authorize('ADMIN')],
+      preHandler: [authenticate, authorize('ADMIN'), idempotency],
       preValidation: validate(updateDisputeStatusSchema),
     },
     async (request, reply) => {

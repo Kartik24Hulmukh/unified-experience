@@ -145,6 +145,12 @@ const ResalePage = () => {
             {categories.map((cat, i) => (
               <div
                 key={cat.id}
+                // UX-05: clicking a category card now filters the listing grid by that category
+                onClick={() => setSearchQuery(cat.id)}
+                role="button"
+                aria-label={`Filter by ${cat.title}`}
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && setSearchQuery(cat.id)}
                 className={`category-card group cursor-pointer ${i === 0 ? 'md:col-span-7' : i === 1 ? 'md:col-span-5' : i === 2 ? 'md:col-span-4' : 'md:col-span-8'
                   }`}
                 style={{ perspective: '1000px' }}
@@ -267,11 +273,10 @@ const ResalePage = () => {
               setIsModalOpen(true);
             }}
             disabled={!canCreateListing}
-            className={`px-12 py-5 font-display uppercase tracking-wider text-sm group relative overflow-hidden transition-colors ${
-              canCreateListing
+            className={`px-12 py-5 font-display uppercase tracking-wider text-sm group relative overflow-hidden transition-colors ${canCreateListing
                 ? 'bg-portal-foreground text-portal hover:bg-teal-400'
                 : 'bg-portal-foreground/30 text-portal/50 cursor-not-allowed'
-            }`}
+              }`}
           >
             <span className="relative z-10 flex items-center justify-center">
               List Your First Item <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
@@ -289,7 +294,11 @@ const ResalePage = () => {
       >
         <ResourceListingForm
           moduleName="Resale"
-          onSuccess={() => setIsModalOpen(false)}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            // UX-06: refresh listing grid after successful submission
+            refetch();
+          }}
         />
       </ListingFormModal>
     </div>

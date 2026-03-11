@@ -11,6 +11,7 @@
 
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { IDEMPOTENCY } from '@/config/constants';
 import { IdempotencyConflictError, IdempotencyReplayError } from '@/errors/index';
 
@@ -153,16 +154,19 @@ export async function idempotencyCacheResponse(
     expiry.setHours(expiry.getHours() + IDEMPOTENCY.EXPIRES_HOURS);
 
     // Parse payload safely
-    let responseBody: Record<string, unknown> | Buffer = {};
+    let responseBody: Prisma.InputJsonValue = {};
     if (typeof payload === 'string') {
       try {
-        responseBody = JSON.parse(payload);
+        responseBody = JSON.parse(payload) as Prisma.InputJsonObject;
       } catch {
+        // Fallback for non-JSON strings
         responseBody = { raw: payload };
       }
     } else if (payload && typeof payload === 'object') {
-      responseBody = payload;
+      // payload could be a Buffer or generic object
+      responseBody = payload as unknown as Prisma.InputJsonObject;
     }
+
 
     // UPDATE: Only store if the request was successful or a 4xx.
     // We generally don't want to cache 5xx internal errors.

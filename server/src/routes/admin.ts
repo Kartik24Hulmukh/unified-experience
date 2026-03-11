@@ -10,7 +10,8 @@
  * POST   /api/admin/recovery     — Stale transaction recovery
  */
 
-import type { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import { Prisma } from '@prisma/client';
 import { authenticate } from '@/middleware/authenticate';
 import { authorize } from '@/middleware/authorize';
 import { validate } from '@/middleware/validate';
@@ -88,7 +89,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
         action,
         entityType: entityType ?? 'USER',
         entityId: targetUserId,
-        metadata,
+        metadata: metadata as Prisma.InputJsonObject | undefined,
         actorRole: request.userRole,
         ipAddress: request.ip,
       });

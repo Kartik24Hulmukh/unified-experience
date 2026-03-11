@@ -6,12 +6,15 @@
  */
 
 import { prisma } from '@/lib/prisma';
-import { NotFoundError, ConflictError, ForbiddenError } from '@/errors/index';
+import { NotFoundError, ConflictError, ForbiddenError, InvalidTransitionError } from '@/errors/index';
 import { PAGINATION } from '@/config/constants';
 import type { CreateDisputeInput, UpdateDisputeStatusInput } from '@/shared/validation';
 import type { DisputeStatus, DisputeType } from '@prisma/client';
 import { createDisputeMachine } from '@/domain/disputeEngine';
 import type { DisputeEvent, DisputeState } from '@/domain/disputeEngine';
+import { createRequestMachine, type RequestState } from '@/domain/fsm/RequestMachine';
+import { requireWritePrivilege } from '@/services/adminService';
+import { getCurrentUser } from '@/services/authService';
 
 /* ═══════════════════════════════════════════════════
    FSM Transition Helper
@@ -48,15 +51,13 @@ function applyDisputeTransition(
   const event = STATUS_TO_EVENT[targetStatus];
 
   if (!event) {
-    throw new ConflictError(`Invalid target status: ${targetStatus}`);
+    throw new InvalidTransitionError('Dispute', currentStatus, targetStatus);
   }
 
   const machine = createDisputeMachine({ state: fsmState });
 
   if (!machine.can(event)) {
-    throw new ConflictError(
-      `Cannot transition dispute from '${currentStatus}' to '${targetStatus}'`,
-    );
+    throw new InvalidTransitionError('Dispute', currentStatus, targetStatus);
   }
 
   const next = machine.send(event);
@@ -96,8 +97,10 @@ export async function listDisputes(params: ListDisputesParams) {
     prisma.dispute.findMany({
       where,
       include: {
-        raisedBy: { select: { id: true, fullName: true, email: true } },
-        against: { select: { id: true, fullName: true, email: true } },
+        // SEC-PII-01: email stripped for non-admin views — students should not
+        // see each other's email addresses through the dispute API.
+        raisedBy: { select: { id: true, fullName: true } },
+        against: { select: { id: true, fullName: true } },
         request: {
           select: {
             id: true,
@@ -124,6 +127,12 @@ export async function listDisputes(params: ListDisputesParams) {
    ═══════════════════════════════════════════════════ */
 
 export async function createDispute(input: CreateDisputeInput, raisedById: string) {
+  // SEC-GOV-01: Pre-flight restriction check — blocks PUBLIC_USER from raising disputes
+  const trust = await getCurrentUser(raisedById);
+  if (trust.restriction.isRestricted) {
+    throw new ForbiddenError(`Action restricted: ${trust.restriction.reasons.join(' ')}`);
+  }
+
   return prisma.$transaction(async (tx) => {
     // Verify the against user exists
     const againstUser = await tx.user.findUnique({
@@ -162,13 +171,15 @@ export async function createDispute(input: CreateDisputeInput, raisedById: strin
         listingId = request.listingId;
       }
 
-      // EXCH-BUG-08: apply DISPUTED transition via FSM + version bump, not a raw status write.
-      // Direct write bypasses the version counter, silently breaking optimistic locking.
+      // DET-3 FIX: validate the DISPUTED transition through the Request FSM instead of
+      // a hardcoded whitelist. This keeps dispute creation in sync with any future FSM
+      // changes (e.g., if new states that allow DISPUTE are added).
       if (request.status !== 'DISPUTED') {
-        const validFromStates: string[] = ['COMPLETED', 'ACCEPTED', 'MEETING_SCHEDULED'];
-        if (!validFromStates.includes(request.status)) {
+        const fsmState = request.status.toLowerCase() as RequestState;
+        const machine = createRequestMachine({ state: fsmState, history: [] });
+        if (!machine.can('DISPUTE')) {
           throw new ConflictError(
-            `Cannot file a dispute for a request in state '${request.status}'. Only COMPLETED or active meeting requests can be disputed.`,
+            'A dispute cannot be filed for this request in its current state.',
           );
         }
         await tx.request.update({
@@ -220,8 +231,9 @@ export async function createDispute(input: CreateDisputeInput, raisedById: strin
         status: 'OPEN',
       },
       include: {
-        raisedBy: { select: { id: true, fullName: true, email: true } },
-        against: { select: { id: true, fullName: true, email: true } },
+        // SEC-PII-01: email stripped — student-facing response
+        raisedBy: { select: { id: true, fullName: true } },
+        against: { select: { id: true, fullName: true } },
         request: { select: { id: true, listing: { select: { id: true, title: true } } } },
         listing: { select: { id: true, title: true } },
       },
@@ -260,6 +272,9 @@ export async function updateDisputeStatus(
   actorId: string,
 ) {
   return prisma.$transaction(async (tx) => {
+    // OBSERVER admins are read-only — block write operations
+    await requireWritePrivilege(actorId);
+
     // PROD-05: acquire row-level lock to prevent two concurrent admin
     // PATCH requests from both reading the same status and both
     // succeeding (the second write would silently overwrite the first).

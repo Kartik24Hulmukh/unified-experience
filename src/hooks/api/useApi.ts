@@ -237,16 +237,10 @@ export function useVerifyOtp() {
   });
 }
 
-export function useLogout() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => api.post('/auth/logout', undefined, { skipAuth: true }),
-    onSettled: () => {
-      queryClient.clear();
-    },
-  });
-}
+// H3-FIX: useLogout() hook removed — it was dead code (never imported).
+// All logout goes through AuthContext.logout() + ContextNav. The new
+// AuthCacheSyncer in App.tsx handles React Query cache clearing on
+// any auth→unauth transition, making this hook redundant.
 
 /* ═══════════════════════════════════════════════════
    Profile Hooks

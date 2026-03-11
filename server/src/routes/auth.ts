@@ -27,6 +27,50 @@ import { REFRESH_COOKIE } from '@/config/constants';
 import { env } from '@/config/env';
 import * as authService from '@/services/authService';
 
+/* ── Per-email rate limiter (HIGH-C FIX) ────────────────────────────────────
+ * The global @fastify/rate-limit is keyed by IP, so a distributed brute-force
+ * attack (many IPs targeting one account) bypasses it. This in-memory sliding
+ * window adds a second layer keyed by email address: max 15 attempts per 5 min.
+ *
+ * The DB lockout inside authService.login() fires at ≥5 wrong passwords, but
+ * that only counts successful route completions. This check fires before service
+ * code runs, preventing even the DB lookup from being abused at scale.
+ * ─────────────────────────────────────────────────────────────────────────── */
+const EMAIL_RATE_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const EMAIL_RATE_MAX = 15; // max login attempts per email per window
+
+// MED-2 NOTE: emailRateMap is an in-process Map. In a single-process deployment
+// (Docker single container, PM2 single worker) this is sufficient. In a
+// multi-process or multi-replica setup each process has its own map, making the
+// effective limit EMAIL_RATE_MAX * numReplicas. If horizontal scaling is planned,
+// back this with a Redis INCR/EXPIRE counter or a DB row with a sliding window.
+interface RateBucket { timestamps: number[] }
+const emailRateMap = new Map<string, RateBucket>();
+
+// Periodically evict expired buckets to prevent unbounded memory growth
+// HIGH-02 FIX: store the interval handle so it can be cleared on server shutdown,
+// preventing the timer from keeping the Node.js event loop alive during graceful exit.
+const emailRatePruneInterval = setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of emailRateMap) {
+    bucket.timestamps = bucket.timestamps.filter((t) => now - t < EMAIL_RATE_WINDOW_MS);
+    if (bucket.timestamps.length === 0) emailRateMap.delete(key);
+  }
+}, EMAIL_RATE_WINDOW_MS);
+// Allow Node.js to exit even if this timer is still pending
+emailRatePruneInterval.unref();
+
+function checkEmailRateLimit(email: string): boolean {
+  const now = Date.now();
+  const key = email.toLowerCase();
+  const bucket = emailRateMap.get(key) ?? { timestamps: [] };
+  bucket.timestamps = bucket.timestamps.filter((t) => now - t < EMAIL_RATE_WINDOW_MS);
+  if (bucket.timestamps.length >= EMAIL_RATE_MAX) return false; // rate limited
+  bucket.timestamps.push(now);
+  emailRateMap.set(key, bucket);
+  return true; // allowed
+}
+
 /* ── Cookie helper ─────────────────────────────── */
 
 function setRefreshCookie(reply: FastifyReply, rawToken: string): void {
@@ -85,6 +129,16 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     '/login',
     { preValidation: validate(loginSchema) },
     async (request, reply) => {
+      const { email } = request.body as { email: string };
+      if (!checkEmailRateLimit(email)) {
+        return reply.status(429).send({
+          error: 'Too Many Requests',
+          // UX-2 FIX: unified to RATE_LIMIT_EXCEEDED (app.ts global handler uses same code)
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many login attempts for this account. Please wait and try again.',
+        });
+      }
+
       const result = await authService.login(request.body as any, {
         userAgent: request.headers['user-agent'],
         ipAddress: request.ip,

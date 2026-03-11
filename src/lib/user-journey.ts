@@ -19,6 +19,10 @@ export function canRunAdminRecovery(level?: AdminPrivilegeLevel): boolean {
   return level === 'SUPER';
 }
 
+export function canModerateContent(level?: AdminPrivilegeLevel): boolean {
+  return level === 'SUPER' || level === 'REVIEWER';
+}
+
 export function partitionExchangeRequests(requests: ExchangeRequest[]) {
   const activeStatuses: ExchangeRequest['status'][] = ['SENT', 'ACCEPTED', 'MEETING_SCHEDULED', 'DISPUTED'];
 

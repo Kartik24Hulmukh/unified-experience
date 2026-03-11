@@ -54,13 +54,11 @@ export async function idempotency(
         // Expired — delete and proceed to re-claim
         await prisma.idempotencyKey.delete({ where: { id: existing.id } });
       } else if (existing.responseStatus === 102) {
-        // Locked/Processing — tell client to back off
-        reply.status(409).send({
-          error: 'Conflict',
-          code: 'IDEMPOTENCY_PROCESSING',
-          message: 'A request with this key is already being processed.',
-        });
-        return;
+        // CRIT-02 FIX: throw instead of reply.send()+return.  In Fastify v5
+        // an async preHandler that calls reply.send() still lets the route
+        // handler execute. Throwing routes to setErrorHandler, which reliably
+        // bypasses the handler and its services.
+        throw new IdempotencyConflictError('A request with this key is already being processed.');
       } else {
         // Replay: throw to abort route handler in Fastify v5.
         // reply.send() alone does not prevent the route handler from running
@@ -95,13 +93,9 @@ export async function idempotency(
     // bubble up so the global error handler can return a proper 5xx — not a fake 409
     // that would make the client believe the operation is already in-flight.
     if (err?.code === 'P2002') {
+      // CRIT-02 FIX: throw so Fastify v5 bypasses the route handler.
       request.log.warn({ key: compositeKey }, 'Idempotency sentinel race — unique constraint hit');
-      reply.status(409).send({
-        error: 'Conflict',
-        code: 'IDEMPOTENCY_RACE',
-        message: 'Processing already in progress.',
-      });
-      return;
+      throw new IdempotencyConflictError('Processing already in progress.');
     }
     throw err;
   }
@@ -186,7 +180,16 @@ export async function idempotencyCacheResponse(
       },
     });
   } catch (err) {
-    request.log.warn({ key: compositeKey, err }, 'Failed to cache idempotency response');
+    // CORR-1 FIX: if the upsert fails, delete the sentinel immediately so the
+    // client isn't stuck receiving 409 for 10 minutes until the prune job runs.
+    // On next retry, the operation will re-execute — this is acceptable because
+    // the DB commit already happened (the user effectively got their resource).
+    request.log.warn({ key: compositeKey, err }, 'Failed to cache idempotency response — deleting sentinel');
+    try {
+      await prisma.idempotencyKey.deleteMany({ where: { key: compositeKey } });
+    } catch (deleteErr) {
+      request.log.error({ key: compositeKey, deleteErr }, 'Failed to delete idempotency sentinel after cache failure');
+    }
   }
 
   return payload;

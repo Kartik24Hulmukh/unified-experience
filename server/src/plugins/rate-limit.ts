@@ -23,8 +23,8 @@ export const ROUTE_RATE_LIMITS: Record<string, { max: number; timeWindow: string
   'POST /api/auth/signup': { max: 3, timeWindow: '15 minutes' },
   // SEC-RL-01: OTP resend is as sensitive as signup — cap at 3/15min per email
   'POST /api/auth/resend-otp': { max: 3, timeWindow: '15 minutes' },
-  // PROD-07: verify-otp has no rate limit — a 6-digit OTP has 1M combinations,
-  // brute-forceable in ~2h at 150 req/s without this cap.
+  // PROD-07 FIX: verify-otp is capped at 5 attempts per 15 minutes to prevent
+  // brute-forcing a 6-digit OTP (1M combinations) at scale.
   'POST /api/auth/verify-otp': { max: 5, timeWindow: '15 minutes' },
   'POST /api/auth/google': { max: 10, timeWindow: '15 minutes' },
   // Listings & Requests

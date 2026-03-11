@@ -113,7 +113,11 @@ export function handleApiError(error: unknown, options: HandleErrorOptions = {})
   // both layers clear the session, causing double BroadcastChannel 'logout'
   // events and duplicate "Session Expired" toasts.
   if (apiError.code === 'UNAUTHORIZED') {
-    if (sessionManager.isAuthenticated()) {
+    // L1-FIX: use getUser() instead of isAuthenticated() for a tighter guard.
+    // getUser() reads localStorage directly — once clearSession() removes the
+    // key, this returns null immediately, eliminating the micro-window where
+    // isAuthenticated() could still return true between clearSession() calls.
+    if (sessionManager.getUser()) {
       sessionManager.clearSession();
     }
     if (!silent) {

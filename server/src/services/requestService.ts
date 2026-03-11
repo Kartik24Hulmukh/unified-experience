@@ -55,7 +55,7 @@ function applyRequestEvent(currentStatus: RequestStatus, event: string): Request
 
   const fsmState = stateMap[currentStatus];
   if (!fsmState) {
-    throw new ConflictError(`Unknown request status: ${currentStatus}`);
+    throw new ConflictError('This request is in an unexpected state and cannot be updated right now.');
   }
 
   const machine = createRequestMachine({
@@ -65,14 +65,14 @@ function applyRequestEvent(currentStatus: RequestStatus, event: string): Request
 
   if (!machine.can(event as RequestEvent)) {
     throw new ConflictError(
-      `Cannot apply event '${event}' to request in state '${currentStatus}'`,
+      'This action cannot be performed on the request in its current state.',
     );
   }
 
   const next = machine.send(event as RequestEvent);
   const newStatus = reverseMap[next.state];
   if (!newStatus) {
-    throw new ConflictError(`FSM produced unknown state: ${next.state}`);
+    throw new ConflictError('An unexpected error occurred while processing this request. Please try again.');
   }
 
   return newStatus;
@@ -109,8 +109,9 @@ export async function listRequests(params: ListRequestsParams) {
       where,
       include: {
         listing: { select: { id: true, title: true, ownerId: true } },
-        buyer: { select: { id: true, fullName: true, email: true } },
-        seller: { select: { id: true, fullName: true, email: true } },
+        // HIGH-3 FIX: email stripped — buyer/seller emails must not be exposed pre-acceptance
+        buyer: { select: { id: true, fullName: true } },
+        seller: { select: { id: true, fullName: true } },
       },
       orderBy: { createdAt: 'desc' },
       skip,
@@ -133,9 +134,10 @@ export async function getRequest(id: string, userId: string, role: string) {
   const req = await prisma.request.findUnique({
     where: { id },
     include: {
-      listing: { include: { owner: { select: { id: true, fullName: true, email: true } } } },
-      buyer: { select: { id: true, fullName: true, email: true } },
-      seller: { select: { id: true, fullName: true, email: true } },
+      // HIGH-3 FIX: email stripped — never expose buyer/seller/owner email in request responses
+      listing: { include: { owner: { select: { id: true, fullName: true } } } },
+      buyer: { select: { id: true, fullName: true } },
+      seller: { select: { id: true, fullName: true } },
     },
   });
 
@@ -235,8 +237,9 @@ export async function createRequest(input: CreateRequestInput, buyerId: string) 
       },
       include: {
         listing: { select: { id: true, title: true, ownerId: true } },
-        buyer: { select: { id: true, fullName: true, email: true } },
-        seller: { select: { id: true, fullName: true, email: true } },
+        // HIGH-3 FIX: email stripped — buyer/seller emails must not be exposed pre-acceptance
+        buyer: { select: { id: true, fullName: true } },
+        seller: { select: { id: true, fullName: true } },
       },
     });
 
@@ -244,7 +247,7 @@ export async function createRequest(input: CreateRequestInput, buyerId: string) 
     await tx.auditLog.create({
       data: {
         actorId: buyerId,
-        actorRole: 'STUDENT',
+        actorRole: 'STUDENT_VERIFIED',
         action: 'REQUEST_CREATE',
         entityType: 'Request',
         entityId: req.id,
@@ -361,8 +364,9 @@ export async function updateRequestEvent(
       },
       include: {
         listing: { select: { id: true, title: true, ownerId: true } },
-        buyer: { select: { id: true, fullName: true, email: true } },
-        seller: { select: { id: true, fullName: true, email: true } },
+        // HIGH-3 FIX: email stripped — buyer/seller emails must not be exposed pre-acceptance
+        buyer: { select: { id: true, fullName: true } },
+        seller: { select: { id: true, fullName: true } },
       },
     });
 
@@ -377,7 +381,7 @@ export async function updateRequestEvent(
       if (completedCount.count === 0) {
         // Listing was not in the expected IN_TRANSACTION state — log and surface, do not silently corrupt.
         throw new ConflictError(
-          'Listing is not in IN_TRANSACTION state; cannot complete exchange. Possible concurrent state change.',
+          'Cannot complete this exchange — the listing was modified by another action. Please refresh and try again.',
         );
       }
 

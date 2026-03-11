@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, useCallback, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import gsap from 'gsap';
-import { unlockNavigation, lockNavigation } from '@/lib/utils';
+import { unlockNavigation, lockNavigation, isNavigationLocked } from '@/lib/utils';
 import { lenisInstance } from '@/lib/gsap-init';
 
 interface PageTransitionProps {
@@ -41,6 +41,11 @@ const PageTransition = ({ children }: PageTransitionProps) => {
   const latestChildrenRef = useRef<React.ReactNode>(children);
   latestChildrenRef.current = children;
 
+  // CRIT-E FIX: keep a ref mirroring location.pathname so swapContent's
+  // stable useCallback closure never reads a stale captured value.
+  const locationPathnameRef = useRef(location.pathname);
+  locationPathnameRef.current = location.pathname;
+
   // Safety: On mount, ensure curtain and container have correct initial state
   useEffect(() => {
     if (curtainRef.current) {
@@ -57,7 +62,7 @@ const PageTransition = ({ children }: PageTransitionProps) => {
   const swapContent = useCallback(() => {
     if (pendingChildrenRef.current) {
       setDisplayChildren(pendingChildrenRef.current);
-      displayLocationRef.current = pendingLocationRef.current || location.pathname;
+      displayLocationRef.current = pendingLocationRef.current || locationPathnameRef.current;
       pendingChildrenRef.current = null;
       pendingLocationRef.current = null;
     }
@@ -70,6 +75,16 @@ const PageTransition = ({ children }: PageTransitionProps) => {
 
     // Skip animation when not transitioning
     if (!isTransitioning) return;
+
+    // MED-B FIX: honour the user's motion preference (WCAG 2.1 AA §2.3.3).
+    // When prefers-reduced-motion is set, skip the curtain wipe entirely and
+    // swap content immediately — no animation, no scrollTrigger, no lenis pause.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      swapContent();
+      setIsTransitioning(false);
+      unlockNavigation();
+      return;
+    }
 
     // Kill any existing timeline before creating new one
     if (timelineRef.current) {
@@ -168,6 +183,10 @@ const PageTransition = ({ children }: PageTransitionProps) => {
       ctx.revert();
       // ISSUE-04 fix: always unlock navigation on cleanup — idempotent, safe to call twice
       unlockNavigation();
+      // HIGH-06 FIX: restart Lenis in cleanup so that if the component unmounts
+      // mid-transition (e.g. HMR, error boundary), smooth scroll is not left
+      // permanently paused. lenisInstance?.start() is idempotent.
+      lenisInstance?.start();
       // Safety: ensure container is always visible after cleanup
       if (container) {
         container.style.opacity = '1';
@@ -191,7 +210,9 @@ const PageTransition = ({ children }: PageTransitionProps) => {
 
     // Only trigger transition if the route actually changed
     // Lock duration = 1400ms matches the actual animation (1300ms) + 100ms buffer
-    if (location.pathname !== displayLocationRef.current && !isTransitioning) {
+    // MED-RACE FIX: also check isNavigationLocked() to prevent a second transition
+    // from starting while the first one's lock is still active (rapid route switching).
+    if (location.pathname !== displayLocationRef.current && !isTransitioning && !isNavigationLocked()) {
       lockNavigation(1400);
       // Store pending data in refs (no state update = no re-render mid-animation)
       pendingChildrenRef.current = latestChildrenRef.current;

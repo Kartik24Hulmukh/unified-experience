@@ -29,7 +29,7 @@ async function main() {
       email: 'buyer@mctrgit.ac.in',
       fullName: 'Buyer Student',
       password: buyerPw,
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
       verified: true,
     },
   });

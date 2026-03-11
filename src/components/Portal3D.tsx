@@ -20,8 +20,9 @@ class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: Reac
   state: WebGLGuardState = { hasError: false };
   static getDerivedStateFromError(): WebGLGuardState { return { hasError: true }; }
   componentDidCatch(error: Error, info: ErrorInfo) {
-     
-    console.warn('[Portal3D] WebGL crashed — showing fallback', error, info);
+    // HIGH-E FIX: use console.error so production log aggregators (Sentry, etc.)
+    // capture WebGL crashes rather than swallowing them at warn level.
+    console.error('[Portal3D] WebGL crashed — showing fallback', error, info);
   }
   render() {
     return this.state.hasError ? this.props.fallback : this.props.children;
@@ -72,8 +73,25 @@ const SceneCleanup = () => {
       disposeScene(scene);
       // Dispose the WebGL renderer
       gl.dispose();
-      // Note: do NOT call gl.forceContextLoss() here —
-      // it races with PageTransition overlapping canvases
+      // HIGH-D FIX: forcibly lose the WebGL context so the browser reclaims
+      // the slot from its 8-context limit. Using queueMicrotask instead of
+      // setTimeout(500) ensures the context is released at the end of the
+      // current microtask queue — fast enough to prevent exhausting the
+      // browser's ~8-context ceiling on rapid route changes, but still
+      // deferred so gl.dispose() above has fully completed.
+      const canvas = gl.domElement;
+      queueMicrotask(() => {
+        try {
+          const ext =
+            (canvas.getContext('webgl2') as WebGLRenderingContext | null)?.
+              getExtension('WEBGL_lose_context') ??
+            (canvas.getContext('webgl') as WebGLRenderingContext | null)?.
+              getExtension('WEBGL_lose_context');
+          if (ext) ext.loseContext();
+        } catch {
+          // Extension may not be available on all drivers — safe to ignore
+        }
+      });
     };
   }, [gl, scene]);
 

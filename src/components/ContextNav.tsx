@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -114,7 +114,7 @@ const ContextNav = memo(function ContextNav() {
   }, [isDarkBgPage, isHomepage]);
 
   // Animate menu open/close with automatic lifecycle management
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!menuRef.current) return;
 
     const ctx = gsap.context(() => {
@@ -308,7 +308,7 @@ const ContextNav = memo(function ContextNav() {
       <div
         ref={menuRef}
         className="fixed inset-0 z-40 bg-portal flex items-center justify-center"
-        style={{ clipPath: 'circle(0% at calc(100% - 40px) 40px)', willChange: 'clip-path' }}
+        style={{ clipPath: 'circle(0% at calc(100% - 40px) 40px)', willChange: isMenuOpen ? 'clip-path' : 'auto' }}
         role="dialog"
         aria-modal={isMenuOpen}
         aria-label="Navigation menu"
@@ -349,7 +349,11 @@ const ContextNav = memo(function ContextNav() {
               <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-2">Access</p>
               {isAuthenticated ? (
                 <div className="flex items-center gap-4">
-                  <p className="text-portal-foreground font-display text-lg capitalize">{user?.role || 'Student'}</p>
+                  <p className="text-portal-foreground font-display text-lg capitalize">{
+                    user?.role === 'student_verified' ? 'Verified Student' :
+                    user?.role === 'public_user' ? 'Public User' :
+                    user?.role === 'admin' ? 'Admin' : 'User'
+                  }</p>
                   {user?.role === 'admin' && (
                     <Link
                       to="/admin"

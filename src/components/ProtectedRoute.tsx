@@ -17,9 +17,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading, isHydrated, user } = useAuth();
   const location = useLocation();
 
-  // Still hydrating from localStorage — show loading spinner
-  // Use hardcoded white bg to prevent black flash in dark theme
-  if (!isHydrated || isLoading) {
+  // UX-02 FIX: only show the spinner during initial hydration (!isHydrated).
+  // Previously, isLoading was also checked, so a background token refresh
+  // (which briefly sets isLoading=true) would flash a full-page spinner on
+  // every protected page. Post-hydration loading states should not block the UI.
+  if (!isHydrated) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" role="status" aria-label="Loading">

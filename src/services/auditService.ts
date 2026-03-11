@@ -10,20 +10,18 @@
    Types
    ═══════════════════════════════════════════════════ */
 
+// MED-3 FIX: AuditAction must mirror the backend's AUDIT_ACTIONS const (validation.ts).
+// Previous values like VIEW_PROFILE, FRAUD_FLAG_RAISED, LISTING_APPROVED etc. were
+// never in the allowlist → every logAdminAction() call returned 400 and was silently
+// dropped, leaving the admin audit trail blind. Only use values accepted by the server.
 export type AuditAction =
-  | 'VIEW_PROFILE'
-  | 'FRAUD_FLAG_RAISED'
-  | 'FRAUD_REVIEW_PENDING'
-  | 'LISTING_APPROVED'
-  | 'LISTING_REJECTED'
-  | 'LISTING_RESUBMITTED'
-  | 'DISPUTE_RESOLVED'
-  | 'DISPUTE_REJECTED'
-  | 'DISPUTE_ESCALATED'
-  | 'USER_RESTRICTED'
-  | 'TRUST_OVERRIDE'
-  | 'REQUEST_CREATED'
-  | 'EXCHANGE_COMPLETED';
+  | 'ADMIN_FLAG_USER'
+  | 'ADMIN_RESTRICT_USER'
+  | 'ADMIN_APPROVE_LISTING'
+  | 'ADMIN_REJECT_LISTING'
+  | 'LISTING_STATUS_UPDATE'
+  | 'DISPUTE_STATUS_UPDATE'
+  | 'DISPUTE_ESCALATED';
 
 import api from '@/lib/api-client';
 import logger from '@/lib/logger';

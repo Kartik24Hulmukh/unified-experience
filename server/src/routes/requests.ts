@@ -15,6 +15,12 @@ import { createRequestSchema, updateRequestEventSchema } from '@/shared/validati
 import { apiData, apiPage } from '@/shared/response';
 import * as requestService from '@/services/requestService';
 
+// Safe parseInt: rejects NaN, negative, and non-finite values to prevent Prisma crashes.
+const safeParseInt = (s: string | undefined) => {
+  const n = s ? parseInt(s, 10) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+};
+
 export async function requestRoutes(app: FastifyInstance): Promise<void> {
   /** GET /requests — list user's requests */
   app.get(
@@ -25,8 +31,8 @@ export async function requestRoutes(app: FastifyInstance): Promise<void> {
       const result = await requestService.listRequests({
         userId: request.userId!,
         role: request.userRole!,
-        page: query.page ? parseInt(query.page, 10) : undefined,
-        limit: query.limit ? parseInt(query.limit, 10) : undefined,
+        page: safeParseInt(query.page),
+        limit: safeParseInt(query.limit),
       });
       return reply.status(200).send(apiPage(result.requests, result.pagination));
     },

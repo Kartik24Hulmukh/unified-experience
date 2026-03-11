@@ -55,7 +55,7 @@ import {
     getAdminSearchConfig,
     type AdminTab,
 } from '@/lib/admin-console';
-import { canRunAdminRecovery } from '@/lib/user-journey';
+import { canRunAdminRecovery, canModerateContent } from '@/lib/user-journey';
 import {
     useAdminPending, useAdminStats, useUpdateListingStatus,
     useDisputes, useUpdateDisputeStatus, useAdminAuditLog, useAdminFraudDashboard, useAdminRecovery
@@ -87,6 +87,7 @@ const AdminPage = () => {
     const { user } = useAuth();
     const recoveryMutation = useAdminRecovery();
     const recoveryEnabled = canRunAdminRecovery(user?.privilegeLevel);
+    const canModerate = canModerateContent(user?.privilegeLevel);
 
     // API data
     const { data: pendingResponse, isLoading: pendingLoading, isError: pendingError, error: pendingErr, refetch: refetchPending } = useAdminPending();
@@ -439,6 +440,7 @@ const AdminPage = () => {
                                                                             </div>
                                                                         </div>
                                                                     </div>
+                                                                    {canModerate && (
                                                                     <div className="flex justify-end space-x-4">
                                                                         <Button
                                                                             variant="outline"
@@ -465,6 +467,7 @@ const AdminPage = () => {
                                                                             Confirm & Manifest
                                                                         </Button>
                                                                     </div>
+                                                                    )}
                                                                 </DialogContent>
                                                             </Dialog>
                                                         </div>
@@ -513,6 +516,7 @@ const AdminPage = () => {
                                                     <TableCell><Badge variant={d.status === 'RESOLVED' ? 'default' : 'outline'} className={`text-[8px] uppercase tracking-widest ${d.status === 'OPEN' ? 'border-red-500/30 text-red-400' : d.status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'border-white/20 text-white/60'}`}>{d.status.replace(/_/g, ' ')}</Badge></TableCell>
                                                     <TableCell className="text-[10px] font-bold text-white/20 font-display">{new Date(d.createdAt).toLocaleDateString()}</TableCell>
                                                     <TableCell className="text-right">
+                                                        {canModerate ? (
                                                         <div className="flex justify-end space-x-2">
                                                             {d.status === 'OPEN' && (
                                                                 <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-amber-500/20 text-amber-400" onClick={() => openConfirmation({
@@ -540,6 +544,9 @@ const AdminPage = () => {
                                                                 </>
                                                             )}
                                                         </div>
+                                                        ) : (
+                                                        <span className="text-[9px] text-white/20 uppercase tracking-widest">Read-only</span>
+                                                        )}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}

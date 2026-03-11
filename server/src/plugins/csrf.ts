@@ -63,8 +63,18 @@ async function csrfPlugin(app: FastifyInstance): Promise<void> {
         httpOnly: false, // Client JS must read this to send as header
         sameSite: 'strict',
         secure: env.COOKIE_SECURE,
-        maxAge: 86400, // 24h
+        maxAge: 604800, // MED-5 FIX: 7 days (was 24h). A 24h expiry caused a
+        // 'hard logout' pattern: after 24h the cookie was gone, the next mutation
+        // fired a fresh CSRF cookie in the response Set-Cookie, but the CSRF
+        // validation hook ran first → 403 CSRF_INVALID. Heavy users hit this daily.
+        // 7 days aligns with the refresh-token lifetime so both expire together.
       });
+      // M1-FIX: make the freshly-generated token visible to the validation
+      // hook that runs later in the same request cycle. Without this, the
+      // cookie is only in the response Set-Cookie header — request.cookies
+      // still reads as undefined, causing a 403 on the first mutation after
+      // cookie expiry.
+      (request.cookies as Record<string, string>)[CSRF_COOKIE] = token;
     }
   });
 
@@ -76,6 +86,13 @@ async function csrfPlugin(app: FastifyInstance): Promise<void> {
 
       const cookieToken = request.cookies[CSRF_COOKIE];
       const headerToken = request.headers[CSRF_HEADER] as string | undefined;
+
+      // SEC-CSRF-04: The previous "grace" path allowed any request with a cookie
+      // but no header to pass — which is exactly the attack vector CSRF protects
+      // against (browser sends cookie automatically, attacker can't set header).
+      // Removed the grace bypass. Clients must always send X-CSRF-Token.
+      // After cookie expiry the first mutation will 403; the response Set-Cookie
+      // delivers the new token and the client retries with it.
 
       // SEC-CSRF-03: explicit emptiness check before any comparison
       if (!cookieToken || !headerToken) {

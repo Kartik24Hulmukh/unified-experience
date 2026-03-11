@@ -55,6 +55,7 @@ export async function getProfile(userId: string) {
     trustStatus: trust.status,
     activeDisputes: activeDisputesAgainst,
     adminOverride: user.isRestricted,
+    userRole: user.role,
   });
 
   // Shape the response to match the frontend Profile type
@@ -63,10 +64,11 @@ export async function getProfile(userId: string) {
     id: user.id,
     fullName: user.fullName,
     email: user.email,
-    role: user.role.toLowerCase() as 'student' | 'admin',
+    role: user.role.toLowerCase() as 'student_verified' | 'public_user' | 'admin',
     verified: user.verified,
     joinedAt: user.createdAt.toISOString(),
     avatarUrl: null as string | null,
+    collegeLinked: !!user.collegeStudentId,
   };
 
   if (user.role === 'ADMIN') {
@@ -96,14 +98,14 @@ export async function getProfile(userId: string) {
         academicListings: 0,
         systemUptimePercent: 100,
       },
-      privilegeLevel: (user.privilegeLevel?.toLowerCase() ?? 'standard') as 'super' | 'standard',
+      privilegeLevel: user.privilegeLevel?.toLowerCase() ?? 'standard',
     };
   }
 
-  // Student profile
+  // Student profile (both STUDENT_VERIFIED and PUBLIC_USER)
   return {
     identity,
-    role: 'student' as const,
+    role: user.role === 'STUDENT_VERIFIED' ? 'student_verified' as const : 'public_user' as const,
     data: {
       listingsCount: user._count.listings,
       requestsCount: user._count.buyerRequests,
@@ -118,4 +120,45 @@ export async function getProfile(userId: string) {
     trust,
     restriction,
   };
+}
+
+/**
+ * Link a public user's email to the college registry and upgrade to STUDENT_VERIFIED.
+ * Checks if the user's current email exists in CollegeStudentRegistry.
+ */
+export async function linkCollegeEmail(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+
+  if (!user) {
+    throw new NotFoundError('User', userId);
+  }
+
+  if (user.role === 'ADMIN') {
+    throw new NotFoundError('User', userId); // Admins don't upgrade
+  }
+
+  if (user.role === 'STUDENT_VERIFIED') {
+    return { message: 'Your account is already verified as a college student.', upgraded: false };
+  }
+
+  const collegeRecord = await prisma.collegeStudent.findUnique({
+    where: { officialEmail: user.email.toLowerCase().trim() },
+  });
+
+  if (!collegeRecord) {
+    return {
+      message: 'Your email was not found in the college registry. Contact administration if you believe this is an error.',
+      upgraded: false,
+    };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      role: 'STUDENT_VERIFIED',
+      collegeStudentId: collegeRecord.id,
+    },
+  });
+
+  return { message: 'Your account has been upgraded to verified college student!', upgraded: true };
 }

@@ -41,7 +41,7 @@ async function main() {
       email: 'testuser@mctrgit.ac.in',
       fullName: 'Test Seller',
       password: sellerPw,
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
       verified: true,
     },
   });
@@ -55,7 +55,7 @@ async function main() {
       email: 'buyer@mctrgit.ac.in',
       fullName: 'Buyer Student',
       password: buyerPw,
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
       verified: true,
     },
   });

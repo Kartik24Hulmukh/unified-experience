@@ -16,12 +16,15 @@ datasource db {
 // ═══════════════════════════════════════════════════
 
 enum UserRole {
-  STUDENT
+  STUDENT_VERIFIED
+  PUBLIC_USER
   ADMIN
 }
 
 enum PrivilegeLevel {
   STANDARD
+  OBSERVER
+  REVIEWER
   SUPER
 }
 
@@ -80,11 +83,15 @@ model User {
   email              String         @unique
   fullName           String         @map("full_name")
   password           String?        // null for Google-only accounts
-  role               UserRole       @default(STUDENT)
+  role               UserRole       @default(PUBLIC_USER)
   privilegeLevel     PrivilegeLevel @default(STANDARD) @map("privilege_level")
   trustStatus        String         @default("GOOD_STANDING") @map("trust_status")
   verified           Boolean        @default(false)
   avatarUrl          String?        @map("avatar_url")
+
+  // College linkage — set when email exists in CollegeStudentRegistry
+  collegeStudentId   String?        @unique @map("college_student_id")
+  collegeStudent     CollegeStudent? @relation(fields: [collegeStudentId], references: [id])
 
   // Restriction state
   isRestricted       Boolean  @default(false) @map("is_restricted")
@@ -114,6 +121,27 @@ model User {
   @@index([email])
   @@index([role])
   @@map("users")
+}
+
+// ═══════════════════════════════════════════════════
+// College Student Registry — official college student records
+// ═══════════════════════════════════════════════════
+
+model CollegeStudent {
+  id             String  @id @default(uuid())
+  name           String
+  officialEmail  String  @unique @map("official_email")
+  phone          String?
+  department     String?
+  year           String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Reverse relation — at most one linked User
+  user User?
+
+  @@index([officialEmail])
+  @@map("college_students")
 }
 
 // ═══════════════════════════════════════════════════

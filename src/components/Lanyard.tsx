@@ -48,6 +48,21 @@ const SceneCleanup = () => {
     return () => {
       disposeScene(scene);
       gl.dispose();
+      // HIGH-D FIX: release the WebGL context slot (browsers cap at ~8 total).
+      // Deferred by 500 ms to avoid racing with PageTransition overlap.
+      const canvas = gl.domElement;
+      setTimeout(() => {
+        try {
+          const ext =
+            (canvas.getContext('webgl2') as WebGLRenderingContext | null)?.
+              getExtension('WEBGL_lose_context') ??
+            (canvas.getContext('webgl') as WebGLRenderingContext | null)?.
+              getExtension('WEBGL_lose_context');
+          if (ext) ext.loseContext();
+        } catch {
+          // Extension not available on all drivers — safe to ignore
+        }
+      }, 500);
     };
   }, [gl, scene]);
   return null;

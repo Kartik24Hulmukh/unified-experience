@@ -84,6 +84,8 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
     let contextLost = false;
     const onLost = (e: Event) => { e.preventDefault(); contextLost = true; };
     canvas.addEventListener('webglcontextlost', onLost);
+    const onRestored = () => { contextLost = false; initFBOs(); };
+    canvas.addEventListener('webglcontextrestored', onRestored);
 
     let halfFloat: any;
     let supportLinearFiltering: any;
@@ -285,6 +287,7 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
       window.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       canvas.removeEventListener('webglcontextlost', onLost);
+      canvas.removeEventListener('webglcontextrestored', onRestored);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
       if (gl) {
@@ -313,6 +316,14 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
 
         const shaders = [baseVS, copyFS, clearFS, divergenceFS, curlFS, pressureFS, gradSubFS, splatFS, advectionFS, displayFS];
         shaders.forEach(s => { if (s) gl!.deleteShader(s); });
+
+        // Release WebGL context slot to prevent context exhaustion
+        try {
+          const loseExt = gl!.getExtension('WEBGL_lose_context');
+          if (loseExt) loseExt.loseContext();
+        } catch {
+          // Extension unavailable on some drivers — safe to ignore
+        }
       }
     };
   }, []);

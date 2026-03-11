@@ -20,6 +20,7 @@ export interface ProfileIdentity {
   verified: boolean;
   joinedAt: string;          // ISO date
   avatarUrl: string | null;
+  collegeLinked?: boolean;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -64,13 +65,24 @@ export interface AdminProfileData {
    Unified Profile (discriminated union)
    ═══════════════════════════════════════════════════ */
 
-export interface StudentProfile {
+export interface StudentVerifiedProfile {
   identity: ProfileIdentity;
-  role: 'student';
+  role: 'student_verified';
   data: StudentProfileData;
   /** Computed trust level — derived dynamically, never persisted */
   trust: TrustResult | null;
 }
+
+export interface PublicUserProfile {
+  identity: ProfileIdentity;
+  role: 'public_user';
+  data: StudentProfileData;
+  /** Computed trust level — derived dynamically, never persisted */
+  trust: TrustResult | null;
+}
+
+/** @deprecated Use StudentVerifiedProfile or PublicUserProfile */
+export type StudentProfile = StudentVerifiedProfile;
 
 export interface AdminProfile {
   identity: ProfileIdentity;
@@ -80,7 +92,7 @@ export interface AdminProfile {
   privilegeLevel: AdminPrivilegeLevel;
 }
 
-export type Profile = StudentProfile | AdminProfile;
+export type Profile = StudentVerifiedProfile | PublicUserProfile | AdminProfile;
 
 /* ═══════════════════════════════════════════════════
    Safe Defaults
@@ -125,11 +137,17 @@ export interface RoleConfig<D = unknown> {
 }
 
 export const ROLE_CONFIGS: Record<UserRole, RoleConfig> = {
-  student: {
-    label: 'Student',
+  student_verified: {
+    label: 'Verified Student',
     defaultData: DEFAULT_STUDENT_DATA,
     visibleSections: ['activity', 'listings', 'requests', 'contributions'] as const,
     canAct: true,
+  },
+  public_user: {
+    label: 'Public User',
+    defaultData: DEFAULT_STUDENT_DATA,
+    visibleSections: ['activity', 'listings', 'requests'] as const,
+    canAct: false,
   },
   admin: {
     label: 'Administrator',
@@ -162,8 +180,16 @@ export function isObserverOnly(level: AdminPrivilegeLevel): boolean {
    Type Guards
    ═══════════════════════════════════════════════════ */
 
-export function isStudentProfile(p: Profile): p is StudentProfile {
-  return p.role === 'student';
+export function isStudentProfile(p: Profile): p is StudentVerifiedProfile | PublicUserProfile {
+  return p.role === 'student_verified' || p.role === 'public_user';
+}
+
+export function isVerifiedStudent(p: Profile): p is StudentVerifiedProfile {
+  return p.role === 'student_verified';
+}
+
+export function isPublicUser(p: Profile): p is PublicUserProfile {
+  return p.role === 'public_user';
 }
 
 export function isAdminProfile(p: Profile): p is AdminProfile {
@@ -175,9 +201,14 @@ export function isAdminProfile(p: Profile): p is AdminProfile {
    ═══════════════════════════════════════════════════ */
 
 export function validateProfileRoleIntegrity(profile: Profile): boolean {
-  if (profile.identity.role !== profile.role) {
-    // Logged via caller context — pure domain should not import logger
-    return false;
+  // Allow both student roles to match
+  const identityRole = profile.identity.role;
+  const profileRole = profile.role;
+  if (identityRole === 'student_verified' && profileRole === 'student_verified') return true;
+  if (identityRole === 'public_user' && profileRole === 'public_user') return true;
+  if (identityRole === 'admin' && profileRole === 'admin') return true;
+  // Logged via caller context — pure domain should not import logger
+  return false;
   }
   return true;
 }

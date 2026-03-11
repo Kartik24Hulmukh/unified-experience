@@ -1,8 +1,8 @@
-/**
- * BErozgar — Auth Lifecycle Tests
+﻿/**
+ * BErozgar â€” Auth Lifecycle Tests
  *
  * Full coverage of all 15 auth test scenarios:
- *  1.  Signup → OTP → verify → login           (happy path)
+ *  1.  Signup â†’ OTP â†’ verify â†’ login           (happy path)
  *  2.  Expired OTP
  *  3.  Wrong OTP attempts (invalidation after 5)
  *  4.  5 failed login attempts (account lockout)
@@ -11,7 +11,7 @@
  *  7.  Access token expiry
  *  8.  Refresh token rotation
  *  9.  Refresh token reuse attack
- * 10.  Logout → refresh cookie cleared
+ * 10.  Logout â†’ refresh cookie cleared
  * 11.  Session persistence (refresh on page-load hydration)
  * 12.  Simultaneous login / max-tokens enforcement
  * 13.  Tampered JWT
@@ -29,7 +29,7 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import jwt from 'jsonwebtoken';
 
-// ── Mock Prisma ─────────────────────────────────────────────────────────────
+// â”€â”€ Mock Prisma â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
@@ -75,7 +75,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
-// ── Mock env ─────────────────────────────────────────────────────────────────
+// â”€â”€ Mock env â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 vi.mock('@/config/env', () => ({
   env: {
     NODE_ENV: 'test',
@@ -98,7 +98,7 @@ vi.mock('@/config/env', () => ({
   },
 }));
 
-// ── Mock authService ──────────────────────────────────────────────────────────
+// â”€â”€ Mock authService â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 vi.mock('@/services/authService', () => ({
   signup: vi.fn(),
   verifyOtp: vi.fn(),
@@ -132,11 +132,11 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 1 — Signup → OTP → Verify → Login
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 1 â€” Signup â†’ OTP â†’ Verify â†’ Login
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-describe('Scenario 1: Signup → OTP → verify → login (happy path)', () => {
+describe('Scenario 1: Signup â†’ OTP â†’ verify â†’ login (happy path)', () => {
   it('POST /signup returns 200 with OTP-sent confirmation', async () => {
     mockedAuth.signup.mockResolvedValueOnce({
       message: 'Verification code sent to your email',
@@ -162,7 +162,7 @@ describe('Scenario 1: Signup → OTP → verify → login (happy path)', () => {
         id: 'u1',
         email: 'alice@mctrgit.ac.in',
         fullName: 'Alice Student',
-        role: 'STUDENT',
+        role: 'STUDENT_VERIFIED',
         verified: true,
       },
       tokens: { accessToken: 'access-abc123', refreshToken: 'refresh-xyz789' },
@@ -205,7 +205,7 @@ describe('Scenario 1: Signup → OTP → verify → login (happy path)', () => {
         id: 'u1',
         email: 'alice@mctrgit.ac.in',
         fullName: 'Alice Student',
-        role: 'STUDENT',
+        role: 'STUDENT_VERIFIED',
       },
       tokens: { accessToken: 'access-login-123', refreshToken: 'refresh-login-456' },
     });
@@ -225,9 +225,9 @@ describe('Scenario 1: Signup → OTP → verify → login (happy path)', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 2 — Expired OTP
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 2 â€” Expired OTP
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 2: Expired OTP', () => {
   it('returns 400 with expiry message when OTP is past its 10-minute window', async () => {
@@ -269,9 +269,9 @@ describe('Scenario 2: Expired OTP', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 3 — Wrong OTP Attempts
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 3 â€” Wrong OTP Attempts
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 3: Wrong OTP attempts', () => {
   it('returns 400 "Invalid OTP code" on a single wrong attempt', async () => {
@@ -353,9 +353,9 @@ describe('Scenario 3: Wrong OTP attempts', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 4 — 5 Failed Login Attempts (Lockout)
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 4 â€” 5 Failed Login Attempts (Lockout)
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 4: 5 failed login attempts (account lockout)', () => {
   it('returns 401 with lockout message after threshold exceeded', async () => {
@@ -405,9 +405,9 @@ describe('Scenario 4: 5 failed login attempts (account lockout)', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 5 — Google OAuth Login (Happy Path)
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 5 â€” Google OAuth Login (Happy Path)
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 5: Google OAuth login', () => {
   it('returns 200 with user + accessToken; refresh token in httpOnly cookie', async () => {
@@ -416,7 +416,7 @@ describe('Scenario 5: Google OAuth login', () => {
         id: 'u2',
         email: 'bob@mctrgit.ac.in',
         fullName: 'Bob Student',
-        role: 'STUDENT',
+        role: 'STUDENT_VERIFIED',
       },
       tokens: { accessToken: 'access-google-123', refreshToken: 'refresh-google-456' },
     });
@@ -456,9 +456,9 @@ describe('Scenario 5: Google OAuth login', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 6 — Google Login with Disallowed Domain
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 6 â€” Google Login with Disallowed Domain
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 6: Google login with disallowed domain (BUG-02 regression)', () => {
   it('returns 400 when Google email domain is not in ALLOWED_EMAIL_DOMAINS', async () => {
@@ -496,14 +496,14 @@ describe('Scenario 6: Google login with disallowed domain (BUG-02 regression)', 
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 7 — Access Token Expiry
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 7 â€” Access Token Expiry
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 7: Access token expiry', () => {
   it('returns 401 when access token is expired', async () => {
     const expiredToken = jwt.sign(
-      { sub: 'u1', email: 'alice@mctrgit.ac.in', role: 'STUDENT' },
+      { sub: 'u1', email: 'alice@mctrgit.ac.in', role: 'STUDENT_VERIFIED' },
       'test-secret-key-for-unit-tests-32chars!',
       { expiresIn: -1 }, // already expired
     );
@@ -524,7 +524,7 @@ describe('Scenario 7: Access token expiry', () => {
     });
 
     expect(res.statusCode).toBe(401);
-    // No redirect loop — no Location header
+    // No redirect loop â€” no Location header
     expect(res.headers.location).toBeUndefined();
   });
 
@@ -534,7 +534,7 @@ describe('Scenario 7: Access token expiry', () => {
         id: 'u1',
         email: 'alice@mctrgit.ac.in',
         fullName: 'Alice',
-        role: 'STUDENT',
+        role: 'STUDENT_VERIFIED',
         verified: true,
       },
       trust: { status: 'GOOD_STANDING', reasons: [] },
@@ -544,7 +544,7 @@ describe('Scenario 7: Access token expiry', () => {
     const validToken = signAccessToken({
       sub: 'u1',
       email: 'alice@mctrgit.ac.in',
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
     });
 
     const res = await app.inject({
@@ -557,9 +557,9 @@ describe('Scenario 7: Access token expiry', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 8 — Refresh Token Rotation
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 8 â€” Refresh Token Rotation
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 8: Refresh token rotation', () => {
   it('returns 200 with new accessToken and sets new httpOnly refresh cookie', async () => {
@@ -604,9 +604,9 @@ describe('Scenario 8: Refresh token rotation', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 9 — Refresh Token Reuse Attack
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 9 â€” Refresh Token Reuse Attack
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 9: Refresh token reuse attack', () => {
   it('returns 401 when a revoked refresh token is replayed (breach detection)', async () => {
@@ -628,9 +628,9 @@ describe('Scenario 9: Refresh token reuse attack', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 10 — Logout Clears Session
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 10 â€” Logout Clears Session
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 10: Logout revokes server session (BUG-01 regression)', () => {
   it('returns 200 and clears refresh cookie when Bearer token is provided', async () => {
@@ -639,7 +639,7 @@ describe('Scenario 10: Logout revokes server session (BUG-01 regression)', () =>
     const validToken = signAccessToken({
       sub: 'u1',
       email: 'alice@mctrgit.ac.in',
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
     });
 
     const res = await app.inject({
@@ -698,7 +698,7 @@ describe('Scenario 10: Logout revokes server session (BUG-01 regression)', () =>
     const validToken = signAccessToken({
       sub: 'u1',
       email: 'alice@mctrgit.ac.in',
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
     });
 
     await app.inject({
@@ -713,11 +713,11 @@ describe('Scenario 10: Logout revokes server session (BUG-01 regression)', () =>
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 11 — Session Persistence After Page Refresh
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 11 â€” Session Persistence After Page Refresh
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-describe('Scenario 11: Session persistence (hydration via /refresh → /me)', () => {
+describe('Scenario 11: Session persistence (hydration via /refresh â†’ /me)', () => {
   it('/refresh returns new accessToken when a persisted refresh cookie is sent', async () => {
     mockedAuth.refreshAccessToken.mockResolvedValueOnce({
       accessToken: 'hydrated-access-token',
@@ -749,7 +749,7 @@ describe('Scenario 11: Session persistence (hydration via /refresh → /me)', ()
         id: 'u1',
         email: 'alice@mctrgit.ac.in',
         fullName: 'Alice',
-        role: 'STUDENT',
+        role: 'STUDENT_VERIFIED',
         verified: true,
       },
       trust: { status: 'GOOD_STANDING', reasons: [] },
@@ -759,7 +759,7 @@ describe('Scenario 11: Session persistence (hydration via /refresh → /me)', ()
     const freshToken = signAccessToken({
       sub: 'u1',
       email: 'alice@mctrgit.ac.in',
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
     });
 
     const res = await app.inject({
@@ -776,9 +776,9 @@ describe('Scenario 11: Session persistence (hydration via /refresh → /me)', ()
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 12 — Simultaneous Login (Multi-Session)
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 12 â€” Simultaneous Login (Multi-Session)
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 12: Simultaneous login in two browsers', () => {
   it('each active session /refresh independently with its own cookie', async () => {
@@ -816,7 +816,7 @@ describe('Scenario 12: Simultaneous login in two browsers', () => {
   it('6th session login succeeds (oldest session silently revoked server-side)', async () => {
     // issueTokens() revokes the oldest when count > MAX_REFRESH_TOKENS_PER_USER (5)
     mockedAuth.login.mockResolvedValueOnce({
-      user: { id: 'u1', email: 'alice@mctrgit.ac.in', fullName: 'Alice', role: 'STUDENT' },
+      user: { id: 'u1', email: 'alice@mctrgit.ac.in', fullName: 'Alice', role: 'STUDENT_VERIFIED' },
       tokens: { accessToken: 'session-6-access', refreshToken: 'session-6-refresh' },
     });
 
@@ -832,9 +832,9 @@ describe('Scenario 12: Simultaneous login in two browsers', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 13 — Tampered JWT
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 13 â€” Tampered JWT
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 13: Tampered JWT', () => {
   it('returns 401 when JWT is signed with a different secret', async () => {
@@ -857,7 +857,7 @@ describe('Scenario 13: Tampered JWT', () => {
     const validToken = signAccessToken({
       sub: 'u1',
       email: 'alice@mctrgit.ac.in',
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
     });
     const parts = validToken.split('.');
 
@@ -903,9 +903,9 @@ describe('Scenario 13: Tampered JWT', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 14 — Missing/Invalid CSRF Token
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 14 â€” Missing/Invalid CSRF Token
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 14: CSRF token handling', () => {
   /**
@@ -926,7 +926,7 @@ describe('Scenario 14: CSRF token handling', () => {
       '/health',
     ]);
 
-    // These MUST be exempt — user has no session yet to get a CSRF cookie
+    // These MUST be exempt â€” user has no session yet to get a CSRF cookie
     expect(CSRF_EXEMPT.has('/api/auth/login')).toBe(true);
     expect(CSRF_EXEMPT.has('/api/auth/signup')).toBe(true);
     expect(CSRF_EXEMPT.has('/api/auth/verify-otp')).toBe(true);
@@ -949,14 +949,14 @@ describe('Scenario 14: CSRF token handling', () => {
 
     expect(res.statusCode).toBe(200);
     const body = res.json();
-    // csrfToken may be null in test mode (no generateCsrf plugin) — key must exist
+    // csrfToken may be null in test mode (no generateCsrf plugin) â€” key must exist
     expect('csrfToken' in body).toBe(true);
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   SCENARIO 15 — Refresh Token Expired
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SCENARIO 15 â€” Refresh Token Expired
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Scenario 15: Refresh token expired', () => {
   it('returns 401 when the refresh token has passed its 7-day window', async () => {
@@ -976,14 +976,14 @@ describe('Scenario 15: Refresh token expired', () => {
   });
 });
 
-/* ═══════════════════════════════════════════════════
-   PROTOCOL HYGIENE — No Silent Failures
-   ═══════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   PROTOCOL HYGIENE â€” No Silent Failures
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 describe('Protocol hygiene: no silent failures, no leakage', () => {
   it('refresh token raw value never appears in any JSON response body (login)', async () => {
     mockedAuth.login.mockResolvedValueOnce({
-      user: { id: 'u1', email: 'alice@mctrgit.ac.in', fullName: 'Alice', role: 'STUDENT' },
+      user: { id: 'u1', email: 'alice@mctrgit.ac.in', fullName: 'Alice', role: 'STUDENT_VERIFIED' },
       tokens: {
         accessToken: 'access-123',
         refreshToken: 'SUPER_SECRET_REFRESH_TOKEN_GUARD',
@@ -1004,7 +1004,7 @@ describe('Protocol hygiene: no silent failures, no leakage', () => {
 
   it('refresh token raw value never appears in verify-otp response body', async () => {
     mockedAuth.verifyOtp.mockResolvedValueOnce({
-      user: { id: 'u1', email: 'alice@mctrgit.ac.in', fullName: 'Alice', role: 'STUDENT' },
+      user: { id: 'u1', email: 'alice@mctrgit.ac.in', fullName: 'Alice', role: 'STUDENT_VERIFIED' },
       tokens: {
         accessToken: 'access-123',
         refreshToken: 'ANOTHER_SECRET_SHOULD_NOT_LEAK',
@@ -1038,7 +1038,7 @@ describe('Protocol hygiene: no silent failures, no leakage', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('GET /auth/me returns 401 (not redirect) without auth — no redirect loop', async () => {
+  it('GET /auth/me returns 401 (not redirect) without auth â€” no redirect loop', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/auth/me' });
 
     expect(res.statusCode).toBe(401);

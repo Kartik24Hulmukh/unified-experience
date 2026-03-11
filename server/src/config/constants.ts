@@ -68,9 +68,10 @@ export const IDEMPOTENCY = {
 /**
  * Admin registry — emails that may hold ADMIN role.
  * Users NOT in this list can never be assigned ADMIN or SUPER privilege.
- * Extend via ADMIN_EMAILS env var (comma-separated) without touching code.
+ * Configure via ADMIN_EMAILS env var (comma-separated). No emails are hardcoded
+ * so that admin access can be revoked without a code deployment.
  */
-const HARDCODED_ADMIN_EMAILS: readonly string[] = ['admin@mctrgit.ac.in'] as const;
+const HARDCODED_ADMIN_EMAILS: readonly string[] = [] as const;
 
 export const ADMIN_REGISTRY: readonly string[] = [
   ...HARDCODED_ADMIN_EMAILS,
@@ -79,10 +80,5 @@ export const ADMIN_REGISTRY: readonly string[] = [
     : []),
 ] as const;
 
-/**
- * Allowed email domains for signup.
- * Only institutional emails are permitted.
- */
-export const ALLOWED_EMAIL_DOMAINS: readonly string[] = [
-  'mctrgit.ac.in',
-] as const;
+// ALLOWED_EMAIL_DOMAINS removed — signup now accepts all domains.
+// Role assignment is determined by CollegeStudentRegistry lookup at OTP verification.

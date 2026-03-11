@@ -45,9 +45,16 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   /** GET /audit — audit trail (field names mapped to match frontend AuditLogEntry) */
   app.get('/audit', async (request, reply) => {
     const query = request.query as Record<string, string>;
+    // MED-1 FIX: parseInt('abc', 10) returns NaN which is truthy enough to
+    // pass the `? ... : undefined` guard and then crashes Prisma's skip param.
+    // Number.isFinite + positive check guarantees only valid integers reach the DB.
+    const parsePage = (s: string | undefined) => {
+      const n = s ? parseInt(s, 10) : NaN;
+      return Number.isFinite(n) && n > 0 ? n : undefined;
+    };
     const result = await adminService.getAuditLogs({
-      page: query.page ? parseInt(query.page, 10) : undefined,
-      limit: query.limit ? parseInt(query.limit, 10) : undefined,
+      page: parsePage(query.page),
+      limit: parsePage(query.limit),
       action: query.action,
     });
     const mapped = result.logs.map((l) => ({

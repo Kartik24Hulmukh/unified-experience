@@ -1,5 +1,5 @@
-/**
- * BErozgar — Idempotency Middleware Tests
+﻿/**
+ * BErozgar â€” Idempotency Middleware Tests
  *
  * Verifies that:
  *  1. First request stores the full response body (not `{}`)
@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 
-// ── Prisma mock with in-memory idempotency store ────────────
+// â”€â”€ Prisma mock with in-memory idempotency store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const idempotencyStore = new Map<
   string,
   { id: string; key: string; userId: string; responseStatus: number; responseBody: unknown; expiresAt: Date; createdAt: Date }
@@ -100,7 +100,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
-// ── Mock env ─────────────────────────────────────
+// â”€â”€ Mock env â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 vi.mock('@/config/env', () => ({
   env: {
     NODE_ENV: 'test',
@@ -116,7 +116,7 @@ vi.mock('@/config/env', () => ({
   },
 }));
 
-// ── Mock authService ─────────────────────────────
+// â”€â”€ Mock authService â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MOCK_USER_ID = '00000000-0000-4000-a000-000000000001';
 
 vi.mock('@/services/authService', () => ({
@@ -128,7 +128,7 @@ vi.mock('@/services/authService', () => ({
       id: '00000000-0000-4000-a000-000000000001',
       email: 'test@mctrgit.ac.in',
       name: 'Test User',
-      role: 'STUDENT',
+      role: 'STUDENT_VERIFIED',
       status: 'ACTIVE',
     },
   }),
@@ -138,7 +138,7 @@ vi.mock('@/services/authService', () => ({
   getCurrentUser: vi.fn(),
 }));
 
-// ── Mock listingService (the mutating route we'll use for tests) ──
+// â”€â”€ Mock listingService (the mutating route we'll use for tests) â”€â”€
 const CREATED_LISTING = {
   id: 'listing-abc-123',
   title: 'Physics Textbook',
@@ -173,12 +173,12 @@ import * as listingService from '@/services/listingService';
 
 const mockedListing = vi.mocked(listingService);
 
-// ── JWT helper to create a valid token ───────────
+// â”€â”€ JWT helper to create a valid token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import jwt from 'jsonwebtoken';
 
 function makeToken(userId = MOCK_USER_ID): string {
   return jwt.sign(
-    { sub: userId, email: 'test@mctrgit.ac.in', role: 'STUDENT' },
+    { sub: userId, email: 'test@mctrgit.ac.in', role: 'STUDENT_VERIFIED' },
     'test-secret-key-for-unit-tests-32chars!',
     { expiresIn: '15m', algorithm: 'HS256' },
   );
@@ -202,7 +202,7 @@ beforeEach(() => {
   mockedListing.createListing.mockResolvedValue(CREATED_LISTING);
 });
 
-/* ─── Idempotency Tests ──────────────────────────── */
+/* â”€â”€â”€ Idempotency Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 describe('Idempotency Middleware', () => {
   const LISTING_PAYLOAD = {
@@ -242,7 +242,7 @@ describe('Idempotency Middleware', () => {
   it('replays cached response with x-idempotency-replay header', async () => {
     const token = makeToken();
 
-    // First request — creates the listing
+    // First request â€” creates the listing
     const res1 = await app.inject({
       method: 'POST',
       url: '/api/listings',
@@ -255,7 +255,7 @@ describe('Idempotency Middleware', () => {
     expect(res1.statusCode).toBe(201);
     expect(res1.headers['x-idempotency-replay']).toBeUndefined();
 
-    // Second request — same key, should be a replay
+    // Second request â€” same key, should be a replay
     const res2 = await app.inject({
       method: 'POST',
       url: '/api/listings',
@@ -293,7 +293,7 @@ describe('Idempotency Middleware', () => {
       createdAt: new Date(Date.now() - 86_400_000),
     });
 
-    // Send request with the same key — should detect expiry, delete, and re-execute
+    // Send request with the same key â€” should detect expiry, delete, and re-execute
     const res = await app.inject({
       method: 'POST',
       url: '/api/listings',

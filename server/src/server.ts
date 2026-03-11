@@ -23,14 +23,14 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-/** Run stale recovery every 6 hours */
-const STALE_RECOVERY_INTERVAL_MS = 6 * 60 * 60 * 1000;
+/** Run stale recovery every 30 minutes (was 6h; stuck transactions should not wait that long) */
+const STALE_RECOVERY_INTERVAL_MS = 30 * 60 * 1000;
 
 async function main(): Promise<void> {
   const app = await buildApp();
 
   // ── Scheduled Stale Recovery Job ────────────────
-  // Runs every 6h: expires stuck SENT requests, revokes expired tokens,
+  // Runs every 30 min: expires stuck SENT requests, revokes expired tokens,
   // cleans expired idempotency keys. Also runs once at startup.
   let recoveryTimer: ReturnType<typeof setInterval> | null = null;
 

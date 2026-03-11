@@ -79,8 +79,19 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
       </div>
       <div className="hidden lg:flex w-[38%] h-full items-center justify-center p-6 lg:p-14">
         <div className="relative w-full max-w-md aspect-square">
-          {modules.map((module) => activeModule === module.id && (
-            <div key={module.id} className="absolute inset-0 transition-all duration-500 opacity-100 scale-100">
+          {modules.map((module) => (
+            <div
+              key={module.id}
+              // MED-D FIX: always keep image divs mounted so the browser can
+              // prefetch/decode in the background. Toggle visibility via CSS
+              // opacity + pointer-events instead of && conditional unmounting,
+              // which forced a full DOM remove/re-add on every hover.
+              className={`absolute inset-0 transition-all duration-500 ${
+                activeModule === module.id
+                  ? 'opacity-100 scale-100 pointer-events-auto'
+                  : 'opacity-0 scale-95 pointer-events-none'
+              }`}
+            >
               <div className="hud-image-box w-full h-full rounded-none overflow-hidden">
                 <img src={module.preview} alt={module.title} className="w-full h-full object-cover grayscale-[0.2]" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
@@ -114,7 +125,11 @@ const MasterExperience = () => {
     window.scrollTo(0, 0);
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     const timer = setTimeout(() => setIsHeavyMounted(true), 100);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // CRIT-04 FIX: restore scrollRestoration so back-button UX works on other pages
+      if ('scrollRestoration' in history) history.scrollRestoration = 'auto';
+    };
   }, []);
 
   const handleModuleClick = useCallback((path: string) => safeNavigate(navigate, location.pathname, path, { replace: false }), [navigate, location.pathname]);
@@ -127,7 +142,7 @@ const MasterExperience = () => {
       // Move it to onComplete so it only runs once after the animation fully finishes.
       const tl = gsap.timeline({
         scrollTrigger: { trigger: containerRef.current, start: 'top top', end: 'bottom bottom', scrub: 1, onUpdate: (self) => { scrollProgressRef.current = self.progress; } },
-        onComplete: () => ScrollTrigger.refresh(),
+        onComplete: () => requestAnimationFrame(() => ScrollTrigger.refresh()),
       });
 
       // Fade out the entire hero logic

@@ -38,6 +38,7 @@ import {
 import type { Profile, AdminStudentView } from '@/domain/profile';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CollegeVerificationBanner } from '@/components/CollegeVerificationBanner';
 import {
   Dialog,
   DialogContent,
@@ -707,29 +708,32 @@ const ProfilePage = () => {
   useEffect(() => {
     if (!isAdminDrilldown || !user) return;
 
-    let cancelled = false;
+    const controller = new AbortController();
     setDrilldownLoading(true);
     setDrilldownError(null);
 
     const load = async () => {
       try {
-        const response = await api.get<{ data: AdminStudentView }>(`/admin/users/${targetUserId}`);
+        const response = await api.get<{ data: AdminStudentView }>(
+          `/admin/users/${targetUserId}`,
+          { signal: controller.signal },
+        );
         const view = response.data;
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         logAdminAction(user.id, targetUserId, 'VIEW_PROFILE');
         setDrilldownView(view);
       } catch (err) {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         const message = err instanceof Error ? err.message : 'Failed to load student profile';
         logger.error('ProfilePage:Drilldown', message);
         setDrilldownError(message);
       } finally {
-        if (!cancelled) setDrilldownLoading(false);
+        if (!controller.signal.aborted) setDrilldownLoading(false);
       }
     };
 
     load();
-    return () => { cancelled = true; };
+    return () => { controller.abort(); };
   }, [isAdminDrilldown, targetUserId, user]);
 
   // Animate child elements, not the container, to prevent FOUC on Strict Mode double-invoke (ISSUE-08)
@@ -843,8 +847,11 @@ const ProfilePage = () => {
 
           <div className="border-t border-white/5" />
 
+          {/* Public user upgrade banner */}
+          <CollegeVerificationBanner />
+
           {/* Role-specific sections — conditional rendering */}
-          {profile.role === 'student' && <StudentSections profile={profile} userId={user.id} />}
+          {(profile.role === 'student_verified' || profile.role === 'public_user') && <StudentSections profile={profile} userId={user.id} />}
           {profile.role === 'admin' && <AdminSections profile={profile} />}
         </div>
       </div>

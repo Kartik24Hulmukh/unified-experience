@@ -44,7 +44,8 @@ const DB_ENUMS = new Set([
   'DISPUTED',
   'RESOLVED',
   // UserRole
-  'STUDENT',
+  'STUDENT_VERIFIED',
+  'PUBLIC_USER',
   'ADMIN',
   // DisputeStatus
   'OPEN',
@@ -59,6 +60,8 @@ const DB_ENUMS = new Set([
   'OTHER',
   // PrivilegeLevel
   'STANDARD',
+  'OBSERVER',
+  'REVIEWER',
   'SUPER',
 ]);
 

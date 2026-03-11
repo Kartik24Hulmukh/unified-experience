@@ -13,7 +13,7 @@ import { hashToken } from '@/lib/token-hash';
 import { verifyGoogleToken } from '@/lib/google-oauth';
 import { generateOtp, getOtpExpiry, isOtpExpired } from '@/lib/otp';
 import { sendOtpEmail } from '@/lib/email';
-import { AUTH, ALLOWED_EMAIL_DOMAINS } from '@/config/constants';
+import { AUTH } from '@/config/constants';
 import { env } from '@/config/env';
 import {
   UnauthorizedError,
@@ -29,6 +29,20 @@ import type {
   VerifyOtpInput,
   GoogleSignInInput,
 } from '@/shared/validation';
+
+/* ═══════════════════════════════════════════════════
+   College Registry Lookup
+   ═══════════════════════════════════════════════════ */
+
+/**
+ * Check if an email exists in the CollegeStudentRegistry.
+ * Returns the registry record if found, null otherwise.
+ */
+async function lookupCollegeStudent(email: string) {
+  return prisma.collegeStudent.findUnique({
+    where: { officialEmail: email.toLowerCase().trim() },
+  });
+}
 
 /* ═══════════════════════════════════════════════════
    Token Helpers
@@ -100,13 +114,8 @@ async function issueTokens(
    ═══════════════════════════════════════════════════ */
 
 export async function signup(input: SignupInput): Promise<{ message: string }> {
-  // Enforce allowed email domains
-  const emailDomain = input.email.split('@')[1];
-  if (ALLOWED_EMAIL_DOMAINS.length > 0 && !ALLOWED_EMAIL_DOMAINS.includes(emailDomain)) {
-    throw new ValidationError('Only institutional email addresses are allowed', {
-      email: [`Email domain '${emailDomain}' is not permitted. Allowed: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`],
-    });
-  }
+  // No email domain restriction — all users can sign up.
+  // Role assignment happens at OTP verification based on CollegeStudentRegistry.
 
   // Check for existing verified user
   const existing = await prisma.user.findUnique({
@@ -121,7 +130,7 @@ export async function signup(input: SignupInput): Promise<{ message: string }> {
 
   // Generate and store OTP
   const otp = generateOtp();
-  await prisma.otp.create({
+  const otpRecord = await prisma.otp.create({
     data: {
       email: input.email,
       code: otp,
@@ -129,7 +138,10 @@ export async function signup(input: SignupInput): Promise<{ message: string }> {
     },
   });
 
-  // Provider-scaffolded delivery (log provider in dev; SMTP hookable via env)
+  // HIGH-F FIX: attempt email delivery AFTER saving the OTP, but DELETE the
+  // record on failure so the DB doesn't accumulate orphaned, undeliverable OTPs.
+  // (Saving first avoids the opposite race where the email sends but the
+  // subsequent DB write fails — an undeliverable code is worse than no code.)
   try {
     await sendOtpEmail({
       to: input.email,
@@ -137,20 +149,31 @@ export async function signup(input: SignupInput): Promise<{ message: string }> {
       expiresInMinutes: AUTH.OTP_EXPIRES_MINUTES,
     });
   } catch (err) {
-    // Keep observable and fail explicitly so signup doesn't claim delivery success.
-    const msg = err instanceof Error ? err.message : 'Unknown email delivery failure';
-    throw new ValidationError(`Unable to send OTP email: ${msg}`);
+    // Best-effort cleanup — log failure but don't let a delete error shadow the real error
+    await prisma.otp.delete({ where: { id: otpRecord.id } }).catch((delErr) => {
+      console.error('Failed to cleanup undelivered OTP record:', delErr);
+    });
+    // SEC-LEAK-02: never forward transport error details — they may contain
+    // SMTP hostnames, DNS failures, or credential-related strings.
+    throw new ValidationError('Unable to send verification email. Please try again later.');
   }
 
-  // Audit: record signup attempt
-  await prisma.auditLog.create({
-    data: {
-      actorId: null, // SYSTEM
-      action: 'AUTH_SIGNUP_REQUEST',
-      entityType: 'User',
-      metadata: { email: input.email },
-    },
-  });
+  // MED-4 FIX: Wrap audit log write in try-catch so a transient DB failure
+  // here doesn't return 500 after the OTP email was already delivered.
+  // Without this, the user sees an error, retries signup, and now has two
+  // valid OTPs in flight simultaneously.
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorId: null, // SYSTEM
+        action: 'AUTH_SIGNUP_REQUEST',
+        entityType: 'User',
+        metadata: { email: input.email },
+      },
+    });
+  } catch {
+    // Non-fatal — audit write failure must never block or corrupt the signup flow
+  }
 
   return { message: 'Verification code sent to your email' };
 }
@@ -188,32 +211,50 @@ export async function verifyOtp(
   const isMatch = a.length === b.length && timingSafeEqual(a, b);
 
   if (!isMatch) {
-    // PROD-10b: invalidate OTP after too many wrong guesses (defence-in-depth
-    // on top of the rate-limit at PROD-07).
-    const attempts = (otpRecord as any).attempts ?? 0;
-    if (attempts >= 4) {
-      // 5th wrong attempt — permanently burn this OTP
-      await prisma.otp.update({
-        where: { id: otpRecord.id },
-        data: { usedAt: new Date() },
-      });
-      throw new ValidationError('OTP has been invalidated after too many attempts. Please request a new one.');
-    }
-    // Increment attempt counter (best-effort — rate limit middleware still enforces limits)
-    try {
-      await prisma.otp.update({
-        where: { id: otpRecord.id },
+    // CRIT-C FIX: atomically increment + conditionally burn inside a single
+    // transaction. Reading `attempts` outside the tx and incrementing separately
+    // allowed two concurrent wrong guesses to both bypass the 5-attempt threshold
+    // (both read attempts=4, neither burned, effective limit became 6+).
+    await prisma.$transaction(async (tx) => {
+      // Only increment if not already used and under the limit
+      const inc = await tx.otp.updateMany({
+        where: { id: otpRecord.id, usedAt: null, attempts: { lt: 5 } },
         data: { attempts: { increment: 1 } },
       });
-    } catch (err) {
-      // Non-critical: log but don't surface to caller
-      console.warn('Failed to increment OTP attempt counter:', err);
-    }
+      if (inc.count === 0) {
+        throw new ValidationError('OTP has been invalidated. Please request a new one.');
+      }
+      // After atomic increment, check if we've now hit or exceeded the limit
+      const current = await tx.otp.findUnique({
+        where: { id: otpRecord.id },
+        select: { attempts: true },
+      });
+      if (current && current.attempts >= 5) {
+        await tx.otp.update({
+          where: { id: otpRecord.id },
+          data: { usedAt: new Date() },
+        });
+        throw new ValidationError('OTP has been invalidated after too many attempts. Please request a new one.');
+      }
+    });
     throw new ValidationError('Invalid OTP code');
   }
 
   // Atomic: mark OTP used + upsert user (prevents double-use race)
   const passwordHash = await hashPassword(input.password);
+
+  // Check college registry to determine role
+  const collegeRecord = await lookupCollegeStudent(input.email);
+  const assignedRole = collegeRecord ? 'STUDENT_VERIFIED' : 'PUBLIC_USER';
+
+  // HIGH-A FIX: pre-compute all in-memory token values BEFORE the transaction.
+  const accessToken = signAccessToken({
+    sub: 'pending', // replaced after upsert gives us the real userId
+    email: input.email,
+    role: assignedRole,
+  });
+  const rawRefreshToken = generateRefreshToken();
+  const hashedToken = hashToken(rawRefreshToken);
 
   const user = await prisma.$transaction(async (tx) => {
     // CRIT-02 FIX: use updateMany with { usedAt: null } as the guard so that only
@@ -233,14 +274,46 @@ export async function verifyOtp(
         email: input.email,
         fullName: input.fullName,
         password: passwordHash,
+        role: assignedRole,
+        collegeStudentId: collegeRecord?.id ?? null,
         verified: true,
       },
       update: {
         fullName: input.fullName,
         password: passwordHash,
+        role: assignedRole,
+        collegeStudentId: collegeRecord?.id ?? null,
         verified: true,
       },
     });
+
+    // HIGH-A FIX (continued): create the refresh token inside the same tx.
+    // This guarantees the user row and its first session token are always
+    // created together — no crash window between account creation and token issuance.
+    await tx.refreshToken.create({
+      data: {
+        token: hashedToken,
+        userId: createdUser.id,
+        expiresAt: getRefreshExpiry(),
+        userAgent: meta?.userAgent,
+        ipAddress: meta?.ipAddress,
+      },
+    });
+
+    // Prune excess refresh tokens for this user (enforce per-user limit)
+    const allTokens = await tx.refreshToken.findMany({
+      where: { userId: createdUser.id, revokedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (allTokens.length > AUTH.MAX_REFRESH_TOKENS_PER_USER) {
+      const staleIds = allTokens
+        .slice(AUTH.MAX_REFRESH_TOKENS_PER_USER)
+        .map((t) => t.id);
+      await tx.refreshToken.updateMany({
+        where: { id: { in: staleIds } },
+        data: { revokedAt: new Date() },
+      });
+    }
 
     // Audit: account verified/created (FIXED: use createdUser.id)
     await tx.auditLog.create({
@@ -256,11 +329,12 @@ export async function verifyOtp(
     return createdUser;
   });
 
-  const tokens = await issueTokens(user.id, user.email, user.role, meta);
+  // Re-sign the access token now that we have the real userId
+  const finalAccessToken = signAccessToken({ sub: user.id, email: user.email, role: user.role });
 
   return {
     user: sanitizeUser(user),
-    tokens,
+    tokens: { accessToken: finalAccessToken, refreshToken: rawRefreshToken },
   };
 }
 
@@ -289,57 +363,100 @@ export async function login(
 
   // ── Lockout check ────────────────────────────────
   if (user.lockedUntil && user.lockedUntil > new Date()) {
-    const minutesLeft = Math.ceil(
-      (user.lockedUntil.getTime() - Date.now()) / 60_000,
-    );
-    throw new UnauthorizedError(
-      `Account locked due to too many failed attempts. Try again in ${minutesLeft} minute(s).`,
-    );
+    // SEC-ENUM-02: return the same generic message as invalid credentials
+    // to prevent account-existence enumeration via lockout-specific text.
+    throw new UnauthorizedError('Invalid email or password');
   }
 
   const valid = await verifyPassword(user.password, input.password);
 
   if (!valid) {
-    // Increment failed attempts; lockout if threshold reached
-    const attempts = user.failedLoginAttempts + 1;
-    const lockData: Record<string, unknown> = {
-      failedLoginAttempts: attempts,
-    };
-    if (attempts >= MAX_FAILED_ATTEMPTS) {
-      lockData.lockedUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
-    }
-    await prisma.user.update({
+    // CRIT-2 FIX: Atomic increment prevents the read-modify-write race where
+    // two concurrent wrong-password requests both read counter=N, compute N+1,
+    // and SET N+1 — advancing the counter by 1 instead of 2.
+    // updateMany with `lockedUntil: null` ensures only the first request that
+    // crosses the threshold writes the lock (idempotent for concurrent callers).
+    const updated = await prisma.user.update({
       where: { id: user.id },
-      data: lockData,
+      data: { failedLoginAttempts: { increment: 1 } },
+      select: { failedLoginAttempts: true },
     });
+    if (updated.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+      await prisma.user.updateMany({
+        where: { id: user.id, lockedUntil: null },
+        data: { lockedUntil: new Date(Date.now() + LOCKOUT_DURATION_MS) },
+      });
+    }
 
     throw new UnauthorizedError('Invalid email or password');
   }
 
-  // ── Reset lockout counters on successful login ──
-  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { failedLoginAttempts: 0, lockedUntil: null },
-    });
-  }
+  // DET-1 FIX: pre-compute in-memory token values BEFORE the transaction.
+  // Previously counter-reset and issueTokens() were separate DB operations,
+  // leaving a crash window where counters are cleared but no refresh token
+  // exists. Inlining both into one transaction closes that gap atomically.
+  const accessToken = signAccessToken({ sub: user.id, email: user.email, role: user.role });
+  const rawRefreshToken = generateRefreshToken();
+  const hashedToken = hashToken(rawRefreshToken);
 
-  // Audit: Successful login
-  await prisma.auditLog.create({
-    data: {
-      actorId: user.id,
-      action: 'AUTH_LOGIN',
-      entityType: 'User',
-      entityId: user.id,
-      metadata: { ip: meta?.ipAddress },
-    },
+  await prisma.$transaction(async (tx) => {
+    // Reset lockout counters on successful login
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
+    }
+
+    // Create refresh token
+    await tx.refreshToken.create({
+      data: {
+        token: hashedToken,
+        userId: user.id,
+        expiresAt: getRefreshExpiry(),
+        userAgent: meta?.userAgent,
+        ipAddress: meta?.ipAddress,
+      },
+    });
+
+    // Enforce max refresh tokens per user (revoke oldest)
+    const allTokens = await tx.refreshToken.findMany({
+      where: { userId: user.id, revokedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (allTokens.length > AUTH.MAX_REFRESH_TOKENS_PER_USER) {
+      const staleIds = allTokens
+        .slice(AUTH.MAX_REFRESH_TOKENS_PER_USER)
+        .map((t) => t.id);
+      await tx.refreshToken.updateMany({
+        where: { id: { in: staleIds } },
+        data: { revokedAt: new Date() },
+      });
+    }
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
 
-  const tokens = await issueTokens(user.id, user.email, user.role, meta);
+  // SEC-AUDIT-01: audit log write is non-critical — must never throw 500
+  // after a successful authentication (tokens already issued above).
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: 'AUTH_LOGIN',
+        entityType: 'User',
+        entityId: user.id,
+        metadata: { ip: meta?.ipAddress },
+      },
+    });
+  } catch {
+    // Non-fatal — audit write failure must never block login
+  }
 
   return {
     user: sanitizeUser(user),
-    tokens,
+    tokens: { accessToken, refreshToken: rawRefreshToken },
   };
 }
 
@@ -353,18 +470,9 @@ export async function googleSignIn(
 ): Promise<{ user: any; tokens: AuthTokens }> {
   const profile = await verifyGoogleToken(input.credential);
 
-  // BUG-02 FIX: enforce allowed email domains for Google OAuth sign-in.
-  // Previously, any Google account (gmail.com, company.com, etc.) could
-  // sign in, bypassing the institutional-email restriction enforced for
-  // email/password signup. Now both paths share the same domain gate.
-  const emailDomain = profile.email.split('@')[1];
-  if (ALLOWED_EMAIL_DOMAINS.length > 0 && !ALLOWED_EMAIL_DOMAINS.includes(emailDomain)) {
-    throw new ValidationError('Only institutional email addresses are allowed', {
-      email: [
-        `Email domain '${emailDomain}' is not permitted. Allowed: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`,
-      ],
-    });
-  }
+  // Determine role based on college registry — no domain restriction.
+  const collegeRecord = await lookupCollegeStudent(profile.email);
+  const assignedRole = collegeRecord ? 'STUDENT_VERIFIED' : 'PUBLIC_USER';
 
   // Upsert user — create if new, link Google ID if existing
   const user = await prisma.user.upsert({
@@ -373,35 +481,74 @@ export async function googleSignIn(
       email: profile.email,
       fullName: profile.name,
       googleId: profile.sub,
+      role: assignedRole,
+      collegeStudentId: collegeRecord?.id ?? null,
       verified: true,
     },
     update: {
       googleId: profile.sub,
+      // Update role if user was PUBLIC_USER and is now in registry
+      ...(collegeRecord ? { role: 'STUDENT_VERIFIED' as const, collegeStudentId: collegeRecord.id } : {}),
       // HIGH-07 FIX: reset any lockout state on successful Google sign-in.
-      // A user locked out via email/password login can bypass the lock with
-      // Google OAuth — clear the counters so they don't get confusingly locked
-      // on their next email/password attempt after an OAuth session.
       failedLoginAttempts: 0,
       lockedUntil: null,
-      // Don't overwrite fullName if already set
     },
   });
 
-  const tokens = await issueTokens(user.id, user.email, user.role, meta);
+  // DET-1 FIX: pre-compute token values, then create refresh token inside the
+  // same flow as the upsert so there is no crash window between account
+  // creation/update and token issuance.
+  const accessToken = signAccessToken({ sub: user.id, email: user.email, role: user.role });
+  const rawRefreshToken = generateRefreshToken();
+  const hashedToken = hashToken(rawRefreshToken);
 
-  // Audit: Google Login
-  await prisma.auditLog.create({
-    data: {
-      actorId: user.id,
-      action: 'AUTH_GOOGLE_LOGIN',
-      entityType: 'User',
-      entityId: user.id,
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.refreshToken.create({
+      data: {
+        token: hashedToken,
+        userId: user.id,
+        expiresAt: getRefreshExpiry(),
+        userAgent: meta?.userAgent,
+        ipAddress: meta?.ipAddress,
+      },
+    });
+
+    // Enforce max refresh tokens per user (revoke oldest)
+    const allTokens = await tx.refreshToken.findMany({
+      where: { userId: user.id, revokedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (allTokens.length > AUTH.MAX_REFRESH_TOKENS_PER_USER) {
+      const staleIds = allTokens
+        .slice(AUTH.MAX_REFRESH_TOKENS_PER_USER)
+        .map((t) => t.id);
+      await tx.refreshToken.updateMany({
+        where: { id: { in: staleIds } },
+        data: { revokedAt: new Date() },
+      });
+    }
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
+
+  // SEC-AUDIT-01: non-critical audit write — must never throw 500 after auth
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        action: 'AUTH_GOOGLE_LOGIN',
+        entityType: 'User',
+        entityId: user.id,
+      },
+    });
+  } catch {
+    // Non-fatal — audit write failure must never block login
+  }
 
   return {
     user: sanitizeUser(user),
-    tokens,
+    tokens: { accessToken, refreshToken: rawRefreshToken },
   };
 }
 
@@ -443,13 +590,21 @@ export async function refreshAccessToken(
   const hashedNewToken = hashToken(rawNewToken);
 
   await prisma.$transaction(async (tx) => {
-    await tx.refreshToken.update({
-      where: { id: record.id },
+    // CRIT-03 FIX: guarded updateMany ensures only ONE concurrent caller
+    // wins the revocation. If count === 0, another refresh already consumed
+    // the token — treat as reuse rather than silently issuing a second token.
+    const revoked = await tx.refreshToken.updateMany({
+      where: { id: record.id, revokedAt: null },
       data: {
         revokedAt: new Date(),
         replacedByToken: hashedNewToken,
       },
     });
+
+    if (revoked.count === 0) {
+      throw new UnauthorizedError('Refresh token already consumed. Please log in again.');
+    }
+
     await tx.refreshToken.create({
       data: {
         token: hashedNewToken,
@@ -545,7 +700,8 @@ export async function getCurrentUser(userId: string) {
   const restriction = computeRestriction({
     trustStatus: trust.status,
     activeDisputes: activeDisputesAgainst,
-    adminOverride: user.isRestricted,   // BUG-FIX: was hardcoded false; read actual DB flag
+    adminOverride: user.isRestricted,
+    userRole: user.role,
   });
 
   return {
@@ -564,5 +720,6 @@ function sanitizeUser(user: any) {
   return {
     ...safe,
     provider: safe.googleId ? 'GOOGLE' : 'EMAIL',
+    collegeLinked: !!safe.collegeStudentId,
   };
 }

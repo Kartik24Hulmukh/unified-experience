@@ -6,9 +6,10 @@ import "./index.css";
 // Initialize GSAP plugins globally (must be first)
 import "./lib/gsap-init";
 
-// Initialize session manager (multi-tab sync, token scheduling)
-import { sessionManager } from "./lib/session";
-sessionManager.init();
+// MED-6 FIX: sessionManager.init() removed from module scope.
+// AuthContext.tsx useEffect is the correct single initialisation point.
+// Calling init() here in strict mode caused: init() -> destroy() -> re-init()
+// which closed the original BroadcastChannel, silently breaking multi-tab sync.
 
 // Initialize monitoring (Sentry + LogRocket)
 import { initMonitoring } from "./lib/monitoring";

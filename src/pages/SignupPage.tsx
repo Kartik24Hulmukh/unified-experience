@@ -34,7 +34,7 @@ const SignupPage = () => {
     const { signup, googleSignIn, isAuthenticated, isLoading: authLoading } = useAuth();
     const { promptSignIn, isLoading: isGoogleLoading, hasRealGIS } = useGoogleIdentity();
     const [isLoading, setIsLoading] = useState(false);
-    const [showEmailForm, setShowEmailForm] = useState(false);
+    const [showEmailForm, setShowEmailForm] = useState(!hasRealGIS);
     const hasRedirected = useRef(false);
 
     // Redirect if already logged in - only once per mount

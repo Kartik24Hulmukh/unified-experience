@@ -59,7 +59,7 @@ services:
       NODE_ENV: production
       PORT: 3001
       HOST: 0.0.0.0
-      DATABASE_URL: postgresql://${POSTGRES_USER:-berozgar}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-berozgar}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-berozgar}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-berozgar}?schema=public&connection_limit=20&connect_timeout=10
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (min 32 chars)}
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_DAYS: ${JWT_REFRESH_EXPIRES_DAYS:-7}

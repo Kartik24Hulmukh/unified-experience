@@ -88,6 +88,17 @@ const CampusEventsSection = () => {
     ScrollTrigger.addEventListener('refreshInit', updateHeight);
     updateHeight();
 
+    // UX-E FIX: ScrollTrigger.addEventListener('refreshInit') only fires when
+    // ScrollTrigger itself refreshes. A window resize that doesn't trigger a
+    // ScrollTrigger refresh (e.g. DevTools panel open/close, mobile keyboard)
+    // leaves the container height and travel distance stale. A ResizeObserver
+    // on the document element catches ALL layout size changes.
+    const resizeObserver = new ResizeObserver(() => {
+      updateHeight();
+      ScrollTrigger.refresh();
+    });
+    resizeObserver.observe(document.documentElement);
+
     // ── GSAP animations (scoped to containerRef) ────────────────────────────
     const ctx = gsap.context(() => {
 
@@ -135,6 +146,7 @@ const CampusEventsSection = () => {
 
     return () => {
       ScrollTrigger.removeEventListener('refreshInit', updateHeight);
+      resizeObserver.disconnect();
       ctx.revert();
       container.style.height = '';
     };

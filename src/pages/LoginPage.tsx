@@ -22,7 +22,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 
-class ErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean }> {
+// UX-1 FIX: renamed from ErrorBoundary to LoginPageErrorBoundary.
+// The original name shadowed the global @/components/ErrorBoundary in this
+// file's scope, masking any future import and losing monitoring integration.
+class LoginPageErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean }> {
     constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) { super(props); this.state = { hasError: false }; }
     static getDerivedStateFromError() { return { hasError: true }; }
     render() { return this.state.hasError ? this.props.fallback : this.props.children; }
@@ -42,7 +45,7 @@ const LoginPage = () => {
     const { promptSignIn, isLoading: isGoogleLoading, hasRealGIS } = useGoogleIdentity();
     const isMobile = useIsMobile();
     const [isLoading, setIsLoading] = useState(false);
-    const [showEmailForm, setShowEmailForm] = useState(false);
+    const [showEmailForm, setShowEmailForm] = useState(!hasRealGIS);
     const hasRedirected = useRef(false);
 
     const from = (location.state as { from?: string })?.from || "/home";
@@ -95,11 +98,11 @@ const LoginPage = () => {
             {/* ── 3D Lanyard Campus ID ── desktop only; Rapier physics is too heavy on mobile ── */}
             {!isMobile && (
               <div className="absolute inset-0 z-0">
-                  <ErrorBoundary fallback={<div className="w-full h-full bg-black" />}>
+                  <LoginPageErrorBoundary fallback={<div className="w-full h-full bg-black" />}>
                       <Suspense fallback={null}>
                           <Lanyard position={[0, 0, 25]} gravity={[0, -40, 0]} fov={22} transparent />
                       </Suspense>
-                  </ErrorBoundary>
+                  </LoginPageErrorBoundary>
               </div>
             )}
 

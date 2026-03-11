@@ -181,6 +181,11 @@ export async function handleTokenRefresh(): Promise<string> {
     // Only store access token in memory; refresh token is in httpOnly cookie
     sessionManager.setTokens(data.accessToken);
 
+    // H1-FIX: broadcast success so other tabs cancel their pending refresh
+    // timers instead of firing duplicate /auth/refresh calls that trigger
+    // the server's token-reuse detection and mass-revoke all sessions.
+    sessionManager.broadcastRefreshSuccess();
+
     processRefreshQueue(null, data.accessToken);
     return data.accessToken;
   } catch (err) {
@@ -200,7 +205,7 @@ async function request<T>(
   endpoint: string,
   config: RequestConfig = {},
 ): Promise<T> {
-  const { body, skipAuth = false, timeout = REQUEST_TIMEOUT, ...fetchConfig } = config;
+  const { body, skipAuth = false, timeout = REQUEST_TIMEOUT, signal: callerSignal, ...fetchConfig } = config;
 
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
 
@@ -226,9 +231,18 @@ async function request<T>(
     headers.set('X-CSRF-Token', currentCsrf);
   }
 
-  // Timeout via AbortController
+  // Timeout via AbortController — also respects caller-provided signal for
+  // cancellation (e.g. React useEffect cleanup / navigation away).
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
+  // If the caller passed a signal, abort the internal controller when it fires
+  if (callerSignal) {
+    if (callerSignal.aborted) {
+      controller.abort();
+    } else {
+      callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
+    }
+  }
 
   try {
     const response = await fetch(url, {
@@ -289,6 +303,59 @@ async function request<T>(
         throw refreshErr instanceof ApiError
           ? refreshErr
           : new ApiError('Session expired', 'UNAUTHORIZED', 401);
+      }
+    }
+
+    // UX-CSRF FIX: Handle 403 CSRF_INVALID by refreshing the token and retrying once.
+    // After the SEC-1 CSRF grace period removal, mutations will 403 if the _csrf
+    // cookie expired. GET /auth/csrf-token re-sets the cookie, then we retry.
+    if (response.status === 403 && isStateChanging) {
+      const csrfErrorBody = await response.json().catch(() => ({}));
+      if (csrfErrorBody.code === 'CSRF_INVALID') {
+        try {
+          // Fetch a fresh CSRF token (sets _csrf cookie via Set-Cookie)
+          await fetch(`${API_BASE_URL}/auth/csrf-token`, {
+            method: 'GET',
+            credentials: 'include',
+          });
+
+          // Re-read the fresh cookie
+          const freshCsrf = getCsrfToken();
+          if (freshCsrf) {
+            headers.set('X-CSRF-Token', freshCsrf);
+          }
+
+          const csrfRetryController = new AbortController();
+          const csrfRetryTimeout = setTimeout(() => csrfRetryController.abort(), timeout);
+          try {
+            const csrfRetryResponse = await fetch(url, {
+              ...fetchConfig,
+              headers,
+              body: body !== undefined ? JSON.stringify(body) : undefined,
+              credentials: 'include',
+              signal: csrfRetryController.signal,
+            });
+            clearTimeout(csrfRetryTimeout);
+
+            if (!csrfRetryResponse.ok) {
+              const retryErrorBody = await csrfRetryResponse.json().catch(() => ({}));
+              throw new ApiError(
+                retryErrorBody.message || retryErrorBody.error || csrfRetryResponse.statusText,
+                statusToCode(csrfRetryResponse.status),
+                csrfRetryResponse.status,
+                retryErrorBody.details,
+              );
+            }
+
+            if (csrfRetryResponse.status === 204) return undefined as T;
+            return (await csrfRetryResponse.json()) as T;
+          } finally {
+            clearTimeout(csrfRetryTimeout);
+          }
+        } catch (csrfErr) {
+          if (csrfErr instanceof ApiError) throw csrfErr;
+          throw new ApiError('CSRF token refresh failed', 'FORBIDDEN', 403);
+        }
       }
     }
 

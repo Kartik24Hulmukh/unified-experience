@@ -60,6 +60,10 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
     const createListing = useCreateListing();
     // V3-01: Stable idempotency key — prevents duplicate listings on network retry/double-submit
     const idempotencyKey = useRef(crypto.randomUUID());
+    // Double-click guard: prevents a second submission before React Query sets isPending.
+    // The ref flips synchronously at call-time, closing the window between the click
+    // event and the async mutateAsync setting isPending: true on the next render.
+    const isSubmittingRef = useRef(false);
 
     const form = useForm<z.infer<typeof listingSchema>>({
         resolver: zodResolver(listingSchema),
@@ -97,8 +101,13 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
     };
 
     async function onSubmit(values: z.infer<typeof listingSchema>) {
+        // Synchronous double-click guard — closes the gap before isPending updates
+        if (isSubmittingRef.current) return;
+        isSubmittingRef.current = true;
+
         // Domain guard: restriction check before FSM transition
         if (!canPerform('CREATE_LISTING')) {
+            isSubmittingRef.current = false;
             toast({
                 title: "Action Unavailable",
                 description: "Your account is currently restricted from creating listings.",
@@ -114,6 +123,7 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
             logger.debug('ListingFSM', `${machine.state} → ${submitted.state}`);
         } catch (err) {
             if (err instanceof InvalidTransitionError) {
+                isSubmittingRef.current = false;
                 toast({
                     title: "Transition Blocked",
                     description: err.message,
@@ -121,6 +131,7 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
                 });
                 return;
             }
+            isSubmittingRef.current = false;
             throw err;
         }
 
@@ -163,6 +174,8 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
                 description: "Could not create your listing. Please try again.",
                 variant: "destructive",
             });
+        } finally {
+            isSubmittingRef.current = false;
         }
     }
 

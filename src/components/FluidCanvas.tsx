@@ -865,17 +865,41 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
 
     updateFrame();
 
+    // MED-G FIX: pause the RAF loop while the tab is not visible to avoid
+    // wasting GPU cycles and prevent jittery delta-time on tab re-activation.
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        if (animationFrameId.current) {
+          cancelAnimationFrame(animationFrameId.current);
+          animationFrameId.current = null;
+        }
+      } else if (isActive) {
+        updateFrame();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       isActive = false;
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
         animationFrameId.current = null;
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       container.removeEventListener('mousemove', handleMouseMove);
       container.removeEventListener('mouseenter', handleMouseEnter);
       container.removeEventListener('mouseleave', handleMouseLeave);
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
+
+      // LOW-RAF FIX: forcibly release the WebGL context to prevent context
+      // exhaustion and ensure the rAF loop cannot call GL methods on a dead context.
+      try {
+        const ext = gl.getExtension('WEBGL_lose_context');
+        if (ext) ext.loseContext();
+      } catch {
+        // Safe to ignore — driver may not support the extension
+      }
     };
   }, [containerRef]);
 

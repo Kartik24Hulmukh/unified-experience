@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ArrowLeft, Shield, Clock, Tag, MapPin, User, MessageSquare } from 'lucide-react';
@@ -21,6 +21,13 @@ const ListingDetailPage = () => {
     const [message, setMessage] = useState('');
     const [requestSent, setRequestSent] = useState(false);
 
+    // MED-UNMOUNT FIX: track mount state so mutation callbacks don't fire
+    // setState/toast on an unmounted component after user navigates away.
+    const mountedRef = useRef(true);
+    useEffect(() => {
+        return () => { mountedRef.current = false; };
+    }, []);
+
     const listing = listingResponse?.data;
 
     useLayoutEffect(() => {
@@ -39,6 +46,7 @@ const ListingDetailPage = () => {
             { listingId: id, message: message || undefined },
             {
                 onSuccess: () => {
+                    if (!mountedRef.current) return;
                     setRequestSent(true);
                     toast({
                         title: 'Request Sent',
@@ -46,6 +54,7 @@ const ListingDetailPage = () => {
                     });
                 },
                 onError: (err) => {
+                    if (!mountedRef.current) return;
                     toast({
                         title: 'Request Failed',
                         description: err.message || 'Could not send exchange request.',

@@ -12,6 +12,8 @@ import type { CreateListingInput, UpdateListingStatusInput } from '@/shared/vali
 import type { ListingStatus, Prisma } from '@prisma/client';
 import { createListingMachine } from '@/domain/fsm/ListingMachine';
 import type { ListingState, ListingEvent } from '@/domain/fsm/ListingMachine';
+import { evaluateFraudHeuristics, isFraudReviewRequired } from '@/domain/fraudHeuristics';
+import { requireWritePrivilege } from '@/services/adminService';
 
 /* ═══════════════════════════════════════════════════
    List Listings (with filtering)
@@ -49,10 +51,15 @@ export async function listListings(params: ListListingsParams) {
     ];
   }
 
+  // IAM: Exclude PUBLIC_USER sellers from resale search results
+  where.owner = { ...((where.owner as Record<string, unknown>) ?? {}), role: { not: 'PUBLIC_USER' } };
+
   const [rawListings, total] = await prisma.$transaction([
     prisma.listing.findMany({
       where,
-      include: { owner: { select: { id: true, fullName: true, email: true } } },
+      // CRIT-F FIX: email omitted — GET /listings is unauthenticated; exposing
+      // owner email to anonymous callers is a PII/enumeration risk.
+      include: { owner: { select: { id: true, fullName: true } } },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
@@ -82,7 +89,8 @@ export async function getListing(id: string) {
   const listing = await prisma.listing.findUnique({
     where: { id },
     include: {
-      owner: { select: { id: true, fullName: true, email: true } },
+      // CRIT-F FIX: email omitted — GET /listings/:id is unauthenticated.
+      owner: { select: { id: true, fullName: true } },
       requests: {
         select: { id: true, buyerId: true, status: true, createdAt: true },
       },
@@ -134,9 +142,66 @@ export async function createListing(
         status: 'DRAFT',
         ownerId: userId,
       },
-      include: { owner: { select: { id: true, fullName: true, email: true } } },
+      // CRIT-1 FIX: email stripped — owner email must never travel in API responses
+      include: { owner: { select: { id: true, fullName: true } } },
     });
   });
+
+  // CRIT-1 FIX: Run server-side fraud heuristics with real user data AFTER the
+  // listing is committed. Client-side fraudService.evaluateAndFlag() previously
+  // called POST /admin/audit which requires ADMIN role → always silently 403'd.
+  // This check is best-effort: failure must never block the listing creation response.
+  try {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60_000);
+    const [recentListingCount, userStats] = await Promise.all([
+      prisma.listing.count({
+        where: { ownerId: userId, createdAt: { gte: oneDayAgo } },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { cancelledRequests: true, adminFlags: true, createdAt: true, _count: { select: { disputes: true } } },
+      }),
+    ]);
+
+    if (userStats) {
+      const accountAgeDays = Math.floor(
+        (Date.now() - userStats.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      const fraudResult = evaluateFraudHeuristics({
+        recentListings: recentListingCount,
+        recentCancellations: userStats.cancelledRequests,
+        recentDisputes: userStats._count.disputes,
+        accountAgeDays,
+      });
+
+      if (isFraudReviewRequired(fraudResult)) {
+        // Atomically increment adminFlags + write audit entry so the
+        // admin fraud dashboard picks this up immediately.
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: userId },
+            data: { adminFlags: { increment: 1 } },
+          }),
+          prisma.auditLog.create({
+            data: {
+              actorId: null, // SYSTEM
+              action: 'ADMIN_FLAG_USER',
+              entityType: 'User',
+              entityId: userId,
+              metadata: {
+                trigger: 'LISTING_CREATED',
+                listingId: listing.id,
+                riskLevel: fraudResult.riskLevel,
+                flags: fraudResult.flags,
+              },
+            },
+          }),
+        ]);
+      }
+    }
+  } catch {
+    // Non-fatal — fraud check must never block listing creation
+  }
 
   // Convert Prisma Decimal → string
   return { ...listing, price: listing.price.toString() };
@@ -231,6 +296,11 @@ export async function updateListingStatus(
       throw new ForbiddenError('Only admins can perform this status transition');
     }
 
+    // OBSERVER admins are read-only — block write operations
+    if (adminOnlyStatuses.includes(input.status) && actorRole === 'ADMIN') {
+      await requireWritePrivilege(actorId);
+    }
+
     const event = STATUS_TO_EVENT[input.status];
     if (!event) {
       throw new InvalidTransitionError('Listing', listing.status, input.status);
@@ -239,12 +309,14 @@ export async function updateListingStatus(
     // EXCH-BUG-06: validate the transition through the FSM
     const fsmState = DB_TO_FSM[listing.status as ListingStatus];
     if (!fsmState) {
-      throw new ConflictError(`Unknown listing status: ${listing.status}`);
+      console.error('[SEC-4] Unknown listing status in FSM lookup:', listing.status);
+      throw new ConflictError('This listing is in an unexpected state and cannot be updated right now.');
     }
     const machine = createListingMachine({ state: fsmState, history: [] });
     if (!machine.can(event)) {
+      console.warn('[SEC-4] Rejected listing FSM transition:', event, listing.status);
       throw new ConflictError(
-        `Cannot apply '${event}' to listing in state '${listing.status}'. Invalid FSM transition.`,
+        'This action cannot be performed on the listing in its current state.',
       );
     }
     const nextFsm = machine.send(event);
@@ -253,7 +325,8 @@ export async function updateListingStatus(
     const updated = await tx.listing.update({
       where: { id: listingId },
       data: { status: newStatus },
-      include: { owner: { select: { id: true, fullName: true, email: true } } },
+      // HIGH-2 FIX: email stripped — owner email must never travel in API responses
+      include: { owner: { select: { id: true, fullName: true } } },
     });
 
     // V3-04: When a listing is flagged or removed by an admin, atomically cancel
@@ -298,5 +371,8 @@ export async function updateListingStatus(
     });
 
     return updated;
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
 }

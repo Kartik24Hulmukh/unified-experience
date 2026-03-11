@@ -224,6 +224,25 @@ export async function requireSuperPrivilege(actorId: string): Promise<void> {
   }
 }
 
+/**
+ * Require write-capable privilege level (SUPER or REVIEWER).
+ * OBSERVER admins are read-only and cannot approve, reject, flag, or resolve.
+ */
+export async function requireWritePrivilege(actorId: string): Promise<void> {
+  const actor = await prisma.user.findUnique({
+    where: { id: actorId },
+    select: { role: true, privilegeLevel: true },
+  });
+
+  if (!actor || actor.role !== 'ADMIN') {
+    throw new ForbiddenError('Admin role required');
+  }
+
+  if (actor.privilegeLevel === 'OBSERVER') {
+    throw new ForbiddenError('OBSERVER admins have read-only access');
+  }
+}
+
 /* ═══════════════════════════════════════════════════
    Fraud Overview
    ═══════════════════════════════════════════════════ */
@@ -234,7 +253,7 @@ export async function getFraudOverview() {
 
   const users = await prisma.user.findMany({
     where: {
-      role: 'STUDENT',
+      role: { in: ['STUDENT_VERIFIED', 'PUBLIC_USER'] },
       OR: [
         { adminFlags: { gte: 1 } },
         { cancelledRequests: { gte: 3 } },
@@ -316,7 +335,24 @@ export async function getIntegrityReport() {
    Stale Transaction Recovery
    ═══════════════════════════════════════════════════ */
 
+// CORR-3 FIX: module-level concurrency guard prevents overlapping runs from
+// both the scheduled job AND the POST /admin/recovery endpoint. Previously
+// only the scheduler in server.ts had a guard — the admin route bypassed it.
+let _recoveryRunning = false;
+
 export async function recoverStaleTransactions() {
+  if (_recoveryRunning) {
+    return { skipped: true, reason: 'Recovery already in progress' };
+  }
+  _recoveryRunning = true;
+  try {
+    return await _recoverStaleTransactionsImpl();
+  } finally {
+    _recoveryRunning = false;
+  }
+}
+
+async function _recoverStaleTransactionsImpl() {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -325,96 +361,119 @@ export async function recoverStaleTransactions() {
   const fourteenDaysAgo = new Date();
   fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
-  return prisma.$transaction(async (tx) => {
-    // PROD-04: bump version alongside status change so any concurrent
-    // optimistic lock held by a user racing against expiry will correctly
-    // conflict instead of silently overwriting the EXPIRED status.
-    const expiredSent = await tx.request.updateMany({
-      where: {
-        status: 'SENT',
-        updatedAt: { lt: sevenDaysAgo },
-      },
-      data: { status: 'EXPIRED', version: { increment: 1 } },
-    });
+  // HIGH-1 FIX: Replace the single mega-transaction that held locks across
+  // requests, listings, refreshToken, idempotencyKey, AND auditLog simultaneously
+  // with three independent sequential operations.
+  //
+  // Rationale for the split:
+  //   • requests + listings share a logical dependency (listing reset reads the
+  //     request state just written) → kept in one focused transaction.
+  //   • refreshToken revocation is independent → standalone query.
+  //   • idempotencyKey cleanup is already handled by the 10-minute prune
+  //     scheduler (sentinelPrune job) → removed to avoid duplicate deletes.
+  //   • auditLog write is independent → written after all logic completes so
+  //     it cannot hold locks on the business tables.
+  //
+  // This eliminates the deadlock window that occurred when the idempotency
+  // middleware tried to INSERT a new key while the recovery job held a
+  // table-level intent lock via the same transaction.
 
-    // EXCH-DESIGN-03 FIX: expire ghost ACCEPTED / MEETING_SCHEDULED requests
-    const expiredActive = await tx.request.updateMany({
-      where: {
-        status: { in: ['ACCEPTED', 'MEETING_SCHEDULED'] },
-        updatedAt: { lt: fourteenDaysAgo },
-      },
-      data: { status: 'EXPIRED', version: { increment: 1 } },
-    });
+  const terminalStatuses: RequestStatus[] = ['EXPIRED', 'DECLINED', 'CANCELLED', 'COMPLETED', 'WITHDRAWN', 'RESOLVED'];
 
-    const expiredRequests = { count: expiredSent.count + expiredActive.count };
-
-    // CRIT-05 FIX: After expiring requests, reset any listings that are now
-    // stranded in INTEREST_RECEIVED or IN_TRANSACTION with no remaining active
-    // (non-terminal) requests. Without this, a listing whose only request
-    // expired could never receive new buyers — it would remain locked forever.
-    // V3-14: This list must match TERMINAL_STATUSES in requestService.ts.
-    // Added WITHDRAWN and RESOLVED which were previously missing — a withdrawn
-    // or resolved request was wrongly treated as "active", blocking listing reset.
-    const terminalStatuses: RequestStatus[] = ['EXPIRED', 'DECLINED', 'CANCELLED', 'COMPLETED', 'WITHDRAWN', 'RESOLVED'];
-
-    const interestReset = await tx.listing.updateMany({
-      where: {
-        status: 'INTEREST_RECEIVED',
-        requests: { none: { status: { notIn: terminalStatuses } } },
-      },
-      data: { status: 'APPROVED' },
-    });
-
-    const inTransactionReset = await tx.listing.updateMany({
-      where: {
-        status: 'IN_TRANSACTION',
-        requests: { none: { status: { notIn: terminalStatuses } } },
-      },
-      data: { status: 'APPROVED' },
-    });
-
-    const recoveredListings = interestReset.count + inTransactionReset.count;
-
-    // Revoke expired refresh tokens
-    const revokedTokens = await tx.refreshToken.updateMany({
-      where: {
-        expiresAt: { lt: new Date() },
-        revokedAt: null,
-      },
-      data: { revokedAt: new Date() },
-    });
-
-    // Clean expired idempotency keys
-    const deletedKeys = await tx.idempotencyKey.deleteMany({
-      where: { expiresAt: { lt: new Date() } },
-    });
-
-    // HIGH-06 FIX: log per-batch counts so ops can trace which expiry type
-    // triggered a listing recovery, instead of a single opaque aggregate.
-    await tx.auditLog.create({
-      data: {
-        actorId: null, // SYSTEM
-        action: 'SYSTEM_RECOVERY',
-        entityType: 'System',
-        metadata: {
-          expiredRequests: expiredRequests.count,
-          expiredSentRequests: expiredSent.count,
-          expiredActiveRequests: expiredActive.count,
-          recoveredListings,
-          recoveredInterestReceived: interestReset.count,
-          recoveredInTransaction: inTransactionReset.count,
-          revokedTokens: revokedTokens.count,
-          deletedIdempotencyKeys: deletedKeys.count,
+  // ── Step 1: Expire stale requests + reset stranded listings ──────────────
+  // Kept in one transaction because listing reset depends on request state
+  // being committed first (otherwise a request that JUST expired would still
+  // appear active and block the listing from being reset).
+  const { expiredSent, expiredActive, interestReset, inTransactionReset } =
+    await prisma.$transaction(async (tx) => {
+      // PROD-04: bump version alongside status change so any concurrent
+      // optimistic lock held by a user racing against expiry will correctly
+      // conflict instead of silently overwriting the EXPIRED status.
+      const _expiredSent = await tx.request.updateMany({
+        where: {
+          status: 'SENT',
+          updatedAt: { lt: sevenDaysAgo },
         },
-      },
+        data: { status: 'EXPIRED', version: { increment: 1 } },
+      });
+
+      // EXCH-DESIGN-03 FIX: expire ghost ACCEPTED / MEETING_SCHEDULED requests
+      const _expiredActive = await tx.request.updateMany({
+        where: {
+          status: { in: ['ACCEPTED', 'MEETING_SCHEDULED'] },
+          updatedAt: { lt: fourteenDaysAgo },
+        },
+        data: { status: 'EXPIRED', version: { increment: 1 } },
+      });
+
+      // CRIT-05 FIX: After expiring requests, reset any listings that are now
+      // stranded in INTEREST_RECEIVED or IN_TRANSACTION with no remaining active
+      // (non-terminal) requests. Without this, a listing whose only request
+      // expired could never receive new buyers — it would remain locked forever.
+      const _interestReset = await tx.listing.updateMany({
+        where: {
+          status: 'INTEREST_RECEIVED',
+          requests: { none: { status: { notIn: terminalStatuses } } },
+        },
+        data: { status: 'APPROVED' },
+      });
+
+      const _inTransactionReset = await tx.listing.updateMany({
+        where: {
+          status: 'IN_TRANSACTION',
+          requests: { none: { status: { notIn: terminalStatuses } } },
+        },
+        data: { status: 'APPROVED' },
+      });
+
+      return {
+        expiredSent: _expiredSent,
+        expiredActive: _expiredActive,
+        interestReset: _interestReset,
+        inTransactionReset: _inTransactionReset,
+      };
     });
 
-    return {
-      expiredRequests: expiredRequests.count,
-      recoveredListings,
-      revokedTokens: revokedTokens.count,
-      deletedIdempotencyKeys: deletedKeys.count,
-      recoveredAt: new Date().toISOString(),
-    };
+  // ── Step 2: Revoke expired refresh tokens (independent, no tx needed) ────
+  const revokedTokens = await prisma.refreshToken.updateMany({
+    where: {
+      expiresAt: { lt: new Date() },
+      revokedAt: null,
+    },
+    data: { revokedAt: new Date() },
   });
+
+  // Step 3: idempotencyKey cleanup intentionally removed — the 10-minute
+  // sentinelPrune scheduler already handles this. Duplicating it here would
+  // cause redundant deletes and contention with concurrent API requests.
+
+  // ── Step 4: Audit log (independent write after all logic is committed) ────
+  const expiredRequestsCount = expiredSent.count + expiredActive.count;
+  const recoveredListings = interestReset.count + inTransactionReset.count;
+
+  // HIGH-06 FIX: log per-batch counts so ops can trace which expiry type
+  // triggered a listing recovery, instead of a single opaque aggregate.
+  await prisma.auditLog.create({
+    data: {
+      actorId: null, // SYSTEM
+      action: 'SYSTEM_RECOVERY',
+      entityType: 'System',
+      metadata: {
+        expiredRequests: expiredRequestsCount,
+        expiredSentRequests: expiredSent.count,
+        expiredActiveRequests: expiredActive.count,
+        recoveredListings,
+        recoveredInterestReceived: interestReset.count,
+        recoveredInTransaction: inTransactionReset.count,
+        revokedTokens: revokedTokens.count,
+      },
+    },
+  });
+
+  return {
+    expiredRequests: expiredRequestsCount,
+    recoveredListings,
+    revokedTokens: revokedTokens.count,
+    recoveredAt: new Date().toISOString(),
+  };
 }

@@ -1,11 +1,11 @@
-import { lazy, Suspense, memo, useEffect } from 'react';
+import { lazy, Suspense, memo, useEffect, useRef } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, QueryCache, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -40,6 +40,16 @@ const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
 const SplashTestPage = lazy(() => import('./pages/SplashTestPage'));
 
 const queryClient = new QueryClient({
+  // M2-FIX: global QueryCache error handler catches unrecoverable 401s from
+  // background queries (e.g. profile refetch, stale-while-revalidate) that
+  // would otherwise silently log the user out with no toast notification.
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (error instanceof ApiError && error.code === 'UNAUTHORIZED') {
+        handleApiError(error, { context: 'BackgroundQuery' });
+      }
+    },
+  }),
   defaultOptions: {
     queries: {
       // AUTH-SESSION-01: never retry 401/403 — the api-client already
@@ -60,10 +70,14 @@ const queryClient = new QueryClient({
   },
 });
 
-/** Route-level error boundary wrapper — granular recovery per page */
+/** Route-level error boundary wrapper — granular recovery per page.
+ *  MED-A FIX: key={pathname} forces ErrorBoundary to remount on each
+ *  navigation so a caught error on one page doesn't persist to the next.
+ */
 const RouteErrorBoundary = memo(function RouteErrorBoundary({ name, children }: { name: string; children: React.ReactNode }) {
+  const { pathname } = useLocation();
   return (
-    <ErrorBoundary boundary={name}>
+    <ErrorBoundary key={pathname} boundary={name}>
       {children}
     </ErrorBoundary>
   );
@@ -84,9 +98,32 @@ const ConditionalScanline = memo(function ConditionalScanline() {
 /** Tracks page views for analytics / monitoring */
 function PageViewTracker() {
   const { pathname } = useLocation();
+  // UX-3 FIX: only fire after auth hydration is complete. Without this guard,
+  // an authenticated user hitting '/' triggers: '/' view → redirect to '/home' →
+  // '/home' view, polluting analytics with phantom page views before hydration.
+  const { isHydrated } = useAuth();
   useEffect(() => {
+    if (!isHydrated) return;
     trackPageView(pathname);
-  }, [pathname]);
+  }, [pathname, isHydrated]);
+  return null;
+}
+
+/** H2-FIX: Clears the React Query cache on ANY auth→unauth transition.
+ *  ContextNav only clears on explicit logout button click; this catches
+ *  multi-tab logout, session expiry, and 401-triggered forced logout. */
+function AuthCacheSyncer() {
+  const { isAuthenticated } = useAuth();
+  const qc = useQueryClient();
+  const prevAuth = useRef(isAuthenticated);
+
+  useEffect(() => {
+    if (prevAuth.current && !isAuthenticated) {
+      qc.clear();
+    }
+    prevAuth.current = isAuthenticated;
+  }, [isAuthenticated, qc]);
+
   return null;
 }
 
@@ -103,6 +140,7 @@ const App = () => (
         <TooltipProvider>
           <AuthProvider>
             <ProfileProvider>
+              <AuthCacheSyncer />
               <Toaster />
               <Sonner />
               <BrowserRouter>
@@ -126,7 +164,8 @@ const App = () => (
                         <Route path="/login" element={<RouteErrorBoundary name="Login"><LoginPage /></RouteErrorBoundary>} />
                         <Route path="/signup" element={<RouteErrorBoundary name="Signup"><SignupPage /></RouteErrorBoundary>} />
                         <Route path="/verify" element={<RouteErrorBoundary name="Verify"><VerificationPage /></RouteErrorBoundary>} />
-                        <Route path="/splash-test" element={<SplashTestPage />} />
+                        {/* Dev-only test route — excluded from production builds */}
+                        {import.meta.env.DEV && <Route path="/splash-test" element={<SplashTestPage />} />}
 
                         {/* Post-login home — MasterExperience + modules */}
                         <Route path="/home" element={<ProtectedRoute><RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary></ProtectedRoute>} />

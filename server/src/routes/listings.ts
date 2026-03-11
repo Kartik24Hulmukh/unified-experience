@@ -15,6 +15,12 @@ import { createListingSchema, updateListingStatusSchema } from '@/shared/validat
 import { apiData, apiPage } from '@/shared/response';
 import * as listingService from '@/services/listingService';
 
+// Safe parseInt: rejects NaN, negative, and non-finite values to prevent Prisma crashes.
+const safeParseInt = (s: string | undefined) => {
+  const n = s ? parseInt(s, 10) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+};
+
 export async function listingRoutes(app: FastifyInstance): Promise<void> {
   /** GET /listings — list with optional filters */
   app.get('/listings', async (request, reply) => {
@@ -23,8 +29,8 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
       status: query.status,
       category: query.category,
       module: query.module,
-      page: query.page ? parseInt(query.page, 10) : undefined,
-      limit: query.limit ? parseInt(query.limit, 10) : undefined,
+      page: safeParseInt(query.page),
+      limit: safeParseInt(query.limit),
       search: query.search,
     });
     return reply.status(200).send(apiPage(result.listings, result.pagination));

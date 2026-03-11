@@ -123,8 +123,11 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
     const userId = user?.id ?? '';
 
     // Poll requests every 30 seconds to pick up status changes without a WebSocket
+    // UX-04 FIX: refetchIntervalInBackground:false pauses polling when the tab
+    // is hidden, saving battery/bandwidth on mobile and reducing server load.
     const { data: requestsData } = useRequests(undefined, {
         refetchInterval: 30_000,
+        refetchIntervalInBackground: false,
         enabled: !!userId,
     });
 
@@ -146,7 +149,11 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     const markAllAsRead = () => {
-        const allIds = new Set([...acknowledgedIds, ...notifications.map(n => n.id)]);
+        // HIGH-04 FIX: prune acknowledged IDs to only include current notification IDs.
+        // Without this, the set grows without bound across sessions as old request IDs
+        // accumulate in localStorage, eventually degrading JSON parse/serialize perf.
+        const currentIds = new Set(notifications.map(n => n.id));
+        const allIds = new Set([...currentIds, ...[...acknowledgedIds].filter(id => currentIds.has(id))]);
         setAcknowledgedIds(allIds);
         saveAcknowledged(allIds);
     };
@@ -166,11 +173,11 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
             <PopoverTrigger asChild>
                 <button className="relative group" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}>
                     <div className={`p-2 transition-all duration-300 ${isOpen ? 'rotate-12' : 'group-hover:-rotate-12'}`}>
-                        <Bell className={`w-6 h-6 ${isDark ? 'text-portal-foreground' : 'text-foreground'} ${unreadCount > 0 ? 'animate-pulse' : 'opacity-60'}`} />
+                        <Bell className={`w-6 h-6 ${isDark ? 'text-portal-foreground' : 'text-foreground'} ${unreadCount > 0 ? 'opacity-100' : 'opacity-60'}`} />
                     </div>
                     {unreadCount > 0 && (
                         <Badge
-                            className="absolute -top-1 -right-1 bg-primary text-black font-display font-bold text-[10px] h-5 w-5 flex items-center justify-center rounded-none border-none animate-bounce"
+                            className="absolute -top-1 -right-1 bg-primary text-black font-display font-bold text-[10px] h-5 w-5 flex items-center justify-center rounded-none border-none"
                         >
                             {unreadCount}
                         </Badge>

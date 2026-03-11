@@ -70,6 +70,10 @@ const envSchema = z.object({
 
   // Admin registry extension (comma-separated emails, beyond ADMIN_REGISTRY in constants.ts)
   ADMIN_EMAILS: z.string().optional(),
+
+  // Email domain allowlist for signup (comma-separated; empty string = allow all domains)
+  // Overrides the hardcoded default in constants.ts. Leave unset to use the default.
+  ALLOWED_EMAIL_DOMAINS: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -3,11 +3,12 @@ import { sessionManager } from '@/lib/session';
 import api, { handleTokenRefresh } from '@/lib/api-client';
 import { setCsrfToken, clearCsrfToken } from '@/lib/api-client';
 import { identifyUser, clearUser as clearMonitoringUser } from '@/lib/monitoring';
+import { toast } from '@/components/ui/use-toast';
 import type { RestrictionResult } from '@/domain/restrictionEngine';
 
 /* ─── Types ─── */
 
-export type UserRole = 'student' | 'admin';
+export type UserRole = 'student_verified' | 'public_user' | 'admin';
 
 /**
  * Internal privilege tiers for the unified admin role.
@@ -26,6 +27,8 @@ export interface User {
   email: string;
   role: UserRole;
   verified: boolean;
+  /** Whether user's email is linked to college registry */
+  collegeLinked?: boolean;
   /** How the user authenticated (Google OAuth or email/password) */
   provider: AuthProvider;
   /**
@@ -105,13 +108,24 @@ interface AuthMeResponse {
 }
 
 function normalizeUserRole(role: string | undefined): UserRole {
-  return role?.toLowerCase() === 'admin' ? 'admin' : 'student';
+  const lower = role?.toLowerCase();
+  if (lower === 'admin') return 'admin';
+  if (lower === 'student_verified') return 'student_verified';
+  return 'public_user';
+}
+
+function normalizePrivilegeLevel(level: string | undefined): AdminPrivilegeLevel | undefined {
+  if (!level) return undefined;
+  const upper = level.toUpperCase();
+  if (upper === 'SUPER' || upper === 'REVIEWER' || upper === 'OBSERVER') return upper;
+  return undefined;
 }
 
 function normalizeUser(user: User): User {
   return {
     ...user,
     role: normalizeUserRole(user.role),
+    privilegeLevel: normalizePrivilegeLevel(user.privilegeLevel as string | undefined),
   };
 }
 
@@ -130,6 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // CRIT-04 FIX: hold the pending signup password in memory only.
   // It is set in signup() and cleared in verifyOtp() / logout().
   const pendingPasswordRef = useRef<string | null>(null);
+  // Auto-clear after OTP_EXPIRES_MINUTES (10 min) so the password doesn't
+  // stay in memory indefinitely if the user abandons the flow.
+  const pendingPasswordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize session manager (multi-tab sync, token refresh)
   useEffect(() => {
@@ -243,11 +260,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // shares the isRefreshing mutex with any concurrent 401-triggered refresh.
         // Previously, calling api.post() directly bypassed the mutex, allowing two
         // simultaneous refresh requests which could invalidate each other's tokens.
-        handleTokenRefresh().catch(() => {
+        handleTokenRefresh().then(() => {
+          // M3-FIX: after proactive refresh success, re-fetch trust/restriction
+          // so admin-applied restrictions take effect without a full page reload.
+          api.get<AuthMeResponse>('/auth/me').then((me) => {
+            const user = normalizeUser(me.user);
+            sessionManager.setUser(user);
+            setState((prev) => ({
+              ...prev,
+              user,
+              trust: me.trust,
+              restriction: me.restriction,
+            }));
+          }).catch(() => { /* non-fatal: trust stays stale until next navigation */ });
+        }).catch(() => {
           // handleTokenRefresh() has already called clearSession() — just sync React state
           clearCsrfToken();
           clearMonitoringUser();
           setState({ ...INITIAL_STATE, isHydrated: true });
+          // MED-SESSION FIX: notify the user that their session expired so they
+          // aren't silently logged out while actively using the app.
+          toast({
+            title: 'Session Expired',
+            description: 'Your session has expired. Please log in again to continue.',
+            variant: 'destructive',
+          });
         });
       }
     });
@@ -306,6 +343,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post('/auth/signup', { fullName, email, password }, { skipAuth: true });
       // CRIT-04 FIX: persist only non-sensitive data; hold password in-memory.
       pendingPasswordRef.current = password;
+      // Auto-clear password after 10 minutes (matches OTP expiry)
+      if (pendingPasswordTimerRef.current) clearTimeout(pendingPasswordTimerRef.current);
+      pendingPasswordTimerRef.current = setTimeout(() => {
+        pendingPasswordRef.current = null;
+        pendingPasswordTimerRef.current = null;
+      }, 10 * 60 * 1000);
       savePending({ fullName, email });
       setState((prev) => ({ ...prev, isLoading: false }));
     } catch (err) {
@@ -337,6 +380,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, { skipAuth: true });
 
       pendingPasswordRef.current = null;
+      if (pendingPasswordTimerRef.current) {
+        clearTimeout(pendingPasswordTimerRef.current);
+        pendingPasswordTimerRef.current = null;
+      }
       clearPending();
       const user = normalizeUser(response.user);
 
@@ -372,6 +419,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearCsrfToken();
     clearMonitoringUser();
     pendingPasswordRef.current = null;
+    if (pendingPasswordTimerRef.current) {
+      clearTimeout(pendingPasswordTimerRef.current);
+      pendingPasswordTimerRef.current = null;
+    }
     clearPending();
     setState({ ...INITIAL_STATE, isHydrated: true });
   }, []);

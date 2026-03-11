@@ -45,6 +45,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   // React Query: automatic caching, deduplication across tabs, and stale-while-revalidate.
   // MED-03 FIX: queryKey scoped to user?.id (stable primitive) prevents re-fetches
   // caused by new object references from token-refresh events in AuthContext.
+  // CRIT-01 FIX: queryKey includes user?.id so that after logout → login as a
+  // different user, React Query treats the new user's profile as a cache miss
+  // instead of serving the previous user's stale data.
   const {
     data: profile = null,
     isLoading,
@@ -72,7 +75,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     enabled: isAuthenticated && !!user,
     staleTime: 5 * 60 * 1000,   // 5 min: avoids redundant fetches on rapid navigation
     gcTime: 10 * 60 * 1000,      // 10 min: keep cache warm across route switches
-    retry: false,
+    // UX-C FIX: retry:false caused a single transient network hiccup to show a
+    // permanent error state. Retry once with exponential backoff (max 10 s).
+    // Still respects the global QueryClient rule that 401/403 never retries.
+    retry: 1,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
   });
 
   const error = queryError

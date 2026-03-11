@@ -67,6 +67,8 @@ export const RequestDefinition: MachineDefinition<
       SCHEDULE: 'meeting_scheduled',
       CANCEL: 'cancelled',
       DISPUTE: 'disputed',
+      // DET-2 FIX: system recovery can expire ghosted accepted requests after 14 days
+      EXPIRE: 'expired',
     },
     declined: {
       RETRY: 'idle',
@@ -75,6 +77,8 @@ export const RequestDefinition: MachineDefinition<
       CONFIRM: 'completed',
       CANCEL: 'cancelled',
       DISPUTE: 'disputed',
+      // DET-2 FIX: system recovery can expire ghosted meeting requests after 14 days
+      EXPIRE: 'expired',
     },
     completed: {
       DISPUTE: 'disputed',

@@ -18,7 +18,8 @@ import type { TrustStatus } from '@/domain/trustEngine';
 export type RestrictableAction =
   | 'CREATE_LISTING'
   | 'REQUEST_EXCHANGE'
-  | 'REQUEST_CONTACT';
+  | 'REQUEST_CONTACT'
+  | 'RAISE_DISPUTE';
 
 export interface RestrictionInput {
   trustStatus: TrustStatus;

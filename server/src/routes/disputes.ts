@@ -15,6 +15,12 @@ import { createDisputeSchema, updateDisputeStatusSchema } from '@/shared/validat
 import { apiData, apiPage } from '@/shared/response';
 import * as disputeService from '@/services/disputeService';
 
+// Safe parseInt: rejects NaN, negative, and non-finite values to prevent Prisma crashes.
+const safeParseInt = (s: string | undefined) => {
+  const n = s ? parseInt(s, 10) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+};
+
 export async function disputeRoutes(app: FastifyInstance): Promise<void> {
   /** GET /disputes — list disputes for current user (admin sees all) */
   app.get(
@@ -25,8 +31,8 @@ export async function disputeRoutes(app: FastifyInstance): Promise<void> {
       const result = await disputeService.listDisputes({
         userId: request.userId!,
         role: request.userRole!,
-        page: query.page ? parseInt(query.page, 10) : undefined,
-        limit: query.limit ? parseInt(query.limit, 10) : undefined,
+        page: safeParseInt(query.page),
+        limit: safeParseInt(query.limit),
       });
       return reply.status(200).send(apiPage(result.disputes, result.pagination));
     },

@@ -231,6 +231,15 @@ class SessionManager {
   }
 
   /**
+   * Notify other tabs that a token refresh succeeded so they can cancel
+   * their own pending refresh timers. Reuses the 'login' broadcast type
+   * which already triggers clearRefreshTimer() in receivers.
+   */
+  broadcastRefreshSuccess() {
+    this.broadcast('login');
+  }
+
+  /**
    * Check if there's an active session (user data exists).
    * Does NOT validate token — call getAccessToken() for that.
    */
@@ -254,10 +263,15 @@ class SessionManager {
       return;
     }
 
+    // MED-MULTITAB FIX: add random jitter (0-5s) to stagger refresh calls
+    // across multiple tabs. This prevents all tabs from firing /auth/refresh
+    // simultaneously when they share the same JWT, which could cause
+    // server-side refresh token rotation to reject all but the first request.
+    const jitter = Math.random() * 5000;
     this.refreshTimer = setTimeout(() => {
       // Proactive refresh signal: emit locally so AuthContext can call /auth/refresh
       this.emit('token-refresh', this.getUser());
-    }, refreshIn);
+    }, refreshIn + jitter);
   }
 
   private clearRefreshTimer() {
@@ -286,7 +300,11 @@ class SessionManager {
       this.clearRefreshTimer();
       this.emit('logout', null);
     } else if (type === 'login') {
-      // Another tab logged in — reload user from storage
+      // Another tab logged in or refreshed — reload user from storage.
+      // MED-MULTITAB FIX: cancel our pending refresh timer since the other tab
+      // already refreshed successfully and we'll pick up the new token on
+      // next API call via the shared httpOnly refresh cookie.
+      this.clearRefreshTimer();
       // Note: no access token in memory here; first API call will auto-refresh
       // via the shared httpOnly refresh cookie.
       const user = this.getUser();

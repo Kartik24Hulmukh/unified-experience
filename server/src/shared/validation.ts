@@ -145,8 +145,35 @@ export const updateRequestEventSchema = z.object({
    Admin Schemas
    ═══════════════════════════════════════════════════ */
 
+// MED-E FIX: allowlist all valid audit-log action strings.
+// Accepting a free-form z.string() allowed arbitrary values to be injected
+// into the AuditLog table via POST /admin/audit, making the audit trail
+// unreliable as an integrity record. Any new event type must be added here.
+export const AUDIT_ACTIONS = [
+  'AUTH_SIGNUP_REQUEST',
+  'AUTH_VERIFY_OTP',
+  'AUTH_LOGIN',
+  'AUTH_GOOGLE_LOGIN',
+  'AUTH_LOGOUT',
+  'LISTING_STATUS_UPDATE',
+  'REQUESTS_FORCE_CANCELLED',
+  'REQUEST_CREATE',
+  'REQUEST_EVENT',
+  'DISPUTE_CREATE',
+  'DISPUTE_ESCALATED',
+  'DISPUTE_STATUS_UPDATE',
+  'SYSTEM_STARTUP',
+  'SYSTEM_RECOVERY',
+  'ADMIN_FLAG_USER',
+  'ADMIN_RESTRICT_USER',
+  'ADMIN_APPROVE_LISTING',
+  'ADMIN_REJECT_LISTING',
+] as const;
+
+export type AuditAction = typeof AUDIT_ACTIONS[number];
+
 export const createAuditLogSchema = z.object({
-  action: safeString(100),
+  action: z.enum(AUDIT_ACTIONS),
   targetUserId: z.string().uuid().optional(),
   entityType: z.string().trim().max(50).optional(),
   metadata: z.record(z.unknown()).optional(),

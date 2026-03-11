@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BErozgar â€” Auth Lifecycle Tests
  *
  * Full coverage of all 15 auth test scenarios:
@@ -33,7 +33,7 @@ import jwt from 'jsonwebtoken';
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
-    $transaction: vi.fn((fn: (tx: any) => Promise<any>) =>
+    $transaction: vi.fn((fn: (tx: Record<string, unknown>) => Promise<unknown>) =>
       fn({
         otp: { update: vi.fn(), upsert: vi.fn() },
         user: { upsert: vi.fn(), findUnique: vi.fn(), update: vi.fn() },

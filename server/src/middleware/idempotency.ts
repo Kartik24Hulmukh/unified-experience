@@ -14,6 +14,13 @@ import { prisma } from '@/lib/prisma';
 import { IDEMPOTENCY } from '@/config/constants';
 import { IdempotencyConflictError, IdempotencyReplayError } from '@/errors/index';
 
+declare module 'fastify' {
+  interface FastifyRequest {
+    _idempotencyKey?: string;
+    _idempotencyUserId?: string;
+  }
+}
+
 /**
  * preHandler — check for an existing cached response and replay it,
  * or mark the request for caching in the onSend hook.
@@ -85,14 +92,14 @@ export async function idempotency(
     });
 
     // Mark for onSend to update the sentinel
-    (request as any)._idempotencyKey = compositeKey;
-    (request as any)._idempotencyUserId = userId;
-  } catch (err: any) {
+    request._idempotencyKey = compositeKey;
+    request._idempotencyUserId = userId;
+  } catch (err: unknown) {
     // HIGH-01 FIX: only treat Prisma unique-constraint violations (P2002) as a
     // sentinel race. Any other DB error (deadlock, connection drop, timeout) must
     // bubble up so the global error handler can return a proper 5xx — not a fake 409
     // that would make the client believe the operation is already in-flight.
-    if (err?.code === 'P2002') {
+    if (err instanceof Error && 'code' in err && (err as Error & { code?: string }).code === 'P2002') {
       // CRIT-02 FIX: throw so Fastify v5 bypasses the route handler.
       request.log.warn({ key: compositeKey }, 'Idempotency sentinel race — unique constraint hit');
       throw new IdempotencyConflictError('Processing already in progress.');
@@ -137,8 +144,8 @@ export async function idempotencyCacheResponse(
   reply: FastifyReply,
   payload: string | Buffer | null,
 ): Promise<typeof payload> {
-  const compositeKey = (request as any)._idempotencyKey as string | undefined;
-  const userId = (request as any)._idempotencyUserId as string | undefined;
+  const compositeKey = request._idempotencyKey;
+  const userId = request._idempotencyUserId;
   if (!compositeKey || !userId) return payload;
 
   try {
@@ -146,7 +153,7 @@ export async function idempotencyCacheResponse(
     expiry.setHours(expiry.getHours() + IDEMPOTENCY.EXPIRES_HOURS);
 
     // Parse payload safely
-    let responseBody: any = {};
+    let responseBody: Record<string, unknown> | Buffer = {};
     if (typeof payload === 'string') {
       try {
         responseBody = JSON.parse(payload);

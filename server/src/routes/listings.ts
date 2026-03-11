@@ -12,6 +12,7 @@ import { authenticate } from '@/middleware/authenticate';
 import { idempotency } from '@/middleware/idempotency';
 import { validate } from '@/middleware/validate';
 import { createListingSchema, updateListingStatusSchema } from '@/shared/validation';
+import type { CreateListingInput, UpdateListingStatusInput } from '@/shared/validation';
 import { apiData, apiPage } from '@/shared/response';
 import * as listingService from '@/services/listingService';
 
@@ -52,7 +53,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const listing = await listingService.createListing(
-        request.body as any,
+        request.body as CreateListingInput,
         request.userId!,
       );
       return reply.status(201).send(apiData(listing));
@@ -70,7 +71,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const listing = await listingService.updateListingStatus(
         id,
-        request.body as any,
+        request.body as UpdateListingStatusInput,
         request.userId!,
         request.userRole!,
       );

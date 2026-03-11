@@ -12,6 +12,7 @@ import { authorize } from '@/middleware/authorize';
 import { idempotency } from '@/middleware/idempotency';
 import { validate } from '@/middleware/validate';
 import { createDisputeSchema, updateDisputeStatusSchema } from '@/shared/validation';
+import type { CreateDisputeInput, UpdateDisputeStatusInput } from '@/shared/validation';
 import { apiData, apiPage } from '@/shared/response';
 import * as disputeService from '@/services/disputeService';
 
@@ -47,7 +48,7 @@ export async function disputeRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const dispute = await disputeService.createDispute(
-        request.body as any,
+        request.body as CreateDisputeInput,
         request.userId!,
       );
       return reply.status(201).send(apiData(dispute));
@@ -65,7 +66,7 @@ export async function disputeRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const dispute = await disputeService.updateDisputeStatus(
         id,
-        request.body as any,
+        request.body as UpdateDisputeStatusInput,
         request.userId!,
       );
       return reply.status(200).send(apiData(dispute));

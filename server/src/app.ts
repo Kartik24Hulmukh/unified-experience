@@ -111,7 +111,7 @@ export async function buildApp() {
       const details: Record<string, string[]> = {};
       for (const v of fastifyErr.validation) {
         // IMPROVED: handle nested paths and ensure consistent key for frontend mapping
-        const key = (v as any).instancePath?.replace(/^\//, '').replace(/\//g, '.') || v.params?.missingProperty || '_root';
+        const key = (v as { instancePath?: string }).instancePath?.replace(/^\//, '').replace(/\//g, '.') || String(v.params?.missingProperty ?? '_root');
         if (!details[key]) details[key] = [];
         details[key].push(v.message ?? 'Invalid');
       }

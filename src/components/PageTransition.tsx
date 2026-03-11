@@ -66,7 +66,6 @@ const PageTransition = ({ children }: PageTransitionProps) => {
       pendingChildrenRef.current = null;
       pendingLocationRef.current = null;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // stable — no deps, reads from refs
 
   // Use useLayoutEffect for immediate cleanup before paint

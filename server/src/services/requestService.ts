@@ -10,7 +10,7 @@ import { PAGINATION } from '@/config/constants';
 import type { CreateRequestInput, UpdateRequestEventInput } from '@/shared/validation';
 import type { RequestStatus, Prisma } from '@prisma/client';
 import { createRequestMachine } from '@/domain/fsm/RequestMachine';
-import type { RequestEvent } from '@/domain/fsm/RequestMachine';
+import type { RequestEvent, RequestState } from '@/domain/fsm/RequestMachine';
 
 /* ═══════════════════════════════════════════════════
    Terminal statuses (for partial unique enforcement)
@@ -34,7 +34,7 @@ const TERMINAL_STATUSES: RequestStatus[] = [
    ═══════════════════════════════════════════════════ */
 
 function applyRequestEvent(currentStatus: RequestStatus, event: string): RequestStatus {
-  const stateMap: Record<RequestStatus, string> = {
+  const stateMap: Record<RequestStatus, RequestState> = {
     IDLE: 'idle',
     SENT: 'sent',
     ACCEPTED: 'accepted',
@@ -59,7 +59,7 @@ function applyRequestEvent(currentStatus: RequestStatus, event: string): Request
   }
 
   const machine = createRequestMachine({
-    state: fsmState as any,
+    state: fsmState,
     history: [],
   });
 

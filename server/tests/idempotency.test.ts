@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BErozgar â€” Idempotency Middleware Tests
  *
  * Verifies that:
@@ -16,6 +16,14 @@ const idempotencyStore = new Map<
   string,
   { id: string; key: string; userId: string; responseStatus: number; responseBody: unknown; expiresAt: Date; createdAt: Date }
 >();
+
+interface IdempotencyKeyData {
+  key: string;
+  userId: string;
+  responseStatus: number;
+  responseBody: unknown;
+  expiresAt: Date;
+}
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -47,7 +55,7 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: vi.fn().mockImplementation(({ where }: { where: { key: string } }) => {
         return Promise.resolve(idempotencyStore.get(where.key) ?? null);
       }),
-      create: vi.fn().mockImplementation(({ data }: { data: any }) => {
+      create: vi.fn().mockImplementation(({ data }: { data: IdempotencyKeyData }) => {
         const entry = {
           id: crypto.randomUUID(),
           key: data.key,
@@ -71,7 +79,7 @@ vi.mock('@/lib/prisma', () => ({
       }),
       // upsert is called by idempotencyCacheResponse to store the real response
       // after the handler completes, replacing the 102-Processing sentinel.
-      upsert: vi.fn().mockImplementation(({ where, update, create: createData }: { where: { key: string }; update: any; create: any }) => {
+      upsert: vi.fn().mockImplementation(({ where, update, create: createData }: { where: { key: string }; update: Record<string, unknown>; create: IdempotencyKeyData }) => {
         const existing = idempotencyStore.get(where.key);
         if (existing) {
           const updated = { ...existing, ...update };
@@ -235,8 +243,8 @@ describe('Idempotency Middleware', () => {
     expect(cached!.responseStatus).toBe(201);
     // The critical assertion: responseBody must NOT be {}
     expect(cached!.responseBody).not.toEqual({});
-    expect((cached!.responseBody as any).data).toBeDefined();
-    expect((cached!.responseBody as any).data.id).toBe('listing-abc-123');
+    expect((cached!.responseBody as Record<string, unknown>).data).toBeDefined();
+    expect(((cached!.responseBody as Record<string, unknown>).data as Record<string, unknown>).id).toBe('listing-abc-123');
   });
 
   it('replays cached response with x-idempotency-replay header', async () => {

@@ -31,7 +31,7 @@ export function validate<T>(
     }
 
     // Replace raw body with parsed (trimmed, coerced) data
-    (request as any).body = result.data;
+    (request as FastifyRequest & { body: T }).body = result.data;
   };
 }
 

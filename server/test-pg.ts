@@ -16,8 +16,8 @@ async function test() {
         const res = await client.query('SELECT current_database(), current_user');
         console.log('Data:', res.rows[0]);
         await client.end();
-    } catch (err: any) {
-        console.error('FAILED raw pg:', err.message);
+    } catch (err: unknown) {
+        console.error('FAILED raw pg:', err instanceof Error ? err.message : err);
     }
 }
 

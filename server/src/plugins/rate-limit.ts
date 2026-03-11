@@ -69,7 +69,7 @@ export async function registerRateLimit(app: FastifyInstance): Promise<void> {
 
     if (override) {
       routeOptions.config = {
-        ...((routeOptions.config as any) || {}),
+        ...((routeOptions.config as Record<string, unknown>) || {}),
         rateLimit: {
           max: override.max,
           timeWindow: override.timeWindow,
@@ -92,7 +92,7 @@ export async function registerRateLimit(app: FastifyInstance): Promise<void> {
       // directly inside those route handlers using the email field after body parsing.
       //
       // Authenticated routes: keyed by userId (survives IP change / VPN)
-      return (request as any).userId ?? request.ip;
+      return request.userId ?? request.ip;
     },
     errorResponseBuilder: (_request, context) => ({
       statusCode: 429,

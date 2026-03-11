@@ -14,7 +14,7 @@ import type { FastifyInstance } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
 import { authorize } from '@/middleware/authorize';
 import { validate } from '@/middleware/validate';
-import { createAuditLogSchema } from '@/shared/validation';
+import { createAuditLogSchema, type CreateAuditLogInput } from '@/shared/validation';
 import { apiData } from '@/shared/response';
 import * as adminService from '@/services/adminService';
 
@@ -80,7 +80,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     '/audit',
     { preValidation: validate(createAuditLogSchema) },
     async (request, reply) => {
-      const { action, targetUserId, entityType, metadata } = request.body as any;
+      const { action, targetUserId, entityType, metadata } = request.body as CreateAuditLogInput;
       const actorId = request.userId!;
 
       const entry = await adminService.createAuditLog({

@@ -23,6 +23,12 @@ import {
   loginSchema,
   googleSignInSchema,
 } from '@/shared/validation';
+import type {
+  SignupInput,
+  VerifyOtpInput,
+  LoginInput,
+  GoogleSignInInput,
+} from '@/shared/validation';
 import { REFRESH_COOKIE } from '@/config/constants';
 import { env } from '@/config/env';
 import * as authService from '@/services/authService';
@@ -100,7 +106,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     '/signup',
     { preValidation: validate(signupSchema) },
     async (request, reply) => {
-      const result = await authService.signup(request.body as any);
+      const result = await authService.signup(request.body as SignupInput);
       return reply.status(200).send(result);
     },
   );
@@ -110,7 +116,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     '/verify-otp',
     { preValidation: validate(verifyOtpSchema) },
     async (request, reply) => {
-      const result = await authService.verifyOtp(request.body as any, {
+      const result = await authService.verifyOtp(request.body as VerifyOtpInput, {
         userAgent: request.headers['user-agent'],
         ipAddress: request.ip,
       });
@@ -139,7 +145,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const result = await authService.login(request.body as any, {
+      const result = await authService.login(request.body as LoginInput, {
         userAgent: request.headers['user-agent'],
         ipAddress: request.ip,
       });
@@ -158,7 +164,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     '/google',
     { preValidation: validate(googleSignInSchema) },
     async (request, reply) => {
-      const result = await authService.googleSignIn(request.body as any, {
+      const result = await authService.googleSignIn(request.body as GoogleSignInInput, {
         userAgent: request.headers['user-agent'],
         ipAddress: request.ip,
       });
@@ -243,8 +249,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // a spurious 500 and prevent the SPA from bootstrapping.  If neither the
     // method nor the cookie exists the token is null; the client falls back to
     // reading document.cookie (cookie value will arrive in the response headers).
-    if (typeof (reply as any).generateCsrf === 'function') {
-      const token = (reply as any).generateCsrf();
+    if (typeof (reply as FastifyReply & { generateCsrf?: () => string }).generateCsrf === 'function') {
+      const token = (reply as FastifyReply & { generateCsrf: () => string }).generateCsrf();
       return reply.status(200).send({ csrfToken: token });
     }
 

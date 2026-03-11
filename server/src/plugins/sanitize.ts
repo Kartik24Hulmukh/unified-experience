@@ -102,7 +102,7 @@ function sanitizeQuery(request: FastifyRequest): void {
     for (const [key, val] of Object.entries(request.query as Record<string, unknown>)) {
       sanitized[key] = sanitizeValue(val);
     }
-    (request as any).query = sanitized;
+    (request as FastifyRequest & { query: Record<string, unknown> }).query = sanitized;
   }
 }
 

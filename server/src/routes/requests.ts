@@ -12,6 +12,7 @@ import { authenticate } from '@/middleware/authenticate';
 import { idempotency } from '@/middleware/idempotency';
 import { validate } from '@/middleware/validate';
 import { createRequestSchema, updateRequestEventSchema } from '@/shared/validation';
+import type { CreateRequestInput, UpdateRequestEventInput } from '@/shared/validation';
 import { apiData, apiPage } from '@/shared/response';
 import * as requestService from '@/services/requestService';
 
@@ -58,7 +59,7 @@ export async function requestRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const req = await requestService.createRequest(
-        request.body as any,
+        request.body as CreateRequestInput,
         request.userId!,
       );
       return reply.status(201).send(apiData(req));
@@ -76,7 +77,7 @@ export async function requestRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const req = await requestService.updateRequestEvent(
         id,
-        request.body as any,
+        request.body as UpdateRequestEventInput,
         request.userId!,
         request.userRole!,
       );

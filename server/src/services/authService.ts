@@ -29,6 +29,7 @@ import type {
   VerifyOtpInput,
   GoogleSignInInput,
 } from '@/shared/validation';
+import type { User } from '@prisma/client';
 
 /* ═══════════════════════════════════════════════════
    College Registry Lookup
@@ -185,7 +186,7 @@ export async function signup(input: SignupInput): Promise<{ message: string }> {
 export async function verifyOtp(
   input: VerifyOtpInput,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<{ user: any; tokens: AuthTokens }> {
+): Promise<{ user: ReturnType<typeof sanitizeUser>; tokens: AuthTokens }> {
   // Find the most recent unused OTP for this email
   const otpRecord = await prisma.otp.findFirst({
     where: {
@@ -348,7 +349,7 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 export async function login(
   input: LoginInput,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<{ user: any; tokens: AuthTokens }> {
+): Promise<{ user: ReturnType<typeof sanitizeUser>; tokens: AuthTokens }> {
   const user = await prisma.user.findUnique({
     where: { email: input.email },
   });
@@ -467,7 +468,7 @@ export async function login(
 export async function googleSignIn(
   input: GoogleSignInInput,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<{ user: any; tokens: AuthTokens }> {
+): Promise<{ user: ReturnType<typeof sanitizeUser>; tokens: AuthTokens }> {
   const profile = await verifyGoogleToken(input.credential);
 
   // Determine role based on college registry — no domain restriction.
@@ -715,7 +716,7 @@ export async function getCurrentUser(userId: string) {
    Helpers
    ═══════════════════════════════════════════════════ */
 
-function sanitizeUser(user: any) {
+function sanitizeUser(user: User) {
   const { password, failedLoginAttempts, lockedUntil, ...safe } = user;
   return {
     ...safe,

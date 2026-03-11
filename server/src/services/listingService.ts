@@ -9,7 +9,7 @@ import { NotFoundError, ForbiddenError } from '@/errors/index';
 import { InvalidTransitionError, ConflictError } from '@/errors/index';
 import { PAGINATION } from '@/config/constants';
 import type { CreateListingInput, UpdateListingStatusInput } from '@/shared/validation';
-import type { ListingStatus, Prisma } from '@prisma/client';
+import type { ListingStatus, RequestStatus, Prisma } from '@prisma/client';
 import { createListingMachine } from '@/domain/fsm/ListingMachine';
 import type { ListingState, ListingEvent } from '@/domain/fsm/ListingMachine';
 import { evaluateFraudHeuristics, isFraudReviewRequired } from '@/domain/fraudHeuristics';
@@ -338,7 +338,7 @@ export async function updateListingStatus(
       await tx.request.updateMany({
         where: {
           listingId,
-          status: { in: activeStatuses as any[] },
+          status: { in: activeStatuses as RequestStatus[] },
         },
         data: { status: 'CANCELLED', version: { increment: 1 } },
       });

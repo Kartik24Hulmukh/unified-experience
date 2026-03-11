@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import { sessionManager } from '@/lib/session';
-import api from '@/lib/api-client';
+import api, { handleTokenRefresh } from '@/lib/api-client';
 import { setCsrfToken, clearCsrfToken } from '@/lib/api-client';
 import { identifyUser, clearUser as clearMonitoringUser } from '@/lib/monitoring';
 import type { RestrictionResult } from '@/domain/restrictionEngine';
@@ -67,15 +67,18 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const PENDING_KEY = 'berozgar_pending';
 
+// CRIT-04 FIX: password is excluded from the persisted shape — passwords must
+// never be written to any browser storage (sessionStorage is still reachable
+// by same-origin XSS). The password is held in AuthProvider's pendingPasswordRef
+// (in-memory only) and cleared immediately after verifyOtp succeeds.
 interface PendingUser {
   fullName: string;
   email: string;
-  password: string;
 }
 
 function savePending(data: PendingUser) {
   // Use sessionStorage (not localStorage) — clears on tab close, not persistent,
-  // not accessible from other tabs. Needed to carry password to OTP step.
+  // not accessible from other tabs. Carries non-sensitive data to the OTP step.
   sessionStorage.setItem(PENDING_KEY, JSON.stringify(data));
 }
 
@@ -101,6 +104,17 @@ interface AuthMeResponse {
   restriction: RestrictionResult;
 }
 
+function normalizeUserRole(role: string | undefined): UserRole {
+  return role?.toLowerCase() === 'admin' ? 'admin' : 'student';
+}
+
+function normalizeUser(user: User): User {
+  return {
+    ...user,
+    role: normalizeUserRole(user.role),
+  };
+}
+
 const INITIAL_STATE: AuthState = {
   user: null,
   isAuthenticated: false,
@@ -113,6 +127,9 @@ const INITIAL_STATE: AuthState = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(INITIAL_STATE);
   const hydrationRef = useRef(false);
+  // CRIT-04 FIX: hold the pending signup password in memory only.
+  // It is set in signup() and cleared in verifyOtp() / logout().
+  const pendingPasswordRef = useRef<string | null>(null);
 
   // Initialize session manager (multi-tab sync, token refresh)
   useEffect(() => {
@@ -138,11 +155,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Validate the session server-side
+    // AUTH-MULTITAB-01: When a new tab opens, the in-memory access token is gone
+    // (tokens are not persisted to localStorage for XSS safety). We must call
+    // /auth/refresh first using the httpOnly refresh cookie (sent automatically)
+    // to obtain a fresh access token, then call /auth/me to hydrate the session.
+    // Without this step, /auth/me would receive no Bearer token → 401 → spurious logout.
     const controller = new AbortController();
     (async () => {
       try {
+        // Step 1: If no in-memory access token, try to refresh first
+        if (!sessionManager.getAccessToken()) {
+          try {
+            const refreshRes = await api.post<{ accessToken: string; csrfToken?: string }>(
+              '/auth/refresh',
+              undefined,
+              { skipAuth: true, signal: controller.signal }
+            );
+            sessionManager.setTokens(refreshRes.accessToken);
+            // Refresh might not return csrfToken directly, but we accept it if it does
+            if (refreshRes.csrfToken) setCsrfToken(refreshRes.csrfToken);
+          } catch {
+            // Refresh cookie is invalid/expired — session is truly dead
+            if (controller.signal.aborted) return;
+            sessionManager.clearSession();
+            clearCsrfToken();
+            clearMonitoringUser();
+            setState({ ...INITIAL_STATE, isHydrated: true });
+            return;
+          }
+        }
+
+        if (controller.signal.aborted) return;
+
+        // Step 2: Validate session and fetch user truth from server
         const response = await api.get<AuthMeResponse>('/auth/me', { signal: controller.signal });
-        const { user, trust, restriction } = response;
+        const user = normalizeUser(response.user);
+        const { trust, restriction } = response;
 
         // Update sessionManager's user data with server truth
         sessionManager.setUser(user);
@@ -191,19 +239,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (event === 'token-refresh') {
         // AUTH-SESSION-02: proactively refresh the access token before expiry.
         // SessionManager emits this event ~60s before the JWT expires.
-        // Without this handler the token would silently expire, causing the
-        // next API call to trigger a 401 → handleTokenRefresh → flash of error.
-        api.post<{ accessToken: string }>('/auth/refresh', undefined, { skipAuth: true })
-          .then((res) => {
-            sessionManager.setTokens(res.accessToken);
-          })
-          .catch(() => {
-            // Refresh cookie expired or revoked — full logout
-            sessionManager.clearSession();
-            clearCsrfToken();
-            clearMonitoringUser();
-            setState({ ...INITIAL_STATE, isHydrated: true });
-          });
+        // CRIT-03 FIX: route through handleTokenRefresh() so this proactive call
+        // shares the isRefreshing mutex with any concurrent 401-triggered refresh.
+        // Previously, calling api.post() directly bypassed the mutex, allowing two
+        // simultaneous refresh requests which could invalidate each other's tokens.
+        handleTokenRefresh().catch(() => {
+          // handleTokenRefresh() has already called clearSession() — just sync React state
+          clearCsrfToken();
+          clearMonitoringUser();
+          setState({ ...INITIAL_STATE, isHydrated: true });
+        });
       }
     });
 
@@ -222,9 +267,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }>('/auth/login', { email, password }, { skipAuth: true });
 
       // Access token in memory; refresh token is httpOnly cookie set by server
-      sessionManager.login(response.user, response.accessToken);
+      const user = normalizeUser(response.user);
+
+      sessionManager.login(user, response.accessToken);
       if (response.csrfToken) setCsrfToken(response.csrfToken);
-      identifyUser({ id: response.user.id, email: response.user.email, role: response.user.role });
+      identifyUser({ id: user.id, email: user.email, role: user.role });
       clearPending();
 
       // Fetch trust/restriction from /auth/me now that we have a valid session
@@ -239,7 +286,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setState({
-        user: response.user,
+        user,
         isAuthenticated: true,
         isLoading: false,
         isHydrated: true,
@@ -257,8 +304,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       await api.post('/auth/signup', { fullName, email, password }, { skipAuth: true });
-      // Save pending data for OTP verification step (sessionStorage only — clears on tab close)
-      savePending({ fullName, email, password });
+      // CRIT-04 FIX: persist only non-sensitive data; hold password in-memory.
+      pendingPasswordRef.current = password;
+      savePending({ fullName, email });
       setState((prev) => ({ ...prev, isLoading: false }));
     } catch (err) {
       setState((prev) => ({ ...prev, isLoading: false }));
@@ -273,6 +321,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const pending = loadPending();
       if (!pending) throw new Error('No pending registration found');
 
+      // CRIT-04 FIX: read password from the in-memory ref, not from storage.
+      const password = pendingPasswordRef.current;
+      if (!password) throw new Error('Registration session expired. Please sign up again.');
+
       const response = await api.post<{
         user: User;
         accessToken: string;
@@ -280,18 +332,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }>('/auth/verify-otp', {
         email: pending.email,
         fullName: pending.fullName,
-        password: pending.password,
+        password,
         otp,
       }, { skipAuth: true });
 
+      pendingPasswordRef.current = null;
       clearPending();
-      sessionManager.login(response.user, response.accessToken);
+      const user = normalizeUser(response.user);
+
+      sessionManager.login(user, response.accessToken);
       if (response.csrfToken) setCsrfToken(response.csrfToken);
-      identifyUser({ id: response.user.id, email: response.user.email, role: response.user.role });
+      identifyUser({ id: user.id, email: user.email, role: user.role });
 
       // Fresh account — trust/restriction will be default
       setState({
-        user: response.user,
+        user,
         isAuthenticated: true,
         isLoading: false,
         isHydrated: true,
@@ -305,11 +360,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    // Fire-and-forget server logout
-    api.post('/auth/logout', undefined, { skipAuth: true }).catch(() => { });
+    // Fire-and-forget server logout.
+    // BUG-01 FIX: send the Bearer token so the server audit log records the
+    // actor. Do NOT use skipAuth:true — with it no Authorization header was
+    // sent, the server's authenticate middleware returned 401, and the
+    // refresh token was never revoked in the database.
+    // The /logout route no longer requires authenticate, so this works even
+    // when the access token has already expired.
+    api.post('/auth/logout', undefined).catch(() => { });
     sessionManager.clearSession();
     clearCsrfToken();
     clearMonitoringUser();
+    pendingPasswordRef.current = null;
     clearPending();
     setState({ ...INITIAL_STATE, isHydrated: true });
   }, []);
@@ -325,9 +387,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isNewUser?: boolean;
       }>('/auth/google', { credential }, { skipAuth: true });
 
-      sessionManager.login(response.user, response.accessToken);
+      const user = normalizeUser(response.user);
+
+      sessionManager.login(user, response.accessToken);
       if (response.csrfToken) setCsrfToken(response.csrfToken);
-      identifyUser({ id: response.user.id, email: response.user.email, role: response.user.role });
+      identifyUser({ id: user.id, email: user.email, role: user.role });
       clearPending();
 
       // Fetch trust/restriction from /auth/me
@@ -342,7 +406,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setState({
-        user: response.user,
+        user,
         isAuthenticated: true,
         isLoading: false,
         isHydrated: true,
@@ -369,6 +433,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 /* ─── Hook ─── */
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook intentionally co-located with context provider
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

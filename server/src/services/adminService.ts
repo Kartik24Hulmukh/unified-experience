@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '@/lib/prisma';
+import { RequestStatus } from '@prisma/client';
 import { NotFoundError, ForbiddenError } from '@/errors/index';
 import { ADMIN_REGISTRY } from '@/config/constants';
 import { computeTrust } from '@/domain/trustEngine';
@@ -112,7 +113,11 @@ export async function getUserDrilldown(userId: string) {
   const restriction = computeRestriction({
     trustStatus: trust.status,
     activeDisputes: activeDisputeCount,
-    adminOverride: false,
+    // MED-05 FIX: read the persisted restriction flag from the DB rather than
+    // hardcoding false. isRestricted is the admin-managed override field on the
+    // User model — hardcoding false meant admin-overridden users always appeared
+    // unrestricted in the admin drilldown, hiding enforcement state from reviewers.
+    adminOverride: user.isRestricted,
   });
 
   const { password: _, ...safeUser } = user;
@@ -164,7 +169,7 @@ export async function getAuditLogs(options: {
 import { Prisma } from '@prisma/client';
 
 export async function createAuditLog(data: {
-  actorId: string;
+  actorId: string | null;
   action: string;
   entityType?: string;
   entityId?: string;
@@ -225,6 +230,8 @@ export async function requireSuperPrivilege(actorId: string): Promise<void> {
 
 export async function getFraudOverview() {
   // Get all users with potential fraud signals
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60_000);
+
   const users = await prisma.user.findMany({
     where: {
       role: 'STUDENT',
@@ -247,6 +254,10 @@ export async function getFraudOverview() {
           disputes: true,
         },
       },
+      listings: {
+        where: { createdAt: { gte: oneDayAgo } },
+        select: { id: true },
+      },
     },
     orderBy: { adminFlags: 'desc' },
     take: 50,
@@ -257,12 +268,13 @@ export async function getFraudOverview() {
       (Date.now() - u.createdAt.getTime()) / (1000 * 60 * 60 * 24),
     );
     const heuristics = evaluateFraudHeuristics({
-      recentListings: 0, // Would need time-windowed query for real data
+      recentListings: u.listings.length,
       recentCancellations: u.cancelledRequests,
       recentDisputes: u._count.disputes,
       accountAgeDays,
     });
-    return { ...u, heuristics };
+    const { listings: _recentListings, ...userData } = u;
+    return { ...userData, heuristics };
   });
 }
 
@@ -308,17 +320,60 @@ export async function recoverStaleTransactions() {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+  // EXCH-DESIGN-03: ACCEPTED / MEETING_SCHEDULED can be ghosted indefinitely.
+  // Give them a longer grace window (14 days) before auto-expiring.
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
   return prisma.$transaction(async (tx) => {
     // PROD-04: bump version alongside status change so any concurrent
     // optimistic lock held by a user racing against expiry will correctly
     // conflict instead of silently overwriting the EXPIRED status.
-    const expiredRequests = await tx.request.updateMany({
+    const expiredSent = await tx.request.updateMany({
       where: {
         status: 'SENT',
         updatedAt: { lt: sevenDaysAgo },
       },
       data: { status: 'EXPIRED', version: { increment: 1 } },
     });
+
+    // EXCH-DESIGN-03 FIX: expire ghost ACCEPTED / MEETING_SCHEDULED requests
+    const expiredActive = await tx.request.updateMany({
+      where: {
+        status: { in: ['ACCEPTED', 'MEETING_SCHEDULED'] },
+        updatedAt: { lt: fourteenDaysAgo },
+      },
+      data: { status: 'EXPIRED', version: { increment: 1 } },
+    });
+
+    const expiredRequests = { count: expiredSent.count + expiredActive.count };
+
+    // CRIT-05 FIX: After expiring requests, reset any listings that are now
+    // stranded in INTEREST_RECEIVED or IN_TRANSACTION with no remaining active
+    // (non-terminal) requests. Without this, a listing whose only request
+    // expired could never receive new buyers — it would remain locked forever.
+    // V3-14: This list must match TERMINAL_STATUSES in requestService.ts.
+    // Added WITHDRAWN and RESOLVED which were previously missing — a withdrawn
+    // or resolved request was wrongly treated as "active", blocking listing reset.
+    const terminalStatuses: RequestStatus[] = ['EXPIRED', 'DECLINED', 'CANCELLED', 'COMPLETED', 'WITHDRAWN', 'RESOLVED'];
+
+    const interestReset = await tx.listing.updateMany({
+      where: {
+        status: 'INTEREST_RECEIVED',
+        requests: { none: { status: { notIn: terminalStatuses } } },
+      },
+      data: { status: 'APPROVED' },
+    });
+
+    const inTransactionReset = await tx.listing.updateMany({
+      where: {
+        status: 'IN_TRANSACTION',
+        requests: { none: { status: { notIn: terminalStatuses } } },
+      },
+      data: { status: 'APPROVED' },
+    });
+
+    const recoveredListings = interestReset.count + inTransactionReset.count;
 
     // Revoke expired refresh tokens
     const revokedTokens = await tx.refreshToken.updateMany({
@@ -334,14 +389,20 @@ export async function recoverStaleTransactions() {
       where: { expiresAt: { lt: new Date() } },
     });
 
-    // Audit: Maintenance Run
+    // HIGH-06 FIX: log per-batch counts so ops can trace which expiry type
+    // triggered a listing recovery, instead of a single opaque aggregate.
     await tx.auditLog.create({
       data: {
-        actorId: '00000000-0000-0000-0000-000000000000',
+        actorId: null, // SYSTEM
         action: 'SYSTEM_RECOVERY',
         entityType: 'System',
         metadata: {
           expiredRequests: expiredRequests.count,
+          expiredSentRequests: expiredSent.count,
+          expiredActiveRequests: expiredActive.count,
+          recoveredListings,
+          recoveredInterestReceived: interestReset.count,
+          recoveredInTransaction: inTransactionReset.count,
           revokedTokens: revokedTokens.count,
           deletedIdempotencyKeys: deletedKeys.count,
         },
@@ -350,6 +411,7 @@ export async function recoverStaleTransactions() {
 
     return {
       expiredRequests: expiredRequests.count,
+      recoveredListings,
       revokedTokens: revokedTokens.count,
       deletedIdempotencyKeys: deletedKeys.count,
       recoveredAt: new Date().toISOString(),

@@ -72,6 +72,9 @@ const ListingDetailPage = () => {
         );
     }
 
+    // NEW-BUG-07 FIX: DB returns uppercase statuses ('APPROVED', 'PENDING_REVIEW');
+    // normalise once here so all comparisons below use consistent lowercase keys.
+    const statusKey = (listing.status ?? '').toLowerCase();
     const statusColor: Record<string, string> = {
         approved: 'border-emerald-500/30 text-emerald-400',
         pending_review: 'border-amber-500/30 text-amber-400',
@@ -85,7 +88,7 @@ const ListingDetailPage = () => {
             <header className="px-8 md:px-16 py-8 border-b border-white/5">
                 <Button
                     variant="ghost"
-                    onClick={() => navigate(-1)}
+                    onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/resale')}
                     className="text-white/40 hover:text-white uppercase text-[10px] font-bold tracking-widest -ml-2"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -98,8 +101,8 @@ const ListingDetailPage = () => {
                 {/* Title + Status */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-3 flex-wrap">
-                        <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${statusColor[listing.status] ?? 'border-white/20 text-white/40'}`}>
-                            {listing.status.replace(/_/g, ' ')}
+                        <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${statusColor[statusKey] ?? 'border-white/20 text-white/40'}`}>
+                            {statusKey.replace(/_/g, ' ')}
                         </Badge>
                         <Badge variant="outline" className="border-primary/30 text-primary text-[8px] uppercase tracking-widest">
                             {listing.module}
@@ -143,14 +146,14 @@ const ListingDetailPage = () => {
                     </div>
                 )}
 
-                {/* Institution */}
+                {/* Institution — single-campus app, always MCTRGIT */}
                 <div className="flex items-center gap-3 text-white/40">
                     <MapPin className="w-4 h-4" />
-                    <span className="text-[10px] uppercase font-bold tracking-widest">{listing.institution}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-widest">MCTRGIT</span>
                 </div>
 
-                {/* Request Exchange */}
-                {listing.status === 'approved' && (
+                {/* Request Exchange — only show for approved listings */}
+                {statusKey === 'approved' && (
                     <div className="p-8 border border-primary/20 bg-primary/5 space-y-6">
                         <div className="flex items-center gap-3">
                             <User className="w-5 h-5 text-primary" />
@@ -192,6 +195,27 @@ const ListingDetailPage = () => {
                                 </Button>
                             </>
                         )}
+                    </div>
+                )}
+
+                {/* Non-approved listing status message */}
+                {statusKey !== 'approved' && (
+                    <div className="p-8 border border-white/10 bg-black/20 space-y-3 text-center">
+                        <Shield className="w-8 h-8 text-white/20 mx-auto" />
+                        <p className="text-white/40 text-sm uppercase font-bold tracking-widest">
+                            {statusKey === 'interest_received'
+                                ? 'This listing is under consideration by another buyer. Check back — it becomes available if their request is declined.'
+                                : statusKey === 'in_transaction'
+                                    ? 'This listing is in an active exchange and temporarily unavailable. Check back if the exchange is cancelled.'
+                                    : statusKey === 'pending_review'
+                                        ? 'This listing is pending admin review and is not yet available for exchange.'
+                                        : statusKey === 'rejected'
+                                            ? 'This listing has been rejected and is no longer available.'
+                                            : 'This listing is currently unavailable for exchange.'}
+                        </p>
+                        <Link to="/resale" className="inline-block mt-2 text-primary text-[10px] uppercase font-bold tracking-widest hover:underline">
+                            ← Browse Available Listings
+                        </Link>
                     </div>
                 )}
             </div>

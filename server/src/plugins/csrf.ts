@@ -39,9 +39,19 @@ function generateToken(): string {
 }
 
 async function csrfPlugin(app: FastifyInstance): Promise<void> {
-  // SEC-CSRF-01: enforce in all non-development environments.
-  // Previously was limited to 'production' only, leaving staging servers wide open.
-  const enforce = env.NODE_ENV !== 'development';
+  // GAP-02: use dedicated CSRF_ENFORCE env var instead of NODE_ENV comparison.
+  // This prevents staging deployments that happen to run with NODE_ENV=development
+  // from skipping CSRF enforcement. Set CSRF_ENFORCE=false only in .env.development.
+  const enforce = env.CSRF_ENFORCE;
+
+  // SEC-CSRF-STARTUP: emit a visible warning when CSRF is disabled so it is never
+  // silently absent in staging or production deployments.
+  if (!enforce) {
+    app.log.warn(
+      { csrfEnforce: enforce, env: process.env.NODE_ENV },
+      '⚠ CSRF protection is DISABLED (CSRF_ENFORCE=false). Set CSRF_ENFORCE=true in production.',
+    );
+  }
 
   // Set CSRF cookie on every response if not already present
   app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {

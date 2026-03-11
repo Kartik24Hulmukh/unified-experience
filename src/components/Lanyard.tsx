@@ -1,6 +1,6 @@
-/* eslint-disable react/no-unknown-property */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useEffect, useLayoutEffect, useState, useMemo } from 'react';
-import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, extend, type Object3DNode } from '@react-three/fiber';
 import { Lightformer, Text } from '@react-three/drei';
 import {
   Physics,
@@ -18,6 +18,16 @@ import * as THREE from 'three';
    ────────────────────────────────────────────────────────── */
 
 extend({ MeshLineGeometry, MeshLineMaterial });
+
+// Teach TypeScript about the custom JSX elements added via extend().
+// Without this declaration the compiler raises TS2339 on <meshLineGeometry />
+// and <meshLineMaterial /> even though r3f's extend() makes them work at runtime.
+declare module '@react-three/fiber' {
+  interface ThreeElements {
+    meshLineGeometry: Object3DNode<MeshLineGeometry, typeof MeshLineGeometry>;
+    meshLineMaterial: Object3DNode<MeshLineMaterial, typeof MeshLineMaterial>;
+  }
+}
 
 const disposeScene = (scene: THREE.Scene) => {
   scene.traverse((object) => {
@@ -252,13 +262,13 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false }) {
       </group>
       <mesh ref={band}>
         <meshLineGeometry />
-        <meshLineMaterial color="#00BCD4" depthTest={false} resolution={isMobile ? [1000, 2000] : [1000, 1000]} lineWidth={1.2} />
+        <meshLineMaterial color="#00BCD4" depthTest={false} resolution={new THREE.Vector2(1000, isMobile ? 2000 : 1000)} lineWidth={1.2} />
       </mesh>
     </>
   );
 }
 
-const Lanyard = ({ position = [0, 0, 30], gravity = [0, -40, 0], fov = 20, transparent = true }) => {
+const Lanyard = ({ position = [0, 0, 30], gravity = [0, -40, 0], fov = 20, transparent = true }: LanyardProps) => {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);

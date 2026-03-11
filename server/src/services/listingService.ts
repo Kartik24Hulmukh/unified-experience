@@ -49,7 +49,7 @@ export async function listListings(params: ListListingsParams) {
     ];
   }
 
-  const [listings, total] = await prisma.$transaction([
+  const [rawListings, total] = await prisma.$transaction([
     prisma.listing.findMany({
       where,
       include: { owner: { select: { id: true, fullName: true, email: true } } },
@@ -59,6 +59,9 @@ export async function listListings(params: ListListingsParams) {
     }),
     prisma.listing.count({ where }),
   ]);
+
+  // Convert Prisma Decimal → string so JSON serialisation returns "350" not {s,e,d}
+  const listings = rawListings.map((l) => ({ ...l, price: l.price.toString() }));
 
   return {
     listings,
@@ -90,7 +93,8 @@ export async function getListing(id: string) {
     throw new NotFoundError('Listing', id);
   }
 
-  return listing;
+  // Convert Prisma Decimal → string
+  return { ...listing, price: listing.price.toString() };
 }
 
 /* ═══════════════════════════════════════════════════
@@ -103,26 +107,39 @@ export async function createListing(
   input: CreateListingInput,
   userId: string,
 ) {
-  // SEC-GOV-01: Enforce RestrictionEngine
+  // SEC-GOV-01: Pre-flight restriction check (fast-path)
   const trust = await getCurrentUser(userId);
   if (trust.restriction.isRestricted) {
     throw new ForbiddenError(`Action restricted: ${trust.restriction.reasons.join(' ')}`);
   }
 
-  const listing = await prisma.listing.create({
-    data: {
-      title: input.title,
-      description: input.description,
-      category: input.category,
-      module: input.module,
-      price: input.price,
-      status: 'DRAFT',
-      ownerId: userId,
-    },
-    include: { owner: { select: { id: true, fullName: true, email: true } } },
+  // V3-08: Re-check isRestricted inside a transaction to close the TOCTOU window
+  // where an admin restricts the user between the pre-flight check and the DB write.
+  const listing = await prisma.$transaction(async (tx) => {
+    const userRow = await tx.user.findUnique({
+      where: { id: userId },
+      select: { isRestricted: true },
+    });
+    if (userRow?.isRestricted) {
+      throw new ForbiddenError('Your account has been restricted from creating listings');
+    }
+
+    return tx.listing.create({
+      data: {
+        title: input.title,
+        description: input.description,
+        category: input.category,
+        module: input.module,
+        price: input.price,
+        status: 'DRAFT',
+        ownerId: userId,
+      },
+      include: { owner: { select: { id: true, fullName: true, email: true } } },
+    });
   });
 
-  return listing;
+  // Convert Prisma Decimal → string
+  return { ...listing, price: listing.price.toString() };
 }
 
 /* ═══════════════════════════════════════════════════
@@ -167,6 +184,11 @@ const STATUS_TO_EVENT: Record<string, ListingEvent> = {
   pending_review: 'SUBMIT',
   approved: 'APPROVE',
   rejected: 'REJECT',
+  // NEW-BUG-03 FIX: admin/system-only transitions previously unreachable via API
+  flagged: 'FLAG',
+  removed: 'REMOVE',
+  archived: 'ARCHIVE',
+  expired: 'EXPIRE',
 };
 
 export async function updateListingStatus(
@@ -186,7 +208,7 @@ export async function updateListingStatus(
     }>>`
       SELECT id, status, owner_id
       FROM listings
-      WHERE id = ${listingId}::uuid
+      WHERE id = ${listingId}
       FOR UPDATE
     `;
 
@@ -202,12 +224,11 @@ export async function updateListingStatus(
       throw new ForbiddenError('You do not have permission to modify this listing');
     }
 
-    // Only admins can approve/reject
-    if (
-      (input.status === 'approved' || input.status === 'rejected') &&
-      actorRole !== 'ADMIN'
-    ) {
-      throw new ForbiddenError('Only admins can approve or reject listings');
+    // Only admins can approve/reject/flag/remove/expire
+    // NEW-BUG-03 FIX: extended admin-only guard to cover all privileged transitions
+    const adminOnlyStatuses = ['approved', 'rejected', 'flagged', 'removed', 'expired'];
+    if (adminOnlyStatuses.includes(input.status) && actorRole !== 'ADMIN') {
+      throw new ForbiddenError('Only admins can perform this status transition');
     }
 
     const event = STATUS_TO_EVENT[input.status];
@@ -235,10 +256,40 @@ export async function updateListingStatus(
       include: { owner: { select: { id: true, fullName: true, email: true } } },
     });
 
-    // Create audit log
+    // V3-04: When a listing is flagged or removed by an admin, atomically cancel
+    // all non-terminal requests for it. Without this, buyer and seller are stuck:
+    // CONFIRM fails (listing no longer IN_TRANSACTION), CANCEL fails (listing not
+    // IN_TRANSACTION/INTEREST_RECEIVED), and they must wait 14 days for expiry.
+    if (event === 'FLAG' || event === 'REMOVE') {
+      const activeStatuses = ['SENT', 'ACCEPTED', 'MEETING_SCHEDULED', 'DISPUTED'];
+      await tx.request.updateMany({
+        where: {
+          listingId,
+          status: { in: activeStatuses as any[] },
+        },
+        data: { status: 'CANCELLED', version: { increment: 1 } },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId,
+          actorRole,
+          action: 'REQUESTS_FORCE_CANCELLED',
+          entityType: 'Listing',
+          entityId: listingId,
+          metadata: {
+            reason: `Listing transitioned to ${newStatus} by admin`,
+            affectedStatuses: activeStatuses,
+          },
+        },
+      });
+    }
+
+    // V3-07: Populate the actorRole column (not just metadata) so audit queries
+    // using the indexed actorRole column work correctly.
     await tx.auditLog.create({
       data: {
         actorId,
+        actorRole,
         action: 'LISTING_STATUS_UPDATE',
         entityType: 'Listing',
         entityId: listingId,

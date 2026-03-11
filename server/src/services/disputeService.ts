@@ -138,7 +138,7 @@ export async function createDispute(input: CreateDisputeInput, raisedById: strin
       throw new ConflictError('You cannot raise a dispute against yourself');
     }
 
-    let requestId: string | null = input.requestId ?? null;
+    const requestId: string | null = input.requestId ?? null;
     let listingId: string | null = input.listingId ?? null;
 
     // If requestId, verify request and that raiser is a party
@@ -191,11 +191,14 @@ export async function createDispute(input: CreateDisputeInput, raisedById: strin
       }
     }
 
-    // Prevent duplicate active disputes
+    // Prevent duplicate active disputes — check bidirectionally (NEW-RACE-02 FIX)
+    // Without bidirectional check, Alice→Bob and Bob→Alice can both file simultaneously.
     const existing = await tx.dispute.findFirst({
       where: {
-        raisedById,
-        againstId: input.againstId,
+        OR: [
+          { raisedById, againstId: input.againstId },
+          { raisedById: input.againstId, againstId: raisedById },
+        ],
         ...(requestId ? { requestId } : {}),
         ...(listingId && !requestId ? { listingId } : {}),
         status: { in: ['OPEN', 'UNDER_REVIEW'] },
@@ -203,7 +206,7 @@ export async function createDispute(input: CreateDisputeInput, raisedById: strin
     });
 
     if (existing) {
-      throw new ConflictError('You already have an active dispute for this');
+      throw new ConflictError('An active dispute already exists between these parties for this item');
     }
 
     const dispute = await tx.dispute.create({
@@ -241,6 +244,9 @@ export async function createDispute(input: CreateDisputeInput, raisedById: strin
     });
 
     return dispute;
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
 }
 
@@ -261,11 +267,12 @@ export async function updateDisputeStatus(
       id: string;
       status: string;
       request_id: string | null;
+      listing_id: string | null;
       against_id: string;
     }>>`
-      SELECT id, status, request_id, against_id
+      SELECT id, status, request_id, listing_id, against_id
       FROM disputes
-      WHERE id = ${disputeId}::uuid
+      WHERE id = ${disputeId}
       FOR UPDATE
     `;
 
@@ -303,6 +310,17 @@ export async function updateDisputeStatus(
         where: { id: dispute.against_id },
         data: { adminFlags: { increment: 1 } },
       });
+
+      // V3-05: Reset the listing from IN_TRANSACTION back to APPROVED so it
+      // becomes available to new buyers. Without this, any dispute filed on a
+      // ACCEPTED/MEETING_SCHEDULED request leaves the listing permanently stuck
+      // in IN_TRANSACTION with no active request after the dispute closes.
+      if (dispute.listing_id) {
+        await tx.listing.updateMany({
+          where: { id: dispute.listing_id, status: { in: ['IN_TRANSACTION', 'INTEREST_RECEIVED'] } },
+          data: { status: 'APPROVED' },
+        });
+      }
     }
 
     if (newStatus === 'REJECTED' && dispute.request_id) {
@@ -311,20 +329,45 @@ export async function updateDisputeStatus(
         where: { id: dispute.request_id },
         data: { status: 'COMPLETED', version: { increment: 1 } },
       });
+      // Listing stays COMPLETED — exchange was real, no reset needed
+    }
+
+    // V3-06: ESCALATED disputes leave the system in a held state.
+    // The request remains DISPUTED and the listing remains IN_TRANSACTION.
+    // Record an explicit audit note so ops know these need manual resolution.
+    if (newStatus === 'ESCALATED') {
+      await tx.auditLog.create({
+        data: {
+          actorId,
+          actorRole: 'ADMIN',
+          action: 'DISPUTE_ESCALATED',
+          entityType: 'Dispute',
+          entityId: disputeId,
+          metadata: {
+            requestId: dispute.request_id,
+            listingId: dispute.listing_id,
+            note: 'Dispute escalated — request and listing remain frozen until manually resolved by a SUPER admin.',
+          },
+        },
+      });
     }
 
     // Audit
     await tx.auditLog.create({
       data: {
         actorId,
+        actorRole: 'ADMIN',
         action: 'DISPUTE_STATUS_UPDATE',
         entityType: 'Dispute',
         entityId: disputeId,
-        // EXCH-BUG-09 (audit): record actorRole so audit trail shows who resolved
+        // V3-07: actorRole also stored in metadata for backward compatibility
         metadata: { from: dispute.status, to: newStatus, actorRole: 'ADMIN' },
       },
     });
 
     return updated;
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
 }

@@ -7,8 +7,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ═══════════════════════════════════════════════════
@@ -245,8 +245,8 @@ model Dispute {
 
 model AuditLog {
   id         String   @id @default(uuid())
-  actorId    String   @map("actor_id")
-  actor      User     @relation("AuditActor", fields: [actorId], references: [id])
+  actorId    String?  @map("actor_id")
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
   action     String
   entityType String?  @map("entity_type")
   entityId   String?  @map("entity_id")

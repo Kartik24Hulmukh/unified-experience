@@ -32,7 +32,7 @@ const SignupPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { signup, googleSignIn, isAuthenticated, isLoading: authLoading } = useAuth();
-    const { promptSignIn, isLoading: isGoogleLoading } = useGoogleIdentity();
+    const { promptSignIn, isLoading: isGoogleLoading, hasRealGIS } = useGoogleIdentity();
     const [isLoading, setIsLoading] = useState(false);
     const [showEmailForm, setShowEmailForm] = useState(false);
     const hasRedirected = useRef(false);
@@ -106,6 +106,7 @@ const SignupPage = () => {
 
                     <div className="relative bg-[#0a0a0a] border border-white/10 p-8 md:p-12 rounded-2xl shadow-2xl backdrop-blur-3xl overflow-hidden">
                         {/* ── Google Sign-In — Primary CTA ── */}
+                        {hasRealGIS && (
                         <Button
                             type="button"
                             onClick={handleGoogleClick}
@@ -120,10 +121,13 @@ const SignupPage = () => {
                             </svg>
                             {isGoogleLoading ? "Signing in..." : "Continue with Google"}
                         </Button>
+                        )}
 
+                        {hasRealGIS && (
                         <p className="text-center text-white/25 text-[10px] mb-6 tracking-wide">
                             Recommended — instant access, no OTP required
                         </p>
+                        )}
 
                         {/* ── Email Toggle ── */}
                         <div className="flex items-center gap-4 mb-4">

@@ -16,12 +16,17 @@ import type { RequestEvent } from '@/domain/fsm/RequestMachine';
    Terminal statuses (for partial unique enforcement)
    ═══════════════════════════════════════════════════ */
 
+// NEW-BUG-02 FIX: 'RESOLVED' was missing, causing buyers with resolved requests
+// to be permanently blocked from re-requesting the same listing (EXCH-RACE-02),
+// and preventing cancelled-request listing reset (EXCH-BUG-04 activeCount check).
+// 'DISPUTED' is intentionally excluded — active litigation is not terminal.
 const TERMINAL_STATUSES: RequestStatus[] = [
   'COMPLETED',
   'DECLINED',
   'EXPIRED',
   'CANCELLED',
   'WITHDRAWN',
+  'RESOLVED',
 ];
 
 /* ═══════════════════════════════════════════════════
@@ -153,13 +158,22 @@ export async function getRequest(id: string, userId: string, role: string) {
 import { getCurrentUser } from '@/services/authService';
 
 export async function createRequest(input: CreateRequestInput, buyerId: string) {
-  // SEC-GOV-01: Enforce RestrictionEngine
+  // SEC-GOV-01: Pre-flight restriction check (fast-path)
   const trust = await getCurrentUser(buyerId);
   if (trust.restriction.isRestricted) {
     throw new ForbiddenError(`Action restricted: ${trust.restriction.reasons.join(' ')}`);
   }
 
   return prisma.$transaction(async (tx) => {
+    // V3-08: Re-check isRestricted inside the transaction to close the TOCTOU window
+    // where an admin restricts the user between the pre-flight check and this write.
+    const userRow = await tx.user.findUnique({
+      where: { id: buyerId },
+      select: { isRestricted: true },
+    });
+    if (userRow?.isRestricted) {
+      throw new ForbiddenError('Your account has been restricted from creating requests');
+    }
     // Verify listing exists and is approved
     // Acquisition-time check is okay for existence, but status must be locked atomically.
     const listing = await tx.listing.findUnique({
@@ -187,16 +201,15 @@ export async function createRequest(input: CreateRequestInput, buyerId: string) 
       }),
     ]);
 
-    // If the listing wasn't APPROVED, it means someone else already requested it 
-    // or it's in a different terminal state.
-    if (updatedCount.count === 0 && listing.status === 'APPROVED') {
-      throw new ConflictError('Listing was just taken by another user. Status outdated.');
-    }
-
-    // If it was already INTEREST_RECEIVED, that's okay (multiple interests allowed for some models, 
-    // but here we check if a transaction is already in progress). 
-    if (listing.status !== 'APPROVED' && listing.status !== 'INTEREST_RECEIVED') {
-      throw new ConflictError('Listing is not available for requests');
+    // CRIT-03 FIX: If the CAS missed (count === 0), the listing is no longer
+    // APPROVED — always throw. The previous code re-read the listing and only
+    // threw when status was NOT INTEREST_RECEIVED, meaning a second buyer whose
+    // listing was already INTEREST_RECEIVED would silently fall through and
+    // create a second active request on the same listing.
+    if (updatedCount.count === 0) {
+      throw new ConflictError(
+        'Listing is no longer available for requests. Another buyer may have already shown interest.',
+      );
     }
 
     // EXCH-RACE-02: Application-level check for buyer duality.
@@ -231,6 +244,7 @@ export async function createRequest(input: CreateRequestInput, buyerId: string) 
     await tx.auditLog.create({
       data: {
         actorId: buyerId,
+        actorRole: 'STUDENT',
         action: 'REQUEST_CREATE',
         entityType: 'Request',
         entityId: req.id,
@@ -239,6 +253,9 @@ export async function createRequest(input: CreateRequestInput, buyerId: string) 
     });
 
     return req;
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
 }
 
@@ -307,7 +324,7 @@ export async function updateRequestEvent(
     }>>`
       SELECT id, listing_id, buyer_id, seller_id, status, version
       FROM requests
-      WHERE id = ${requestId}::uuid
+      WHERE id = ${requestId}
       FOR UPDATE
     `;
 
@@ -351,10 +368,18 @@ export async function updateRequestEvent(
 
     // 6. Side effects based on the transition
     if (newStatus === 'COMPLETED') {
-      await tx.listing.update({
-        where: { id: row.listing_id },
+      // NEW-BUG-01 FIX: Use updateMany with WHERE assertion so a listing in an
+      // unexpected state (e.g., flagged) does not silently get overwritten.
+      const completedCount = await tx.listing.updateMany({
+        where: { id: row.listing_id, status: 'IN_TRANSACTION' },
         data: { status: 'COMPLETED' },
       });
+      if (completedCount.count === 0) {
+        // Listing was not in the expected IN_TRANSACTION state — log and surface, do not silently corrupt.
+        throw new ConflictError(
+          'Listing is not in IN_TRANSACTION state; cannot complete exchange. Possible concurrent state change.',
+        );
+      }
 
       // EXCH-BUG-02: increment BOTH parties' completedExchanges counters.
       await tx.user.updateMany({
@@ -366,15 +391,23 @@ export async function updateRequestEvent(
     if (newStatus === 'ACCEPTED') {
       // EXCH-BUG-06: When a request is accepted, the listing MUST move to IN_TRANSACTION.
       // This prevents other users from interacting with it until it's finished or cancelled.
-      await tx.listing.update({
-        where: { id: row.listing_id },
+      // NEW-BUG-01 FIX: Assert expected prior state in WHERE clause.
+      const acceptedCount = await tx.listing.updateMany({
+        where: { id: row.listing_id, status: { in: ['INTEREST_RECEIVED', 'APPROVED'] } },
         data: { status: 'IN_TRANSACTION' },
       });
+      if (acceptedCount.count === 0) {
+        throw new ConflictError(
+          'Listing is not in an available state to accept; possible concurrent state change.',
+        );
+      }
     }
 
     if (newStatus === 'CANCELLED' || newStatus === 'WITHDRAWN' || newStatus === 'DECLINED') {
       // EXCH-BUG-03: attribute CANCEL to the actor
-      if (newStatus === 'CANCELLED') {
+      // NEW-RACE-03 FIX: WITHDRAWN (buyer retracts a sent request) also counts against
+      // the actor — prevents repeated send/withdraw harassment with zero trust penalty.
+      if (newStatus === 'CANCELLED' || newStatus === 'WITHDRAWN') {
         await tx.user.update({
           where: { id: actorId },
           data: { cancelledRequests: { increment: 1 } },
@@ -392,8 +425,11 @@ export async function updateRequestEvent(
       });
 
       if (activeCount === 0) {
-        await tx.listing.update({
-          where: { id: row.listing_id },
+        // NEW-BUG-01 FIX: Use updateMany with WHERE to guard against unexpected listing state.
+        // If another concurrent transaction already changed the listing (e.g., admin flagged it),
+        // the update is a no-op rather than silently overwriting an unintended state.
+        await tx.listing.updateMany({
+          where: { id: row.listing_id, status: { in: ['IN_TRANSACTION', 'INTEREST_RECEIVED'] } },
           data: { status: 'APPROVED' },
         });
       }
@@ -403,6 +439,7 @@ export async function updateRequestEvent(
     await tx.auditLog.create({
       data: {
         actorId,
+        actorRole,
         action: 'REQUEST_EVENT',
         entityType: 'Request',
         entityId: requestId,
@@ -414,5 +451,8 @@ export async function updateRequestEvent(
     // onSend hook handles this with the correct composite key format.
 
     return updated;
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
 }

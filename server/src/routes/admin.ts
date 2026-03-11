@@ -26,31 +26,46 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   /** GET /pending — listings awaiting review */
   app.get('/pending', async (_request, reply) => {
     const listings = await adminService.getPendingListings();
-    return reply.status(200).send(listings);
+    return reply.status(200).send(apiData(listings));
   });
 
   /** GET /stats — platform statistics */
   app.get('/stats', async (_request, reply) => {
     const stats = await adminService.getStats();
-    return reply.status(200).send(stats);
+    return reply.status(200).send(apiData(stats));
   });
 
   /** GET /users/:userId — full user drilldown */
   app.get('/users/:userId', async (request, reply) => {
     const { userId } = request.params as { userId: string };
     const drilldown = await adminService.getUserDrilldown(userId);
-    return reply.status(200).send(drilldown);
+    return reply.status(200).send(apiData(drilldown));
   });
 
-  /** GET /audit — audit trail */
+  /** GET /audit — audit trail (field names mapped to match frontend AuditLogEntry) */
   app.get('/audit', async (request, reply) => {
     const query = request.query as Record<string, string>;
-    const logs = await adminService.getAuditLogs({
+    const result = await adminService.getAuditLogs({
       page: query.page ? parseInt(query.page, 10) : undefined,
       limit: query.limit ? parseInt(query.limit, 10) : undefined,
       action: query.action,
     });
-    return reply.status(200).send(logs);
+    const mapped = result.logs.map((l) => ({
+      id: l.id,
+      timestamp: (l.createdAt as Date).toISOString(),
+      actorId: l.actorId,
+      actorRole: l.actorRole ?? 'system',
+      action: l.action,
+      targetType: (l.entityType?.toLowerCase() ?? 'system') as
+        | 'listing'
+        | 'request'
+        | 'dispute'
+        | 'user'
+        | 'system',
+      targetId: l.entityId ?? '',
+      details: l.metadata != null ? JSON.stringify(l.metadata) : undefined,
+    }));
+    return reply.status(200).send(apiData(mapped));
   });
 
   /** POST /audit — record an audit entry */
@@ -75,23 +90,44 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
-  /** GET /fraud — fraud overview */
+  /** GET /fraud — fraud overview (mapped to FraudDashboardData shape) */
   app.get('/fraud', async (_request, reply) => {
     const report = await adminService.getFraudOverview();
-    return reply.status(200).send(report);
+    const flaggedUsers = report.map((u) => ({
+      userId: u.id,
+      email: u.email,
+      fullName: u.fullName,
+      riskLevel: u.heuristics.riskLevel,
+      flags: u.heuristics.flags,
+      trust:
+        u.heuristics.riskLevel === 'HIGH'
+          ? 'RESTRICTED'
+          : u.heuristics.riskLevel === 'MEDIUM'
+          ? 'REVIEW_REQUIRED'
+          : 'GOOD_STANDING',
+      activeDisputes: u._count.disputes,
+    }));
+    return reply.status(200).send(
+      apiData({
+        flaggedUsers,
+        totalFlagged: flaggedUsers.length,
+        highRisk: flaggedUsers.filter((u) => u.riskLevel === 'HIGH').length,
+        mediumRisk: flaggedUsers.filter((u) => u.riskLevel === 'MEDIUM').length,
+      }),
+    );
   });
 
   /** GET /integrity — referential integrity report (SUPER only) */
   app.get('/integrity', async (request, reply) => {
     await adminService.requireSuperPrivilege(request.userId!);
     const report = await adminService.getIntegrityReport();
-    return reply.status(200).send(report);
+    return reply.status(200).send(apiData(report));
   });
 
   /** POST /recovery — recover stale transactions (SUPER only) */
   app.post('/recovery', async (request, reply) => {
     await adminService.requireSuperPrivilege(request.userId!);
     const result = await adminService.recoverStaleTransactions();
-    return reply.status(200).send(result);
+    return reply.status(200).send(apiData(result));
   });
 }

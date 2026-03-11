@@ -20,7 +20,7 @@ interface FilterOption {
 }
 
 interface FilterPayload {
-    price?: number[];
+    price?: [number, number];
     categories?: string[];
 }
 
@@ -41,7 +41,8 @@ const ModuleSearchFilter = ({
 }: ModuleSearchFilterProps) => {
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [localPrice, setLocalPrice] = useState([priceRange[0], priceRange[1]]);
+    const [localPrice, setLocalPrice] = useState<[number, number]>([priceRange[0], priceRange[1]]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const resultsCountRef = useRef<HTMLSpanElement>(null);
     const gsapCtxRef = useRef<gsap.Context | null>(null);
@@ -172,7 +173,18 @@ const ModuleSearchFilter = ({
                                         {categories.map((cat) => (
                                             <div key={cat.id} className="flex items-center justify-between group cursor-pointer p-2 hover:bg-white/5 transition-colors">
                                                 <div className="flex items-center space-x-4">
-                                                    <Checkbox id={cat.id} className="border-white/20 data-[state=checked]:bg-primary rounded-none" />
+                                                    <Checkbox
+                                                        id={cat.id}
+                                                        checked={selectedCategories.includes(cat.id)}
+                                                        onCheckedChange={(checked) => {
+                                                            setSelectedCategories(prev =>
+                                                                checked
+                                                                    ? [...prev, cat.id]
+                                                                    : prev.filter(id => id !== cat.id)
+                                                            );
+                                                        }}
+                                                        className="border-white/20 data-[state=checked]:bg-primary rounded-none"
+                                                    />
                                                     <label
                                                         htmlFor={cat.id}
                                                         className="text-xs text-white/80 font-bold uppercase tracking-widest cursor-pointer group-hover:text-white transition-colors"
@@ -193,10 +205,11 @@ const ModuleSearchFilter = ({
                                     <h4 className="text-white/30 text-[9px] uppercase font-bold tracking-[0.3em] border-b border-white/5 pb-2">Resource Valuation (INR)</h4>
                                     <div className="px-2">
                                         <Slider
-                                            defaultValue={[priceRange[0], priceRange[1]]}
+                                            defaultValue={[priceRange[1]]}
+                                            min={priceRange[0]}
                                             max={priceRange[1] * 2}
                                             step={100}
-                                            onValueChange={(val) => setLocalPrice(val)}
+                                            onValueChange={(val) => setLocalPrice([priceRange[0], val[0]])}
                                             className="mt-6"
                                         />
                                         <div className="flex justify-between mt-6 text-[10px] font-bold uppercase text-white/60 font-display">
@@ -208,7 +221,7 @@ const ModuleSearchFilter = ({
 
                                 <Button
                                     className="w-full h-14 bg-primary hover:bg-teal-400 text-black font-bold text-xs uppercase tracking-widest rounded-none group transition-all duration-500 overflow-hidden relative"
-                                    onClick={() => onFilterChange({ price: localPrice })}
+                                    onClick={() => onFilterChange({ price: localPrice, categories: selectedCategories })}
                                 >
                                     <span className="relative z-10 flex items-center">
                                         APPLY FILTERS <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1" />

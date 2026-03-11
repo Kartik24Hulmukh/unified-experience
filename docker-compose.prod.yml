@@ -63,7 +63,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (min 32 chars)}
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_DAYS: ${JWT_REFRESH_EXPIRES_DAYS:-7}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is required}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-https://berozgar.in}
       COOKIE_SECURE: "true"
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.berozgar.in}
@@ -79,6 +79,10 @@ services:
       # Rate limiting
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      # Proxy trust — Docker bridge network CIDR (nginx → api)
+      TRUST_PROXY: ${TRUST_PROXY:-172.16.0.0/12}
+      # Security
+      CSRF_ENFORCE: "true"
       # Optional monitoring
       SENTRY_DSN: ${SENTRY_DSN:-}
     networks:

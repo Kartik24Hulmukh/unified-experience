@@ -1,5 +1,5 @@
-import { useState, memo } from 'react';
-import { Bell, CheckCircle2, MessageSquare, ShieldAlert } from 'lucide-react';
+import { useState, useMemo, memo } from 'react';
+import { Bell, CheckCircle2, MessageSquare, ShieldAlert, Clock } from 'lucide-react';
 import {
     Popover,
     PopoverContent,
@@ -8,6 +8,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { useRequests } from '@/hooks/api/useApi';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Notification {
     id: string;
@@ -18,47 +20,135 @@ interface Notification {
     isRead: boolean;
 }
 
+const ACK_STORAGE_KEY = 'berozgar_ack_notifications';
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+function getAcknowledged(): Set<string> {
+    try {
+        const raw = localStorage.getItem(ACK_STORAGE_KEY);
+        return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+        return new Set();
+    }
+}
+
+function saveAcknowledged(ids: Set<string>) {
+    try {
+        localStorage.setItem(ACK_STORAGE_KEY, JSON.stringify([...ids]));
+    } catch { /* storage quota issues — silently fail */ }
+}
+
+function statusToNotification(req: { id: string; status: string; updatedAt: string; listingId: string }, userId: string, buyerId: string): Notification | null {
+    const updatedAt = new Date(req.updatedAt);
+    if (Date.now() - updatedAt.getTime() > ONE_DAY_MS) return null;
+
+    const isBuyer = buyerId === userId;
+    const timeLabel = updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    switch (req.status) {
+        case 'ACCEPTED':
+            return {
+                id: `${req.id}:ACCEPTED`,
+                type: 'approval',
+                title: 'Request Accepted',
+                description: isBuyer
+                    ? 'The seller has accepted your request. Coordinate your meeting.'
+                    : 'You accepted a request. Coordinate with the buyer for the exchange.',
+                time: timeLabel,
+                isRead: false,
+            };
+        case 'MEETING_SCHEDULED':
+            return {
+                id: `${req.id}:MEETING_SCHEDULED`,
+                type: 'message',
+                title: 'Meeting Scheduled',
+                description: 'A meeting has been scheduled for this exchange.',
+                time: timeLabel,
+                isRead: false,
+            };
+        case 'COMPLETED':
+            return {
+                id: `${req.id}:COMPLETED`,
+                type: 'success',
+                title: 'Exchange Completed',
+                description: 'The exchange was successfully completed. Trust score updated.',
+                time: timeLabel,
+                isRead: false,
+            };
+        case 'DECLINED':
+            return {
+                id: `${req.id}:DECLINED`,
+                type: 'alert',
+                title: 'Request Declined',
+                description: isBuyer
+                    ? 'Your request was declined. The listing may still be available.'
+                    : 'You declined a request.',
+                time: timeLabel,
+                isRead: false,
+            };
+        case 'CANCELLED':
+            return {
+                id: `${req.id}:CANCELLED`,
+                type: 'alert',
+                title: 'Request Cancelled',
+                description: 'This exchange request was cancelled.',
+                time: timeLabel,
+                isRead: false,
+            };
+        case 'DISPUTED':
+            return {
+                id: `${req.id}:DISPUTED`,
+                type: 'alert',
+                title: 'Dispute Filed',
+                description: 'A dispute has been raised for this exchange. Admin review pending.',
+                time: timeLabel,
+                isRead: false,
+            };
+        case 'RESOLVED':
+            return {
+                id: `${req.id}:RESOLVED`,
+                type: 'success',
+                title: 'Dispute Resolved',
+                description: 'The dispute for this exchange has been resolved by an admin.',
+                time: timeLabel,
+                isRead: false,
+            };
+        default:
+            return null;
+    }
+}
+
 const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark: boolean }) {
-    const [notifications, setNotifications] = useState<Notification[]>([
-        {
-            id: '1',
-            type: 'approval',
-            title: 'Listing Approved',
-            description: 'Your scientific calculator listing has been verified and is now live.',
-            time: '2m ago',
-            isRead: false
-        },
-        {
-            id: '2',
-            type: 'message',
-            title: 'New Transaction Request',
-            description: 'A verified student is interested in your 2BHK flat listing.',
-            time: '1h ago',
-            isRead: false
-        },
-        {
-            id: '3',
-            type: 'alert',
-            title: 'Security Protocol',
-            description: 'Please review the updated consent sharing policy for peer exchanges.',
-            time: '3h ago',
-            isRead: true
-        },
-        {
-            id: '4',
-            type: 'success',
-            title: 'Verification Complete',
-            description: 'Your institutional ID was successfully audited by the administration.',
-            time: '1d ago',
-            isRead: true
-        }
-    ]);
+    const { user } = useAuth();
+    const userId = user?.id ?? '';
+
+    // Poll requests every 30 seconds to pick up status changes without a WebSocket
+    const { data: requestsData } = useRequests(undefined, {
+        refetchInterval: 30_000,
+        enabled: !!userId,
+    });
+
+    const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(getAcknowledged);
 
     const [isOpen, setIsOpen] = useState(false);
+
+    const notifications = useMemo<Notification[]>(() => {
+        const requests = requestsData?.data ?? [];
+        return requests
+            .flatMap((req) => {
+                const notif = statusToNotification(req, userId, req.buyerId);
+                return notif ? [notif] : [];
+            })
+            .map((n) => ({ ...n, isRead: acknowledgedIds.has(n.id) }))
+            .sort((a, b) => (a.isRead === b.isRead ? 0 : a.isRead ? 1 : -1));
+    }, [requestsData, acknowledgedIds, userId]);
+
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     const markAllAsRead = () => {
-        setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+        const allIds = new Set([...acknowledgedIds, ...notifications.map(n => n.id)]);
+        setAcknowledgedIds(allIds);
+        saveAcknowledged(allIds);
     };
 
     const getIcon = (type: string) => {
@@ -66,7 +156,8 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
             case 'message': return <MessageSquare className="w-4 h-4 text-primary" />;
             case 'approval': return <ShieldAlert className="w-4 h-4 text-teal-400" />;
             case 'success': return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
-            default: return <Bell className="w-4 h-4 text-white/40" />;
+            case 'alert': return <Bell className="w-4 h-4 text-amber-400" />;
+            default: return <Clock className="w-4 h-4 text-white/40" />;
         }
     };
 
@@ -109,7 +200,13 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
                 {/* List */}
                 <ScrollArea className="h-[400px]">
                     <div className="flex flex-col">
-                        {notifications.map((notif, i) => (
+                        {notifications.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-48 gap-3 text-white/20">
+                                <Bell className="w-8 h-8 opacity-30" />
+                                <p className="text-[10px] uppercase font-bold tracking-widest">No notifications yet</p>
+                            </div>
+                        ) : (
+                            notifications.map((notif) => (
                             <div
                                 key={notif.id}
                                 className={`relative p-6 border-b border-white/5 hover:bg-white/5 transition-all duration-300 group cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}
@@ -134,7 +231,8 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
                                 {/* Glitch interaction on hover */}
                                 <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/5 transition-colors pointer-events-none" />
                             </div>
-                        ))}
+                        ))
+                        )}
                     </div>
                 </ScrollArea>
 

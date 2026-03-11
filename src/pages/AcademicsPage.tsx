@@ -7,6 +7,7 @@ import ListingGrid from '@/components/ListingGrid';
 const academicsHero = '/Academics.jpg';
 import { Search, X } from 'lucide-react';
 import { useListings } from '@/hooks/api/useApi';
+import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 
 // ScrollTrigger registered in lib/gsap-init.ts
@@ -32,18 +33,18 @@ const AcademicsPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
-  const mainRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
 
   // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'academics' });
-  const items = listingsResponse?.data ?? [];
+  const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    return items.filter(item =>
+    return visibleItems.filter(item =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery, items]);
+  }, [searchQuery, visibleItems]);
 
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {

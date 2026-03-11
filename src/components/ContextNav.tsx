@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -6,8 +6,9 @@ import { useTheme } from 'next-themes';
 import { Sun, Moon, LogOut } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { isNavigationLocked, lockNavigation, safeNavigate } from '@/lib/utils';
+import { isNavigationLocked, lockNavigation, safeNavigate, unlockNavigation } from '@/lib/utils';
 import { useScrollTriggerCleanup } from '@/hooks/useScrollTriggerCleanup';
+import { toast } from '@/components/ui/use-toast';
 import NotificationCenter from './NotificationCenter';
 
 // ScrollTrigger registered in lib/gsap-init.ts
@@ -41,6 +42,21 @@ const ContextNav = memo(function ContextNav() {
   const { isAuthenticated, user, logout } = useAuth();
   // UX-02: invalidate all cached queries on logout to prevent stale data leakage
   const queryClient = useQueryClient();
+
+  // Admin-aware nav items — adds Admin Panel entry for admin users
+  const displayNavItems = useMemo(() => {
+    const base: NavItem[] = [
+      { label: 'Home', path: '/home', number: '00' },
+      { label: 'Academics', path: '/academics', number: '01' },
+      { label: 'Accommodation', path: '/accommodation', number: '02' },
+      { label: 'Essentials', path: '/essentials', number: '03' },
+      { label: 'Resale', path: '/resale', number: '04' },
+    ];
+    if (user?.role === 'admin') {
+      base.push({ label: 'Admin', path: '/admin', number: '05' });
+    }
+    return base;
+  }, [user?.role]);
 
   // Kill ScrollTriggers when leaving animated pages (runs on all routes)
   useScrollTriggerCleanup();
@@ -149,11 +165,15 @@ const ContextNav = memo(function ContextNav() {
   // not the animated landing splash which looks like a crash.
   // UX-02: clear React Query cache to prevent stale private data on shared devices.
   const handleLogout = useCallback(() => {
-    if (isNavigationLocked()) return;
+    // Logout is terminal session teardown and must not be blocked by a stale
+    // route-transition lock from an earlier navigation.
+    unlockNavigation();
+    setIsMenuOpen(false);
     queryClient.clear(); // UX-02: wipe all cached queries
     logout();
-    safeNavigate(navigate, location.pathname, '/login', { replace: true });
-  }, [logout, navigate, location.pathname, queryClient]);
+    toast({ title: 'Signed Out', description: 'You have been logged out successfully.' });
+    navigate('/login', { replace: true });
+  }, [logout, navigate, queryClient]);
 
   // ── Early return AFTER all hooks ──
   if (isAuthPage || isLandingPage) return null;
@@ -239,6 +259,16 @@ const ContextNav = memo(function ContextNav() {
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
 
+            {isAuthenticated && (
+              <button
+                onClick={handleLogout}
+                className={`p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+                aria-label="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
+
             <NotificationCenter isDark={isDark} />
 
             {/* Menu Button */}
@@ -285,7 +315,7 @@ const ContextNav = memo(function ContextNav() {
       >
         <div className="max-w-4xl w-full px-8 md:px-16">
           <nav className="space-y-4 md:space-y-6">
-            {navItems.map((item) => (
+            {displayNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}

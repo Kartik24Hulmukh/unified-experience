@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * FluidMaskCursor — WebGL Navier-Stokes fluid simulation for hover-reveal masking.
  *
@@ -57,6 +58,8 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
     const handleVisibilityChange = () => { pageHidden = document.hidden; };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    let lastUpdateTime = Date.now();
+    let _maskCursorDirty = false;
     const pointers = [
       { x: 0, y: 0, px: 0, py: 0, mass: 0.18 },
       { x: 0, y: 0, px: 0, py: 0, mass: 0.10 },
@@ -122,9 +125,9 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
       return ok;
     }
 
-    let formatRGBA = isWebGL2 ? getSupportedFormat(gl, (gl as any).RGBA16F, (gl as any).RGBA, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
-    let formatRG = isWebGL2 ? getSupportedFormat(gl, (gl as any).RG16F, (gl as any).RG, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
-    let formatR = isWebGL2 ? getSupportedFormat(gl, (gl as any).R16F, (gl as any).RED, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
+    const formatRGBA = isWebGL2 ? getSupportedFormat(gl, (gl as any).RGBA16F, (gl as any).RGBA, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
+    const formatRG = isWebGL2 ? getSupportedFormat(gl, (gl as any).RG16F, (gl as any).RG, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
+    const formatR = isWebGL2 ? getSupportedFormat(gl, (gl as any).R16F, (gl as any).RED, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
 
     function compileShader(type: number, source: string) {
       const s = gl!.createShader(type)!; gl!.shaderSource(s, source); gl!.compileShader(s); return s;
@@ -190,7 +193,7 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
     }
     function createDoubleFBO(w: number, h: number, intFmt: number, fmt: number, type: number, param: number) {
       let f1 = createFBO(w, h, intFmt, fmt, type, param); let f2 = createFBO(w, h, intFmt, fmt, type, param);
-      return { width: w, height: h, texelSizeX: 1 / w, texelSizeY: 1 / h, get read() { return f1; }, get write() { return f2; }, swap() { let t = f1; f1 = f2; f2 = t; } };
+      return { width: w, height: h, texelSizeX: 1 / w, texelSizeY: 1 / h, get read() { return f1; }, get write() { return f2; }, swap() { const t = f1; f1 = f2; f2 = t; } };
     }
 
     function initFBOs() {
@@ -215,13 +218,13 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
       }
 
       const now = Date.now();
-      let dt = Math.min((now - lastUpdateTime) / 1000, 0.017);
+      const dt = Math.min((now - lastUpdateTime) / 1000, 0.017);
       lastUpdateTime = now;
 
       let activePointers = 0;
       pointers.forEach(p => {
         p.x += (mouseX - p.x) * p.mass; p.y += (mouseY - p.y) * p.mass;
-        let dx = (p.x - p.px) * SPLAT_FORCE; let dy = (p.y - p.py) * SPLAT_FORCE;
+        const dx = (p.x - p.px) * SPLAT_FORCE; const dy = (p.y - p.py) * SPLAT_FORCE;
         if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
           activePointers++;
           splatProg.bind(); gl!.uniform1f(splatProg.uniforms.aspectRatio, 1.0); gl!.uniform2f(splatProg.uniforms.point, p.x, p.y); gl!.uniform1f(splatProg.uniforms.radius, SPLAT_RADIUS / 100);
@@ -234,6 +237,12 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
       // Keep dirty while fluid is moving/visible
       if (activePointers > 0) frameCount = 60; // Keep updating for ~1sec after stop
       else if (frameCount > 0) frameCount--;
+
+      // Simulation has fully settled — skip all GL shader passes to save GPU
+      if (frameCount === 0) {
+        rafRef.current = requestAnimationFrame(loop);
+        return;
+      }
 
       curlProg.bind(); gl!.uniform2f(curlProg.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY); gl!.uniform1i(curlProg.uniforms.uVelocity, velocity.read.attach(0)); blit(curlFBO);
       divProg.bind(); gl!.uniform2f(divProg.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY); gl!.uniform1i(divProg.uniforms.uVelocity, velocity.read.attach(0)); blit(divergenceFBO);

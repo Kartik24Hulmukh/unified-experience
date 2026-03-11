@@ -72,12 +72,13 @@ export interface Listing {
   title: string;
   price: string;
   category: string;
-  institution: string;
   module: string;
-  status: 'draft' | 'pending_review' | 'approved' | 'rejected';
-  createdBy: string;
+  // status reflects the Prisma ListingStatus enum — always UPPERCASE from the server
+  status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'INTEREST_RECEIVED' | 'IN_TRANSACTION' | 'COMPLETED' | 'EXPIRED' | 'FLAGGED' | 'ARCHIVED' | 'REMOVED';
+  createdBy?: string;
   createdAt: string;
   description?: string;
+  owner?: { id: string; fullName: string; email: string };
 }
 
 export interface ListingFilters {
@@ -99,21 +100,28 @@ export interface ProfileIdentity {
 }
 
 export interface StudentData {
+  listingsCount: number;
+  requestsCount: number;
   exchangesCompleted: number;
+  valueCirculated: number;
   activeListings: number;
-  pendingRequests: number;
-  totalContributions: number;
   reputation: number;
-  recentActivity: Array<{ type: string; title: string; timestamp: string }>;
+  cancelledRequests: number;
+  disputesCount: number;
+  adminFlags: number;
 }
 
 export interface AdminData {
-  systemHealth: number;
-  pendingReviews: number;
-  activeDisputes: number;
-  totalUsers: number;
-  flaggedAccounts: number;
-  recentActions: Array<{ type: string; target: string; timestamp: string }>;
+  totalListings: number;
+  activeUsers: number;
+  openDisputes: number;
+  avgApprovalTimeHours: number;
+  recentActions: number;
+  systemHealthScore: number;
+  totalStudents: number;
+  activeExchanges: number;
+  academicListings: number;
+  systemUptimePercent: number;
 }
 
 export interface TrustInfo {
@@ -136,6 +144,14 @@ export interface AdminStats {
   completedExchanges: number;
 }
 
+export interface AdminRecoveryResult {
+  expiredRequests: number;
+  recoveredListings: number;
+  revokedTokens: number;
+  deletedIdempotencyKeys: number;
+  recoveredAt: string;
+}
+
 export interface PendingItem {
   id: string;
   title: string;
@@ -154,7 +170,8 @@ export interface PendingItem {
 export interface Dispute {
   id: string;
   type: 'fraud' | 'item_not_as_described' | 'no_show' | 'other';
-  status: 'open' | 'under_review' | 'resolved' | 'rejected' | 'escalated';
+  // status reflects the Prisma DisputeStatus enum — always UPPERCASE from the server
+  status: 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED' | 'ESCALATED';
   raisedById: string;
   againstId: string;
   requestId?: string;
@@ -204,7 +221,7 @@ export function useLogin() {
 export function useSignup() {
   return useMutation({
     mutationFn: (data: { fullName: string; email: string; password: string }) =>
-      api.post<{ message: string; pendingEmail: string }>('/auth/signup', data, { skipAuth: true }),
+      api.post<{ message: string }>('/auth/signup', data, { skipAuth: true }),
   });
 }
 
@@ -241,7 +258,7 @@ export function useProfile(
   return useQuery({
     queryKey: queryKeys.profile,
     queryFn: () => api.get<ApiResponse<ProfileResponse>>('/profile'),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60_000, // V3-13: 1 min — trust/restriction status changes must be reflected quickly
     ...options,
   });
 }
@@ -298,10 +315,17 @@ export function useCreateListing() {
       category: string;
       module: string;
       description?: string;
-    }) => api.post<ApiResponse<Listing>>('/listings', data),
+      idempotencyKey?: string;
+    }) => {
+      const { idempotencyKey, ...body } = data;
+      return api.post<ApiResponse<Listing>>('/listings', body, {
+        headers: idempotencyKey ? { 'x-idempotency-key': idempotencyKey } : {},
+      });
+    },
     onSuccess: () => {
-      // Invalidate all listing queries to refresh
+      // Invalidate all listing queries to refresh (including module-filtered caches)
       queryClient.invalidateQueries({ queryKey: queryKeys.listings.all });
+      queryClient.invalidateQueries({ queryKey: ['listings'], exact: false });
     },
   });
 }
@@ -350,6 +374,8 @@ export function useUpdateListingStatus() {
       // Always refetch to ensure server state consistency
       queryClient.invalidateQueries({ queryKey: queryKeys.listings.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.pending });
+      // V3-09: also bust module-filtered and search-filtered listing caches
+      queryClient.invalidateQueries({ queryKey: ['listings'], exact: false });
     },
   });
 }
@@ -380,13 +406,27 @@ export function useAdminStats(
   });
 }
 
+export function useAdminRecovery() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api.post<ApiResponse<AdminRecoveryResult>>('/admin/recovery'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.stats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.pending });
+      queryClient.invalidateQueries({ queryKey: queryKeys.listings.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
+    },
+  });
+}
+
 export function useAdminUserProfile(
   userId: string,
-  options?: Partial<UseQueryOptions<ApiResponse<ProfileResponse>, ApiError>>,
+  options?: Partial<UseQueryOptions<ApiResponse<AdminUserDrilldown>, ApiError>>,
 ) {
   return useQuery({
     queryKey: queryKeys.admin.user(userId),
-    queryFn: () => api.get<ApiResponse<ProfileResponse>>(`/admin/users/${userId}`),
+    queryFn: () => api.get<ApiResponse<AdminUserDrilldown>>(`/admin/users/${userId}`),
     enabled: !!userId,
     ...options,
   });
@@ -420,6 +460,10 @@ export function useCreateDispute() {
     }) => api.post<ApiResponse<Dispute>>('/disputes', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.disputes.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.stats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminFraud });
     },
   });
 }
@@ -469,7 +513,8 @@ export interface ExchangeRequest {
   listingId: string;
   buyerId: string;
   sellerId: string;
-  status: 'idle' | 'sent' | 'accepted' | 'declined' | 'meeting_scheduled' | 'completed' | 'expired' | 'cancelled' | 'withdrawn' | 'disputed' | 'resolved';
+  // status reflects the Prisma RequestStatus enum — always UPPERCASE from the server
+  status: 'IDLE' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'MEETING_SCHEDULED' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED' | 'WITHDRAWN' | 'DISPUTED' | 'RESOLVED';
   message?: string;
   createdAt: string;
   updatedAt: string;
@@ -514,6 +559,8 @@ export function useCreateRequest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.listings.all });
+      // Invalidate profile so trust scores and request counts reflect the new exchange
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
     },
   });
 }
@@ -523,7 +570,9 @@ export function useUpdateRequestEvent() {
 
   return useMutation({
     mutationFn: ({ id, event, idempotencyKey }: { id: string; event: string; idempotencyKey?: string }) =>
-      api.patch<ApiResponse<ExchangeRequest>>(`/requests/${id}/event`, { event, idempotencyKey }),
+      api.patch<ApiResponse<ExchangeRequest>>(`/requests/${id}/event`, { event }, {
+        headers: idempotencyKey ? { 'x-idempotency-key': idempotencyKey } : {},
+      }),
     onMutate: async ({ id, event }) => {
       // EXCH-UI-02: cancel BOTH list and detail queries to prevent in-flight overwrites
       await queryClient.cancelQueries({ queryKey: queryKeys.requests.all });
@@ -535,15 +584,15 @@ export function useUpdateRequestEvent() {
 
       // Optimistic status mapping (best-effort; server FSM is the authority)
       const optimisticStatusMap: Record<string, ExchangeRequest['status']> = {
-        ACCEPT: 'accepted',
-        DECLINE: 'declined',
-        SCHEDULE: 'meeting_scheduled',
-        CONFIRM: 'completed',
-        CANCEL: 'cancelled',
-        WITHDRAW: 'withdrawn',
-        DISPUTE: 'disputed',
+        ACCEPT: 'ACCEPTED',
+        DECLINE: 'DECLINED',
+        SCHEDULE: 'MEETING_SCHEDULED',
+        CONFIRM: 'COMPLETED',
+        CANCEL: 'CANCELLED',
+        WITHDRAW: 'WITHDRAWN',
+        DISPUTE: 'DISPUTED',
         // EXCH-UI-01: RESOLVE was missing — admin resolve left UI stuck in 'disputed'
-        RESOLVE: 'resolved',
+        RESOLVE: 'RESOLVED',
       };
       const optimisticStatus = optimisticStatusMap[event];
 
@@ -624,6 +673,34 @@ export interface FraudDashboardData {
   totalFlagged: number;
   highRisk: number;
   mediumRisk: number;
+}
+
+/** Typed response for GET /admin/users/:userId (admin drilldown) */
+export interface AdminUserDrilldown {
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+    verified: boolean;
+    createdAt: string;
+    completedExchanges: number;
+    cancelledRequests: number;
+    adminFlags: number;
+    isRestricted: boolean;
+  };
+  trust: {
+    status: 'GOOD_STANDING' | 'REVIEW_REQUIRED' | 'RESTRICTED';
+    reasons: string[];
+  };
+  fraud: {
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    flags: string[];
+  };
+  restriction: {
+    isRestricted: boolean;
+    reason?: string;
+  };
 }
 
 export function useAdminAuditLog(

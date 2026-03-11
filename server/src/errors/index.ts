@@ -74,6 +74,28 @@ export class IdempotencyConflictError extends AppError {
   }
 }
 
+/**
+ * Thrown by the idempotency preHandler to short-circuit the Fastify v5
+ * async hook runner and send a cached replay response.
+ *
+ * In Fastify v5, calling reply.send() inside an async preHandler does NOT
+ * prevent the route handler from running (the hook runner resolves the
+ * promise unconditionally and proceeds to the next lifecycle step).
+ * Throwing an error causes Fastify to invoke setErrorHandler instead,
+ * which reliably bypasses the route handler and its service calls.
+ */
+export class IdempotencyReplayError extends Error {
+  readonly httpStatus: number;
+  readonly responseBody: unknown;
+
+  constructor(httpStatus: number, responseBody: unknown) {
+    super('__idempotency_replay__');
+    this.name = 'IdempotencyReplayError';
+    this.httpStatus = httpStatus;
+    this.responseBody = responseBody;
+  }
+}
+
 export class InvalidTransitionError extends AppError {
   constructor(machine: string, from: string, event: string) {
     super(

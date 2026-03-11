@@ -12,7 +12,8 @@ import {
     Activity,
     Lock,
     Search,
-    Filter
+    Filter,
+    RefreshCw
 } from 'lucide-react';
 import {
     Table,
@@ -30,14 +31,34 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import SplitText from '@/components/SplitText';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+    filterAdminAuditLogs,
+    filterAdminDisputes,
+    filterAdminFraudUsers,
+    filterAdminPendingListings,
+    getAdminSearchConfig,
+    type AdminTab,
+} from '@/lib/admin-console';
+import { canRunAdminRecovery } from '@/lib/user-journey';
 import {
     useAdminPending, useAdminStats, useUpdateListingStatus,
-    useDisputes, useUpdateDisputeStatus, useAdminAuditLog
+    useDisputes, useUpdateDisputeStatus, useAdminAuditLog, useAdminFraudDashboard, useAdminRecovery
 } from '@/hooks/api/useApi';
 import type { PendingItem, Dispute, AuditLogEntry } from '@/hooks/api/useApi';
 import {
@@ -47,11 +68,25 @@ import {
 } from '@/lib/fsm';
 import { toast } from '@/components/ui/use-toast';
 
+type ConfirmationState = {
+    title: string;
+    description: string;
+    confirmLabel: string;
+    variant?: 'default' | 'destructive';
+    onConfirm: () => void;
+} | null;
+
 const AdminPage = () => {
-    const [activeTab, setActiveTab] = useState('pending');
+    const [activeTab, setActiveTab] = useState<AdminTab>('pending');
     const [searchQuery, setSearchQuery] = useState('');
+    const [confirmation, setConfirmation] = useState<ConfirmationState>(null);
+    // Track which detail dialog is open (keyed by listing id) so we can close it after actions
+    const [openDialogs, setOpenDialogs] = useState<Record<string, boolean>>({});
     const containerRef = useRef<HTMLDivElement>(null);
     const gsapCtxRef = useRef<gsap.Context | null>(null);
+    const { user } = useAuth();
+    const recoveryMutation = useAdminRecovery();
+    const recoveryEnabled = canRunAdminRecovery(user?.privilegeLevel);
 
     // API data
     const { data: pendingResponse, isLoading: pendingLoading, isError: pendingError, error: pendingErr, refetch: refetchPending } = useAdminPending();
@@ -60,23 +95,22 @@ const AdminPage = () => {
     const { data: disputesResponse, isLoading: disputesLoading } = useDisputes();
     const updateDisputeStatus = useUpdateDisputeStatus();
     const { data: auditResponse, isLoading: auditLoading } = useAdminAuditLog();
+    const { data: fraudResponse, isLoading: fraudLoading } = useAdminFraudDashboard();
 
-    const disputes = disputesResponse?.data ?? [];
-    const auditLogs = auditResponse?.data ?? [];
+    const disputes = useMemo(() => disputesResponse?.data ?? [], [disputesResponse?.data]);
+    const auditLogs = useMemo(() => auditResponse?.data ?? [], [auditResponse?.data]);
+    const fraudData = fraudResponse?.data ?? null;
+    const fraudUsers = useMemo(() => fraudData?.flaggedUsers ?? [], [fraudData]);
 
-    const pendingListings = pendingResponse?.data ?? [];
+    const pendingListings = useMemo(() => pendingResponse?.data ?? [], [pendingResponse?.data]);
     const stats = statsResponse?.data;
+    const searchConfig = getAdminSearchConfig(activeTab);
 
     // Filter pending listings by search query (title or owner name)
-    const filteredListings = useMemo(() =>
-        searchQuery.trim()
-            ? pendingListings.filter(l =>
-                l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (l.owner?.fullName ?? '').toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            : pendingListings,
-        [pendingListings, searchQuery]
-    );
+    const filteredListings = useMemo(() => filterAdminPendingListings(pendingListings, searchQuery), [pendingListings, searchQuery]);
+    const filteredDisputes = useMemo(() => filterAdminDisputes(disputes, searchQuery), [disputes, searchQuery]);
+    const filteredAuditLogs = useMemo(() => filterAdminAuditLogs(auditLogs, searchQuery), [auditLogs, searchQuery]);
+    const filteredFraudUsers = useMemo(() => filterAdminFraudUsers(fraudUsers, searchQuery), [fraudUsers, searchQuery]);
 
     /**
      * Each pending listing is assumed to be in `pending_review`
@@ -112,6 +146,10 @@ const AdminPage = () => {
         return () => { gsapCtxRef.current?.revert(); };
     }, []);
 
+    useEffect(() => {
+        setSearchQuery('');
+    }, [activeTab]);
+
     const handleApprove = useCallback((id: string) => {
         const machine = machines[id];
         if (!machine || !machine.can('APPROVE')) {
@@ -121,6 +159,7 @@ const AdminPage = () => {
             return;
         }
 
+        const prev = machine;                                   // NEW-BUG-06 FIX: snapshot before mutation
         const next = machine.send('APPROVE'); // pending_review → approved
         setMachines(prev => ({ ...prev, [id]: next }));
 
@@ -129,11 +168,16 @@ const AdminPage = () => {
             onSuccess: () => {
                 // UX-03: toast confirmation so admin knows the action landed
                 toast({ title: 'Listing Approved', description: 'The listing is now live for students to view.' });
+                // Close the detail dialog if it was open
+                setOpenDialogs(prev => ({ ...prev, [id]: false }));
                 gsapCtxRef.current?.add(() => {
                     gsap.to(`.row-${id}`, { backgroundColor: 'rgba(0, 212, 170, 0.1)', duration: 0.3 });
                 });
             },
             onError: () => {
+                // NEW-BUG-06 FIX: roll back the local FSM snapshot so the button is re-enabled
+                // and admin can retry without a page refresh.
+                setMachines(m => ({ ...m, [id]: prev }));
                 toast({ title: 'Approval Failed', description: 'Could not approve listing. Please try again.', variant: 'destructive' });
             },
         });
@@ -148,6 +192,7 @@ const AdminPage = () => {
             return;
         }
 
+        const prev = machine;                                   // NEW-BUG-06 FIX: snapshot before mutation
         const next = machine.send('REJECT'); // pending_review → rejected
         setMachines(prev => ({ ...prev, [id]: next }));
 
@@ -156,15 +201,39 @@ const AdminPage = () => {
             onSuccess: () => {
                 // UX-03: toast confirmation
                 toast({ title: 'Listing Rejected', description: 'The listing has been rejected and removed from the queue.' });
+                // Close the detail dialog if it was open
+                setOpenDialogs(prev => ({ ...prev, [id]: false }));
                 gsapCtxRef.current?.add(() => {
                     gsap.to(`.row-${id}`, { backgroundColor: 'rgba(239, 68, 68, 0.1)', duration: 0.3 });
                 });
             },
             onError: () => {
+                // NEW-BUG-06 FIX: roll back the local FSM snapshot
+                setMachines(m => ({ ...m, [id]: prev }));
                 toast({ title: 'Rejection Failed', description: 'Could not reject listing. Please try again.', variant: 'destructive' });
             },
         });
     }, [machines, updateStatus]);
+
+    const handleDisputeStatus = useCallback((id: string, status: 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED') => {
+        const messages = {
+            UNDER_REVIEW: { title: 'Dispute Under Review', description: 'Status updated to Under Review.' },
+            RESOLVED: { title: 'Dispute Resolved', description: 'The dispute has been marked as resolved.' },
+            REJECTED: { title: 'Dispute Rejected', description: 'The dispute has been closed as rejected.' },
+        };
+
+        updateDisputeStatus.mutate(
+            { id, status },
+            {
+                onSuccess: () => toast(messages[status]),
+                onError: () => toast({ title: 'Update Failed', variant: 'destructive' }),
+            },
+        );
+    }, [updateDisputeStatus]);
+
+    const openConfirmation = useCallback((nextState: ConfirmationState) => {
+        setConfirmation(nextState);
+    }, []);
 
     return (
         <div ref={containerRef} className="min-h-screen bg-portal flex text-white overflow-hidden">
@@ -185,6 +254,7 @@ const AdminPage = () => {
                         { id: 'pending', label: 'Pending Approvals', icon: ShieldCheck },
                         { id: 'users', label: 'Verified Entities', icon: Users },
                         { id: 'disputes', label: 'Dispute Protocols', icon: AlertTriangle },
+                        { id: 'fraud', label: 'Fraud Dashboard', icon: Activity },
                         { id: 'logs', label: 'System Logs', icon: Terminal },
                         { id: 'activity', label: 'Live Metrics', icon: Activity },
                     ].map((item) => (
@@ -222,10 +292,11 @@ const AdminPage = () => {
                         <div className="relative w-64 group">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
                             <Input
-                                placeholder="PROBE ENTITY..."
+                                placeholder={searchConfig.placeholder}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="bg-black/40 border-white/10 text-[10px] font-bold tracking-widest pl-10 h-10 rounded-none focus-visible:ring-1 focus-visible:ring-primary uppercase"
+                                disabled={!searchConfig.enabled}
+                                className="bg-black/40 border-white/10 text-[10px] font-bold tracking-widest pl-10 h-10 rounded-none focus-visible:ring-1 focus-visible:ring-primary uppercase disabled:opacity-30 disabled:cursor-not-allowed"
                             />
                         </div>
                         {/* UX-04: 'Matrix Filter' button was non-functional (no onClick). Now visually
@@ -306,15 +377,22 @@ const AdminPage = () => {
                                                     <TableCell>
                                                         <div className="space-y-2">
                                                             <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[8px] uppercase tracking-widest">
-                                                                {listing.status.replace(/_/g, ' ')}
+                                                                {listing.status.toLowerCase().replace(/_/g, ' ')}
                                                             </Badge>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end space-x-2">
-                                                            <Dialog>
+                                                            <Dialog
+                                                                open={openDialogs[listing.id] ?? false}
+                                                                onOpenChange={(open) => setOpenDialogs(prev => ({ ...prev, [listing.id]: open }))}
+                                                            >
                                                                 <DialogTrigger asChild>
-                                                                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        className="h-8 w-8 p-0 hover:bg-white/10"
+                                                                        onClick={() => setOpenDialogs(prev => ({ ...prev, [listing.id]: true }))}
+                                                                    >
                                                                         <Search className="w-4 h-4 text-white/40" />
                                                                     </Button>
                                                                 </DialogTrigger>
@@ -341,11 +419,23 @@ const AdminPage = () => {
                                                                             </div>
                                                                         </div>
                                                                         <div className="space-y-4 bg-white/5 p-4">
-                                                                            <p className="text-[9px] text-white/30 uppercase font-bold font-display">AI Verification Log</p>
-                                                                            <div className="space-y-2 text-[10px] font-mono">
-                                                                                <p className="text-emerald-400">✓ Image Authenticated</p>
-                                                                                <p className="text-emerald-400">✓ Metadata Consistent</p>
-                                                                                <p className="text-amber-400">! Price deviates 5% from index</p>
+                                                                            <p className="text-[9px] text-white/30 uppercase font-bold font-display">Moderation Snapshot</p>
+                                                                            <div className="space-y-3 text-[10px] font-mono text-white/60">
+                                                                                <div className="flex items-center justify-between gap-4">
+                                                                                    <span>Status</span>
+                                                                                    <span>{listing.status.toLowerCase().replace(/_/g, ' ')}</span>
+                                                                                </div>
+                                                                                <div className="flex items-center justify-between gap-4">
+                                                                                    <span>Category</span>
+                                                                                    <span>{listing.category ?? 'unclassified'}</span>
+                                                                                </div>
+                                                                                <div className="flex items-center justify-between gap-4">
+                                                                                    <span>Submitted</span>
+                                                                                    <span>{new Date(listing.createdAt).toLocaleDateString()}</span>
+                                                                                </div>
+                                                                                <p className="text-white/30 leading-relaxed pt-2 border-t border-white/10">
+                                                                                    Review the listing details and trust context before approving or rejecting the submission.
+                                                                                </p>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -353,33 +443,30 @@ const AdminPage = () => {
                                                                         <Button
                                                                             variant="outline"
                                                                             className="rounded-none border-white/10 hover:bg-white/5 uppercase text-[10px] font-bold tracking-widest"
-                                                                            onClick={() => handleReject(listing.id)}
+                                                                            onClick={() => openConfirmation({
+                                                                                title: 'Reject listing?',
+                                                                                description: 'This will remove the listing from the review queue and mark it as rejected.',
+                                                                                confirmLabel: 'Reject Listing',
+                                                                                variant: 'destructive',
+                                                                                onConfirm: () => handleReject(listing.id),
+                                                                            })}
                                                                         >
                                                                             Reject Protocol
                                                                         </Button>
                                                                         <Button
                                                                             className="bg-primary hover:bg-teal-400 text-black rounded-none font-bold uppercase text-[10px] tracking-widest"
-                                                                            onClick={() => handleApprove(listing.id)}
+                                                                            onClick={() => openConfirmation({
+                                                                                title: 'Approve listing?',
+                                                                                description: 'This will make the listing visible to students immediately.',
+                                                                                confirmLabel: 'Approve Listing',
+                                                                                onConfirm: () => handleApprove(listing.id),
+                                                                            })}
                                                                         >
                                                                             Confirm & Manifest
                                                                         </Button>
                                                                     </div>
                                                                 </DialogContent>
                                                             </Dialog>
-                                                            <Button
-                                                                variant="ghost"
-                                                                onClick={() => handleApprove(listing.id)}
-                                                                className="h-8 w-8 p-0 hover:bg-emerald-500/20 group-hover:rotate-12 transition-transform"
-                                                            >
-                                                                <Check className="w-4 h-4 text-emerald-400" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                onClick={() => handleReject(listing.id)}
-                                                                className="h-8 w-8 p-0 hover:bg-red-500/20"
-                                                            >
-                                                                <X className="w-4 h-4 text-red-400" />
-                                                            </Button>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
@@ -397,13 +484,13 @@ const AdminPage = () => {
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Dispute Protocols</h3>
                                 <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
-                                    {disputes.length} RECORD{disputes.length !== 1 ? 'S' : ''}
+                                    {filteredDisputes.length} RECORD{filteredDisputes.length !== 1 ? 'S' : ''}
                                 </Badge>
                             </div>
                             <div className="border border-white/10 bg-black/20">
-                                {disputesLoading ? (
+                                    {disputesLoading ? (
                                     <div className="p-12 flex flex-col items-center gap-4"><LoadingSpinner /><p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading disputes…</p></div>
-                                ) : disputes.length === 0 ? (
+                                ) : filteredDisputes.length === 0 ? (
                                     <div className="p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">No disputes found</div>
                                 ) : (
                                     <Table>
@@ -418,30 +505,37 @@ const AdminPage = () => {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {disputes.map((d) => (
+                                            {filteredDisputes.map((d) => (
                                                 <TableRow key={d.id} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
                                                     <TableCell className="font-mono text-[10px] text-primary font-bold">{d.id.slice(0, 8)}</TableCell>
                                                     <TableCell><Badge variant="outline" className="border-amber-500/30 text-amber-400 text-[8px] uppercase tracking-widest">{d.type.replace(/_/g, ' ')}</Badge></TableCell>
-                                                    <TableCell className="text-xs text-white/60 max-w-xs truncate">{d.description}</TableCell>
-                                                    <TableCell><Badge variant={d.status === 'resolved' ? 'default' : 'outline'} className={`text-[8px] uppercase tracking-widest ${d.status === 'open' ? 'border-red-500/30 text-red-400' : d.status === 'resolved' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'border-white/20 text-white/60'}`}>{d.status.replace(/_/g, ' ')}</Badge></TableCell>
+                                                    <TableCell className="text-xs text-white/60 max-w-xs truncate" title={d.description}>{d.description}</TableCell>
+                                                    <TableCell><Badge variant={d.status === 'RESOLVED' ? 'default' : 'outline'} className={`text-[8px] uppercase tracking-widest ${d.status === 'OPEN' ? 'border-red-500/30 text-red-400' : d.status === 'RESOLVED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'border-white/20 text-white/60'}`}>{d.status.replace(/_/g, ' ')}</Badge></TableCell>
                                                     <TableCell className="text-[10px] font-bold text-white/20 font-display">{new Date(d.createdAt).toLocaleDateString()}</TableCell>
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end space-x-2">
-                                                            {d.status === 'open' && (
-                                                                <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-amber-500/20 text-amber-400" onClick={() => updateDisputeStatus.mutate({ id: d.id, status: 'under_review' }, {
-                                                                    onSuccess: () => toast({ title: 'Dispute Under Review', description: 'Status updated to Under Review.' }),
-                                                                    onError: () => toast({ title: 'Update Failed', variant: 'destructive' }),
+                                                            {d.status === 'OPEN' && (
+                                                                <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-amber-500/20 text-amber-400" onClick={() => openConfirmation({
+                                                                    title: 'Move dispute to review?',
+                                                                    description: 'This will mark the dispute as under review for moderation follow-up.',
+                                                                    confirmLabel: 'Start Review',
+                                                                    onConfirm: () => handleDisputeStatus(d.id, 'UNDER_REVIEW'),
                                                                 })}>Review</Button>
                                                             )}
-                                                            {(d.status === 'open' || d.status === 'under_review') && (
+                                                            {(d.status === 'OPEN' || d.status === 'UNDER_REVIEW') && (
                                                                 <>
-                                                                    <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-emerald-500/20 text-emerald-400" onClick={() => updateDisputeStatus.mutate({ id: d.id, status: 'resolved' }, {
-                                                                        onSuccess: () => toast({ title: 'Dispute Resolved', description: 'The dispute has been marked as resolved.' }),
-                                                                        onError: () => toast({ title: 'Update Failed', variant: 'destructive' }),
+                                                                    <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-emerald-500/20 text-emerald-400" onClick={() => openConfirmation({
+                                                                        title: 'Resolve dispute?',
+                                                                        description: 'This marks the dispute as resolved and closes the moderation flow.',
+                                                                        confirmLabel: 'Resolve Dispute',
+                                                                        onConfirm: () => handleDisputeStatus(d.id, 'RESOLVED'),
                                                                     })}>Resolve</Button>
-                                                                    <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-red-500/20 text-red-400" onClick={() => updateDisputeStatus.mutate({ id: d.id, status: 'rejected' }, {
-                                                                        onSuccess: () => toast({ title: 'Dispute Rejected', description: 'The dispute has been closed as rejected.' }),
-                                                                        onError: () => toast({ title: 'Update Failed', variant: 'destructive' }),
+                                                                    <Button size="sm" variant="ghost" className="h-7 text-[9px] uppercase font-bold tracking-widest hover:bg-red-500/20 text-red-400" onClick={() => openConfirmation({
+                                                                        title: 'Reject dispute?',
+                                                                        description: 'This closes the dispute as rejected. Use this only if the report is invalid.',
+                                                                        confirmLabel: 'Reject Dispute',
+                                                                        variant: 'destructive',
+                                                                        onConfirm: () => handleDisputeStatus(d.id, 'REJECTED'),
                                                                     })}>Reject</Button>
                                                                 </>
                                                             )}
@@ -480,8 +574,103 @@ const AdminPage = () => {
                                         <span className="text-3xl font-display font-bold text-emerald-400">{stats?.completedExchanges ?? '—'}</span>
                                     </div>
                                 </div>
-                                <p className="text-white/20 text-[10px] uppercase tracking-widest mt-8 text-center">Individual user lookup available via search bar</p>
+                                <p className="text-white/20 text-[10px] uppercase tracking-widest mt-8 text-center">Search is available on moderation tabs with list data</p>
                             </div>
+                        </div>
+                    )}
+
+                    {/* ═══ FRAUD TAB ═══ */}
+                    {activeTab === 'fraud' && (
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Fraud Dashboard</h3>
+                                <div className="flex items-center gap-3">
+                                    {recoveryEnabled && (
+                                        <Button
+                                            type="button"
+                                            onClick={() => recoveryMutation.mutate(undefined, {
+                                                onSuccess: (response) => {
+                                                    const result = response.data;
+                                                    toast({
+                                                        title: 'Recovery Scan Complete',
+                                                        description: `${result.expiredRequests} stale requests expired and ${result.recoveredListings} listings recovered.`,
+                                                    });
+                                                },
+                                                onError: (error) => {
+                                                    toast({
+                                                        title: 'Recovery Failed',
+                                                        description: error instanceof Error ? error.message : 'Could not run the recovery scan.',
+                                                        variant: 'destructive',
+                                                    });
+                                                },
+                                            })}
+                                            disabled={recoveryMutation.isPending}
+                                            className="rounded-none bg-primary hover:bg-teal-400 text-black text-[10px] font-bold tracking-widest uppercase"
+                                        >
+                                            <RefreshCw className={`w-3.5 h-3.5 mr-2 ${recoveryMutation.isPending ? 'animate-spin' : ''}`} />
+                                            {recoveryMutation.isPending ? 'Running Recovery' : 'Run Recovery Scan'}
+                                        </Button>
+                                    )}
+                                    <Badge variant="outline" className="border-red-500/30 text-red-400 text-[9px] font-bold tracking-widest px-4 py-1">
+                                        TRUST &amp; SAFETY
+                                    </Badge>
+                                </div>
+                            </div>
+                            {fraudLoading ? (
+                                <div className="p-12 flex flex-col items-center gap-4">
+                                    <LoadingSpinner />
+                                    <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading fraud data…</p>
+                                </div>
+                            ) : !fraudData ? (
+                                <div className="border border-white/10 bg-black/20 p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">
+                                    No fraud data available
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="p-6 border border-red-500/20 bg-red-500/5 space-y-2">
+                                            <p className="text-[9px] text-red-400/60 uppercase font-bold tracking-widest">High Risk Users</p>
+                                            <span className="text-3xl font-display font-bold text-red-400">{fraudData.highRisk}</span>
+                                        </div>
+                                        <div className="p-6 border border-amber-500/20 bg-amber-500/5 space-y-2">
+                                            <p className="text-[9px] text-amber-400/60 uppercase font-bold tracking-widest">Flagged Users</p>
+                                            <span className="text-3xl font-display font-bold text-amber-400">{fraudData.totalFlagged}</span>
+                                        </div>
+                                        <div className="p-6 border border-white/10 bg-white/5 space-y-2">
+                                            <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Medium Risk Users</p>
+                                            <span className="text-3xl font-display font-bold">{fraudData.mediumRisk}</span>
+                                        </div>
+                                    </div>
+                                    {filteredFraudUsers.length > 0 && (
+                                        <div className="border border-white/10 bg-black/20">
+                                            <Table>
+                                                <TableHeader className="bg-white/5">
+                                                    <TableRow className="border-white/5 hover:bg-transparent">
+                                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">User</TableHead>
+                                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Risk Level</TableHead>
+                                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Flags</TableHead>
+                                                        <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Active Disputes</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {filteredFraudUsers.map((flag) => (
+                                                        <TableRow key={flag.userId} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
+                                                            <TableCell className="font-mono text-[10px] text-primary font-bold">{flag.userId?.slice(0, 8) ?? '—'}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${flag.riskLevel === 'HIGH' ? 'border-red-500/30 text-red-400' : flag.riskLevel === 'MEDIUM' ? 'border-amber-500/30 text-amber-400' : 'border-white/20 text-white/60'}`}>
+                                                                    {flag.riskLevel ?? 'UNKNOWN'}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="text-xs text-white/60 max-w-xs truncate" title={flag.flags.join(', ')}>{flag.flags.join(', ') || '—'}</TableCell>
+                                                            <TableCell className="text-[10px] font-bold text-white/20">{flag.activeDisputes}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -491,13 +680,13 @@ const AdminPage = () => {
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">System Logs</h3>
                                 <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
-                                    {auditLogs.length} ENTRIES
+                                    {filteredAuditLogs.length} ENTRIES
                                 </Badge>
                             </div>
                             <div className="border border-white/10 bg-black/20">
                                 {auditLoading ? (
                                     <div className="p-12 flex flex-col items-center gap-4"><LoadingSpinner /><p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading audit log…</p></div>
-                                ) : auditLogs.length === 0 ? (
+                                ) : filteredAuditLogs.length === 0 ? (
                                     <div className="p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">No log entries found</div>
                                 ) : (
                                     <Table>
@@ -511,7 +700,7 @@ const AdminPage = () => {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {auditLogs.map((log) => (
+                                            {filteredAuditLogs.map((log) => (
                                                 <TableRow key={log.id} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
                                                     <TableCell className="text-[10px] font-mono text-white/40">{new Date(log.timestamp).toLocaleString()}</TableCell>
                                                     <TableCell className="text-xs font-bold uppercase tracking-tight">{log.actorId.slice(0, 8)} <span className="text-white/30">({log.actorRole})</span></TableCell>
@@ -558,6 +747,33 @@ const AdminPage = () => {
 
             {/* Institutional Scanlines — z below cursor (--z-scanline: 80, --z-cursor: 90) */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[var(--z-scanline)] bg-[length:100%_2px,3px_100%]" />
+
+            <AlertDialog open={!!confirmation} onOpenChange={(open) => !open && setConfirmation(null)}>
+                <AlertDialogContent className="bg-[#0a0a0a] border-white/10 text-white rounded-none">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="font-display text-2xl font-bold uppercase tracking-widest">
+                            {confirmation?.title}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-white/50">
+                            {confirmation?.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-none border-white/10 bg-transparent text-white hover:bg-white/5 hover:text-white">
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            className={`rounded-none font-bold uppercase text-[10px] tracking-widest ${confirmation?.variant === 'destructive' ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-primary hover:bg-teal-400 text-black'}`}
+                            onClick={() => {
+                                confirmation?.onConfirm();
+                                setConfirmation(null);
+                            }}
+                        >
+                            {confirmation?.confirmLabel}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div >
     );
 };

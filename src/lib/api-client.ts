@@ -141,7 +141,8 @@ function processRefreshQueue(error: Error | null, token: string | null) {
   refreshQueue = [];
 }
 
-async function handleTokenRefresh(): Promise<string> {
+/** Exported so AuthContext's proactive refresh uses the same isRefreshing mutex (CRIT-03) */
+export async function handleTokenRefresh(): Promise<string> {
   if (isRefreshing) {
     // Queue concurrent requests while refresh is in-flight
     return new Promise((resolve, reject) => {

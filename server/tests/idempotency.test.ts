@@ -69,6 +69,33 @@ vi.mock('@/lib/prisma', () => ({
         }
         return Promise.resolve({});
       }),
+      // upsert is called by idempotencyCacheResponse to store the real response
+      // after the handler completes, replacing the 102-Processing sentinel.
+      upsert: vi.fn().mockImplementation(({ where, update, create: createData }: { where: { key: string }; update: any; create: any }) => {
+        const existing = idempotencyStore.get(where.key);
+        if (existing) {
+          const updated = { ...existing, ...update };
+          idempotencyStore.set(where.key, updated);
+          return Promise.resolve(updated);
+        }
+        const entry = {
+          id: crypto.randomUUID(),
+          key: createData.key,
+          userId: createData.userId,
+          responseStatus: createData.responseStatus,
+          responseBody: createData.responseBody,
+          expiresAt: createData.expiresAt,
+          createdAt: new Date(),
+        };
+        idempotencyStore.set(createData.key, entry);
+        return Promise.resolve(entry);
+      }),
+      // deleteMany is called by idempotencyCacheResponse when status >= 500
+      deleteMany: vi.fn().mockImplementation(({ where }: { where: { key: string } }) => {
+        const deleted = idempotencyStore.has(where.key) ? 1 : 0;
+        idempotencyStore.delete(where.key);
+        return Promise.resolve({ count: deleted });
+      }),
     },
   },
 }));

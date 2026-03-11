@@ -90,7 +90,7 @@ const scrollingWords = [
 
 const EssentialsPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
-  const mainRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
 
   /* GSAP Animations */
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
@@ -150,6 +150,8 @@ const EssentialsPage = () => {
             alt=""
             className="ess-hero-img absolute inset-0 w-full h-[130%] object-cover"
             style={{ opacity: 0 }}
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />

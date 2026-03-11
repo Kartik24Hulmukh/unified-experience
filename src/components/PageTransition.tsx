@@ -34,6 +34,13 @@ const PageTransition = ({ children }: PageTransitionProps) => {
   const pendingChildrenRef = useRef<React.ReactNode>(null);
   const pendingLocationRef = useRef<string | null>(null);
 
+  // MED-07 FIX: track latest children in a ref updated every render.
+  // This avoids putting the `children` prop in the useLayoutEffect dep array —
+  // JSX children create a new object reference on every parent render, which
+  // would cause the transition effect to fire on irrelevant re-renders.
+  const latestChildrenRef = useRef<React.ReactNode>(children);
+  latestChildrenRef.current = children;
+
   // Safety: On mount, ensure curtain and container have correct initial state
   useEffect(() => {
     if (curtainRef.current) {
@@ -54,6 +61,7 @@ const PageTransition = ({ children }: PageTransitionProps) => {
       pendingChildrenRef.current = null;
       pendingLocationRef.current = null;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // stable — no deps, reads from refs
 
   // Use useLayoutEffect for immediate cleanup before paint
@@ -92,7 +100,8 @@ const PageTransition = ({ children }: PageTransitionProps) => {
 
       timelineRef.current = tl;
 
-      // Safety fallback: if timeline doesn't complete within 3s, force recovery
+      // Safety fallback: if timeline doesn't complete within 1.5s, force recovery
+      // (total timeline is ~1.3s; 1.5s gives margin without locking slow-device users out)
       safetyTimer = setTimeout(() => {
         if (timelineRef.current === tl && tl.isActive()) {
           tl.progress(1).kill();
@@ -107,7 +116,7 @@ const PageTransition = ({ children }: PageTransitionProps) => {
             curtain.style.transform = 'scaleY(0)';
           }
         }
-      }, 3000);
+      }, 1500);
 
       // ── Phase 1: Curtain slides DOWN, old content fades ──
       tl.set(curtain, { transformOrigin: 'top', scaleY: 0 })
@@ -181,17 +190,18 @@ const PageTransition = ({ children }: PageTransitionProps) => {
     }
 
     // Only trigger transition if the route actually changed
+    // Lock duration = 1400ms matches the actual animation (1300ms) + 100ms buffer
     if (location.pathname !== displayLocationRef.current && !isTransitioning) {
-      lockNavigation(2000);
+      lockNavigation(1400);
       // Store pending data in refs (no state update = no re-render mid-animation)
-      pendingChildrenRef.current = children;
+      pendingChildrenRef.current = latestChildrenRef.current;
       pendingLocationRef.current = location.pathname;
       setIsTransitioning(true);
     } else if (location.pathname === displayLocationRef.current) {
       // Same route — just update children silently (e.g. context/prop changes)
-      setDisplayChildren(children);
+      setDisplayChildren(latestChildrenRef.current);
     }
-  }, [location.pathname, isTransitioning, children]);
+  }, [location.pathname, isTransitioning]);
 
   return (
     <>

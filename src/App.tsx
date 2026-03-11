@@ -118,8 +118,9 @@ const App = () => (
 
                 <main id="main-content">
                   <PageTransition>
-                    <Suspense fallback={<FullPageLoader />}>
-                      <Routes>
+                    <ErrorBoundary boundary="LazyRoutes">
+                      <Suspense fallback={<FullPageLoader />}>
+                        <Routes>
                         {/* Public routes */}
                         <Route path="/" element={<RouteErrorBoundary name="Landing"><LandingPage /></RouteErrorBoundary>} />
                         <Route path="/login" element={<RouteErrorBoundary name="Login"><LoginPage /></RouteErrorBoundary>} />
@@ -151,6 +152,7 @@ const App = () => (
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </Suspense>
+                  </ErrorBoundary>
                   </PageTransition>
                 </main>
               </BrowserRouter>

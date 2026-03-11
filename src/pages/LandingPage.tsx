@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { useAuth } from '@/contexts/AuthContext';
 import { safeNavigate } from '@/lib/utils';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
-const SplashCursor = lazy(() => import('@/components/SplashCursor'));
 
 /* ──────────────────────────────────────────────────
    BErozgar Landing / Splash Page
@@ -21,6 +21,7 @@ const LandingPage = () => {
   const location = useLocation();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const hasRedirected = useRef(false);
+  const isMobile = useIsMobile();
 
   /* Refs */
   const containerRef = useRef<HTMLDivElement>(null);
@@ -198,22 +199,6 @@ const LandingPage = () => {
   return (
     <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-[#050505] select-none">
       {/* ═══════════════════════════════════════════
-           SPLASH CURSOR — WebGL fluid simulation
-           ═══════════════════════════════════════════ */}
-      <Suspense fallback={null}>
-        <SplashCursor
-          SIM_RESOLUTION={256}
-          DYE_RESOLUTION={768}
-          DENSITY_DISSIPATION={2.5}
-          VELOCITY_DISSIPATION={2.5}
-          PRESSURE={0.6}
-          CURL={20}
-          SPLAT_RADIUS={0.15}
-          SPLAT_FORCE={6500}
-          COLOR_UPDATE_SPEED={50}
-        />
-      </Suspense>
-      {/* ═══════════════════════════════════════════
           LOADER OVERLAY 
           ═══════════════════════════════════════════ */}
       <div
@@ -303,11 +288,15 @@ const LandingPage = () => {
                 ref={portalContainerRef}
                 className="relative w-[clamp(60px,8vw,120px)] h-[clamp(60px,8vw,120px)] shrink-0 opacity-0"
               >
-                <Suspense fallback={
-                  <div className="w-full h-full border-2 border-white/20 rotate-45 animate-pulse" />
-                }>
-                  <Portal3D className="w-full h-full" />
-                </Suspense>
+                {isMobile ? (
+                  <div className="w-full h-full border-2 border-white/20 rotate-45" />
+                ) : (
+                  <Suspense fallback={
+                    <div className="w-full h-full border-2 border-white/20 rotate-45 animate-pulse" />
+                  }>
+                    <Portal3D className="w-full h-full" />
+                  </Suspense>
+                )}
               </div>
             </div>
           </div>

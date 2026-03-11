@@ -73,7 +73,7 @@ function loadEnv() {
   const result = envSchema.safeParse(raw);
 
   if (!result.success) {
-    // eslint-disable-next-line no-console
+     
     console.error('[env] Invalid environment configuration:', result.error.flatten().fieldErrors);
     throw new Error('[env] Invalid environment configuration — check .env files');
   }

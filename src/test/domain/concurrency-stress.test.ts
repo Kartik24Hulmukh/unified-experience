@@ -402,7 +402,7 @@ describe('Load: Burst Engine Evaluation', () => {
     const results: RequestState[] = [];
 
     for (let i = 0; i < 200; i++) {
-      let req = createRequest('idle');
+      const req = createRequest('idle');
       const sent = req.send('SEND');
       const accepted = createRequest(sent.state).send('ACCEPT');
       const scheduled = createRequest(accepted.state).send('SCHEDULE');

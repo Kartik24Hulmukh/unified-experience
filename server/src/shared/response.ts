@@ -27,8 +27,11 @@ const DB_ENUMS = new Set([
   'APPROVED',
   'REJECTED',
   'INTEREST_RECEIVED',
+  'IN_TRANSACTION',
   'COMPLETED',
   'REMOVED',
+  'FLAGGED',
+  'ARCHIVED',
   // RequestStatus
   'IDLE',
   'SENT',

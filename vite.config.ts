@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target: 'http://127.0.0.1:3001',
           changeOrigin: true,
           secure: false,
         },
@@ -36,7 +36,8 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
+            'vendor-three-core': ['three', '@react-three/fiber'],
+            'vendor-drei': ['@react-three/drei'],
             'vendor-rapier': ['@react-three/rapier'],
             'vendor-meshline': ['meshline'],
             'vendor-gsap': ['gsap'],
@@ -56,7 +57,7 @@ export default defineConfig(({ mode }) => {
       // Strip console.log/debug/info/warn and debugger in production builds
       ...(isProd && {
         drop: ['debugger'],
-        pure: ['console.log', 'console.debug', 'console.info', 'console.warn'],
+        pure: ['console.log', 'console.debug', 'console.info', 'console.warn', 'console.error'],
       }),
     },
   };

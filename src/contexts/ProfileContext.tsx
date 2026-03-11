@@ -8,18 +8,16 @@
 import {
   createContext,
   useContext,
-  useState,
-  useEffect,
   useCallback,
   useMemo,
   type ReactNode,
 } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api-client';
 import type { Profile } from '@/domain/profile';
 import logger from '@/lib/logger';
-import { validateProfileRoleIntegrity, isStudentProfile } from '@/domain/profile';
-import { computeTrust } from '@/domain/trustEngine';
+import { validateProfileRoleIntegrity, isAdminProfile } from '@/domain/profile';
 
 /* ═══════════════════════════════════════════════════
    Context Types
@@ -38,119 +36,56 @@ interface ProfileContextType extends ProfileState {
 const ProfileContext = createContext<ProfileContextType | null>(null);
 
 /* ═══════════════════════════════════════════════════
-   Trust Derivation (students only)
-   ═══════════════════════════════════════════════════ */
-
-/**
- * Enriches student profiles if necessary.
- * Trust is already computed on the backend for /profile and /auth/me,
- * but this serves as a safety net if a legacy path is used.
- */
-function enrichProfile(profile: Profile): Profile {
-  if (!isStudentProfile(profile)) return profile;
-
-  // If trust is missing (shouldn't happen with new API), we use the data in the profile
-  if (!profile.trust) {
-    profile.trust = computeTrust({
-      completedExchanges: profile.data.exchangesCompleted,
-      cancelledRequests: profile.data.cancelledRequests,
-      disputes: profile.data.disputesCount,
-      adminFlags: profile.data.adminFlags,
-      accountAgeDays: Math.floor(
-        (Date.now() - new Date(profile.identity.joinedAt).getTime()) / 86_400_000,
-      ),
-    });
-  }
-
-  return profile;
-}
-
-/* ═══════════════════════════════════════════════════
    Provider
    ═══════════════════════════════════════════════════ */
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuth();
 
-  const [state, setState] = useState<ProfileState>({
-    profile: null,
-    isLoading: false,
-    error: null,
+  // React Query: automatic caching, deduplication across tabs, and stale-while-revalidate.
+  // MED-03 FIX: queryKey scoped to user?.id (stable primitive) prevents re-fetches
+  // caused by new object references from token-refresh events in AuthContext.
+  const {
+    data: profile = null,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      const response = await api.get<{ data: Profile }>('/profile');
+      const p = response.data;
+
+      if (!validateProfileRoleIntegrity(p)) {
+        throw new Error('Role mismatch detected. Profile data withheld for safety.');
+      }
+
+      // MED-01 FIX: trust is server-authoritative; never derive it client-side.
+      // A frontend copy of computeTrust() can silently diverge from the backend
+      // version across deployments. Use the API response as-is.
+      if (!isAdminProfile(p) && !p.trust) {
+        logger.warn('ProfileContext', 'Profile arrived without trust data — displaying without enrichment');
+      }
+
+      return p;
+    },
+    enabled: isAuthenticated && !!user,
+    staleTime: 5 * 60 * 1000,   // 5 min: avoids redundant fetches on rapid navigation
+    gcTime: 10 * 60 * 1000,      // 10 min: keep cache warm across route switches
+    retry: false,
   });
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      setState({ profile: null, isLoading: false, error: null });
-      return;
-    }
-
-    let cancelled = false;
-
-    const load = async () => {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
-      try {
-        const response = await api.get<{ data: Profile }>('/profile');
-        const profile = response.data;
-
-        if (cancelled) return;
-
-        if (!validateProfileRoleIntegrity(profile)) {
-          setState({
-            profile: null,
-            isLoading: false,
-            error: 'Role mismatch detected. Profile data withheld for safety.',
-          });
-          return;
-        }
-
-        const enriched = enrichProfile(profile);
-        setState({ profile: enriched, isLoading: false, error: null });
-      } catch (err) {
-        if (cancelled) return;
-        const message = err instanceof Error ? err.message : 'Failed to load profile';
-        logger.error('ProfileContext', message);
-        setState({ profile: null, isLoading: false, error: message });
-      }
-    };
-
-    load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, isAuthenticated]);
+  const error = queryError
+    ? (queryError instanceof Error ? queryError.message : 'Failed to load profile')
+    : null;
 
   const handleRefresh = useCallback(async () => {
-    if (!user) return;
-
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      const response = await api.get<{ data: Profile }>('/profile');
-      const profile = response.data;
-
-      if (!validateProfileRoleIntegrity(profile)) {
-        setState({
-          profile: null,
-          isLoading: false,
-          error: 'Role mismatch detected. Profile data withheld for safety.',
-        });
-        return;
-      }
-
-      const enriched = enrichProfile(profile);
-      setState({ profile: enriched, isLoading: false, error: null });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to refresh profile';
-      logger.error('ProfileContext', message);
-      setState((prev) => ({ ...prev, isLoading: false, error: message }));
-    }
-  }, [user]);
+    await refetch();
+  }, [refetch]);
 
   const contextValue = useMemo(
-    () => ({ ...state, refreshProfile: handleRefresh }),
-    [state, handleRefresh],
+    () => ({ profile, isLoading, error, refreshProfile: handleRefresh }),
+    [profile, isLoading, error, handleRefresh],
   );
 
   return (
@@ -164,6 +99,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
    Hook
    ═══════════════════════════════════════════════════ */
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook intentionally co-located with context provider
 export function useProfile() {
   const ctx = useContext(ProfileContext);
   if (!ctx) throw new Error('useProfile must be used within ProfileProvider');

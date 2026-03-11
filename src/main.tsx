@@ -16,12 +16,12 @@ initMonitoring();
 
 /* ─── Global safety net: catch ALL unhandled errors/rejections ──── */
 window.addEventListener('error', (event) => {
-  // eslint-disable-next-line no-console
+   
   console.error('[GLOBAL] Uncaught error:', event.error ?? event.message);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-  // eslint-disable-next-line no-console
+   
   console.error('[GLOBAL] Unhandled promise rejection:', event.reason);
 });
 

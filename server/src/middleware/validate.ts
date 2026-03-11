@@ -20,6 +20,9 @@ export function validate<T>(
   schema: ZodSchema<T>,
 ): (request: FastifyRequest, reply: FastifyReply) => Promise<void> {
   return async (request: FastifyRequest, _reply: FastifyReply) => {
+    // SEC-LOG-01: do NOT log request.body — passwords, OTPs, and PII would be written
+    // to stdout in production (Docker logs, log aggregators). Use structured debug instead.
+    request.log.debug({ url: request.url }, '[validate] parsing body');
     const result = schema.safeParse(request.body);
 
     if (!result.success) {

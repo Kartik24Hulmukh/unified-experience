@@ -49,7 +49,7 @@ afterAll(async () => {
 
 describe('GET /health', () => {
   it('returns 200 with full health report when DB is connected', async () => {
-    const res = await app.inject({ method: 'GET', url: '/health' });
+    const res = await app.inject({ method: 'GET', url: '/health?verbose=true' });
 
     expect(res.statusCode).toBe(200);
     const body = res.json();

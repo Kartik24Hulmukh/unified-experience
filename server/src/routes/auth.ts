@@ -142,22 +142,28 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     });
   });
 
-  /** POST /logout — revoke refresh token & clear cookie */
-  app.post(
-    '/logout',
-    { preHandler: authenticate },
-    async (request, reply) => {
-      const token =
-        (request.cookies as Record<string, string | undefined>)?.[REFRESH_COOKIE.NAME];
+  /** POST /logout — revoke refresh token & clear cookie
+   *
+   * SECURITY NOTE (BUG-01 FIX):
+   * Logout does NOT require the authenticate middleware.
+   * - The user may call logout precisely because their access token has
+   *   just expired — blocking with a 401 would make logout impossible.
+   * - The only credential needed to revoke the session is the refresh-token
+   *   httpOnly cookie, which the browser sends automatically.
+   * - request.userId is populated by the authPlugin if a valid Bearer token
+   *   is present (used for the audit log), but is optional here.
+   */
+  app.post('/logout', async (request, reply) => {
+    const token =
+      (request.cookies as Record<string, string | undefined>)?.[REFRESH_COOKIE.NAME];
 
-      if (token) {
-        await authService.logout(token, request.userId);
-      }
-
-      clearRefreshCookie(reply);
-      return reply.status(200).send({ message: 'Logged out' });
+    if (token) {
+      await authService.logout(token, request.userId);
     }
-  );
+
+    clearRefreshCookie(reply);
+    return reply.status(200).send({ message: 'Logged out' });
+  });
 
   /** GET /me — current authenticated user */
   app.get(
@@ -171,7 +177,28 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   /** GET /csrf-token — return CSRF token for SPA double-submit */
   app.get('/csrf-token', async (request, reply) => {
-    const token = (reply as any).generateCsrf?.();
-    return reply.status(200).send({ csrfToken: token ?? null });
+    // Support two CSRF strategies:
+    //
+    // 1. @fastify/csrf-protection — attaches reply.generateCsrf()
+    // 2. Custom double-submit cookie plugin (csrfPlugin) — sets the `_csrf`
+    //    cookie on every response via an onRequest hook; the SPA reads it from
+    //    document.cookie.  In this mode there is no generateCsrf function on reply.
+    //
+    // HIGH-04: We no longer throw when generateCsrf is absent because the
+    // custom plugin IS the CSRF protection layer — throwing would surface as
+    // a spurious 500 and prevent the SPA from bootstrapping.  If neither the
+    // method nor the cookie exists the token is null; the client falls back to
+    // reading document.cookie (cookie value will arrive in the response headers).
+    if (typeof (reply as any).generateCsrf === 'function') {
+      const token = (reply as any).generateCsrf();
+      return reply.status(200).send({ csrfToken: token });
+    }
+
+    // Custom double-submit cookie plugin path: return whatever token the
+    // plugin set on a previous request, or null on the very first request
+    // (the Set-Cookie header carries the fresh token in this same response).
+    const token =
+      (request.cookies as Record<string, string | undefined>)['_csrf'] ?? null;
+    return reply.status(200).send({ csrfToken: token });
   });
 }

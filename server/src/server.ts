@@ -10,6 +10,7 @@ import { buildApp } from '@/app';
 import { env } from '@/config/env';
 import { prisma } from '@/lib/prisma';
 import { recoverStaleTransactions } from '@/services/adminService';
+import { pruneIdempotencyKeys } from '@/middleware/idempotency';
 
 // PROD-01: catch unhandled promise rejections and uncaught exceptions.
 // Without these, Node exits silently with code 1 and zero diagnostic info.
@@ -60,6 +61,23 @@ async function main(): Promise<void> {
     recoveryTimer = setInterval(runRecovery, STALE_RECOVERY_INTERVAL_MS);
   }, 30_000);
 
+  // V3-02: Schedule stuck-sentinel cleanup every 10 minutes.
+  // pruneIdempotencyKeys() removes 102-Processing sentinels older than 10 min
+  // that were left behind by server crashes. Without this scheduler the function
+  // was declared but never called, leaving clients blocked for a full 24 h after
+  // any server restart that interrupted an in-flight mutation.
+  const SENTINEL_PRUNE_INTERVAL_MS = 10 * 60 * 1000;
+  const sentinelPruneTimer = setInterval(async () => {
+    try {
+      const pruned = await pruneIdempotencyKeys();
+      if (pruned > 0) {
+        app.log.info({ pruned }, 'Pruned stale idempotency sentinels');
+      }
+    } catch (err) {
+      app.log.warn({ err }, 'Sentinel prune failed');
+    }
+  }, SENTINEL_PRUNE_INTERVAL_MS);
+
   // ── Graceful Shutdown ───────────────────────────
   const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM'];
   for (const signal of signals) {
@@ -67,6 +85,7 @@ async function main(): Promise<void> {
       app.log.info(`Received ${signal}. Shutting down gracefully...`);
       clearTimeout(startupDelay);
       if (recoveryTimer) clearInterval(recoveryTimer);
+      clearInterval(sentinelPruneTimer);
       try {
         await app.close();
         await prisma.$disconnect();
@@ -89,7 +108,7 @@ async function main(): Promise<void> {
     try {
       const { createAuditLog } = await import('@/services/adminService');
       await createAuditLog({
-        actorId: '00000000-0000-0000-0000-000000000000', // Nil UUID for System
+        actorId: null, // SYSTEM sentinel
         action: 'SYSTEM_STARTUP',
         entityType: 'System',
         metadata: {
@@ -99,7 +118,7 @@ async function main(): Promise<void> {
         },
       });
     } catch (auditErr) {
-      app.log.warn('Failed to record startup audit log', auditErr);
+      app.log.warn({ err: auditErr }, 'Failed to record startup audit log');
     }
   } catch (err) {
     app.log.fatal(err, 'Failed to start server');

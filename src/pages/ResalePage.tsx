@@ -11,37 +11,64 @@ import { Plus, X } from 'lucide-react';
 import { useRestriction } from '@/hooks/useRestriction';
 import { toast } from '@/components/ui/use-toast';
 import { useListings } from '@/hooks/api/useApi';
+import { countBrowseListingsByCategory, getBrowseVisibleListings } from '@/lib/browse-listings';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
 const categories = [
-  { id: 'books', title: 'Engineering Books', count: '150+' },
-  { id: 'calculators', title: 'Scientific Calculators', count: '45+' },
-  { id: 'instruments', title: 'Drawing Instruments', count: '80+' },
-  { id: 'lab', title: 'Lab Equipment', count: '30+' },
+  { id: 'books', title: 'Engineering Books' },
+  { id: 'calculators', title: 'Scientific Calculators' },
+  { id: 'instruments', title: 'Drawing Instruments' },
+  { id: 'lab', title: 'Lab Equipment' },
 ];
 
 const ResalePage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
-  const mainRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 5000]);
   const { canPerform } = useRestriction();
   const canCreateListing = canPerform('CREATE_LISTING');
 
   // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'resale' });
-  const items = listingsResponse?.data ?? [];
+  const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
+  const categoryCounts = useMemo(() => countBrowseListingsByCategory(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    return items.filter(item =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery, items]);
+    return visibleItems.filter(item => {
+      const matchesSearch =
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = !activeCategory ||
+        item.category.toLowerCase() === activeCategory.toLowerCase();
+      const matchesPrice =
+        // item.price is a string from the API (Prisma Decimal serialised via .toString()).
+        // Parse to number before comparing with the numeric priceFilter tuple.
+        Number(item.price) >= priceFilter[0] && Number(item.price) <= priceFilter[1];
+      return matchesSearch && matchesCategory && matchesPrice;
+    });
+  }, [searchQuery, activeCategory, priceFilter, visibleItems]);
+
+  const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
+    if (filters.categories !== undefined) {
+      setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
+    }
+    if (filters.price !== undefined) {
+      setPriceFilter(filters.price);
+    }
+  };
+
+  const handleCategoryCardClick = (categoryId: string) => {
+    // Toggle: clicking same category deselects it
+    setActiveCategory(prev => prev === categoryId ? null : categoryId);
+    setSearchQuery('');
+  };
 
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {
@@ -91,6 +118,8 @@ const ResalePage = () => {
             src={resaleTech}
             alt="Resource Resale"
             className="w-full h-[130%] object-cover opacity-70"
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-portal/30 via-portal/50 to-portal" />
         </div>
@@ -146,13 +175,13 @@ const ResalePage = () => {
               <div
                 key={cat.id}
                 // UX-05: clicking a category card now filters the listing grid by that category
-                onClick={() => setSearchQuery(cat.id)}
+                onClick={() => handleCategoryCardClick(cat.id)}
                 role="button"
-                aria-label={`Filter by ${cat.title}`}
+                aria-label={`Filter by ${cat.title}${activeCategory === cat.id ? ' (active)' : ''}`}
                 tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && setSearchQuery(cat.id)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCategoryCardClick(cat.id)}
                 className={`category-card group cursor-pointer ${i === 0 ? 'md:col-span-7' : i === 1 ? 'md:col-span-5' : i === 2 ? 'md:col-span-4' : 'md:col-span-8'
-                  }`}
+                  } ${activeCategory === cat.id ? 'ring-2 ring-primary/60' : ''}`}
                 style={{ perspective: '1000px' }}
               >
                 <div className="relative h-64 md:h-80 border border-portal-foreground/20 overflow-hidden transition-all duration-500 group-hover:border-portal-foreground/50">
@@ -162,7 +191,7 @@ const ResalePage = () => {
                   {/* Content */}
                   <div className="absolute inset-0 p-8 flex flex-col justify-between">
                     <span className="text-portal-foreground/30 text-sm font-body">
-                      {cat.count} listings
+                      {categoryCounts[cat.id] ?? 0} listings
                     </span>
                     <div>
                       <h3 className="text-portal-foreground font-display text-2xl md:text-3xl font-bold group-hover:translate-x-4 transition-transform duration-500">
@@ -223,13 +252,13 @@ const ResalePage = () => {
         <div className="max-w-7xl mx-auto space-y-16">
           <ModuleSearchFilter
             onSearch={setSearchQuery}
-            onFilterChange={() => { }}
+            onFilterChange={handleFilterChange}
             resultCount={filteredItems.length}
             categories={[
-              { id: 'books', label: 'Books', count: 2 },
-              { id: 'calculators', label: 'Calculators', count: 1 },
-              { id: 'instruments', label: 'Instruments', count: 2 },
-              { id: 'electronics', label: 'Electronics', count: 3 }
+              { id: 'books', label: 'Books', count: categoryCounts.books ?? 0 },
+              { id: 'calculators', label: 'Calculators', count: categoryCounts.calculators ?? 0 },
+              { id: 'instruments', label: 'Instruments', count: categoryCounts.instruments ?? 0 },
+              { id: 'lab', label: 'Lab Equipment', count: categoryCounts.lab ?? 0 }
             ]}
             priceRange={[0, 5000]}
           />

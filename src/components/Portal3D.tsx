@@ -20,7 +20,7 @@ class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: Reac
   state: WebGLGuardState = { hasError: false };
   static getDerivedStateFromError(): WebGLGuardState { return { hasError: true }; }
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // eslint-disable-next-line no-console
+     
     console.warn('[Portal3D] WebGL crashed — showing fallback', error, info);
   }
   render() {

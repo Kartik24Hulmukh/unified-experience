@@ -20,7 +20,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 const DANGEROUS_PATTERNS = [
   /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, // <script>...</script>
   /<\/?(?:script|iframe|object|embed|form|link|meta|base|applet)\b[^>]*>/gi, // dangerous tags
-  /on\w+\s*=\s*["'][^"']*["']/gi,        // event handlers: onclick="..."
+  /on\w+\s*=\s*(?:["'][^"']*["']|[^\s>"'`=]+)/gi, // event handlers: onclick="…" AND unquoted onmouseover=evil()
   /javascript\s*:/gi,                      // javascript: protocol
   /data\s*:\s*text\/html/gi,              // data:text/html injection
   /vbscript\s*:/gi,                        // vbscript: protocol

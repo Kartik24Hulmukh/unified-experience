@@ -10,6 +10,7 @@ import AnimatedCounter from '@/components/AnimatedCounter';
 import FaqItem from '@/components/FaqItem';
 import WordMarquee from '@/components/WordMarquee';
 const hospitalHero = '/Hospital.png';
+import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import {
   Search, X, ArrowRight, Phone, Clock, Activity,
   Heart, Stethoscope, Pill, AlertTriangle,
@@ -197,14 +198,14 @@ const EmergencyBanner = () => (
 const HospitalPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
-  const mainRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'hospital' });
-  const apiItems = listingsResponse?.data ?? [];
+  const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    const listItems = apiItems.map((h: any) => ({
+    const listItems = visibleItems.map((h) => ({
       id: h.id,
       title: h.title,
       price: h.price,
@@ -216,7 +217,7 @@ const HospitalPage = () => {
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery, apiItems]);
+  }, [searchQuery, visibleItems]);
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -284,6 +285,8 @@ const HospitalPage = () => {
             alt=""
             className="hosp-hero-img absolute inset-0 w-full h-[130%] object-cover"
             style={{ opacity: 0 }}
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="absolute inset-0" style={{
             background: 'radial-gradient(ellipse at 70% 30%, rgba(16,185,129,0.06) 0%, transparent 60%)',

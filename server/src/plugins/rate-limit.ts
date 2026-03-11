@@ -18,6 +18,8 @@ import { env } from '@/config/env';
 export const ROUTE_RATE_LIMITS: Record<string, { max: number; timeWindow: string }> = {
   // Auth — strictest limits: these are the credential-abuse attack surface
   'POST /api/auth/login': { max: 5, timeWindow: '15 minutes' },
+  // RT-02: explicit per-route cap on token refresh (was falling back to global 60/60s)
+  'POST /api/auth/refresh': { max: 10, timeWindow: '15 minutes' },
   'POST /api/auth/signup': { max: 3, timeWindow: '15 minutes' },
   // SEC-RL-01: OTP resend is as sensitive as signup — cap at 3/15min per email
   'POST /api/auth/resend-otp': { max: 3, timeWindow: '15 minutes' },
@@ -27,8 +29,8 @@ export const ROUTE_RATE_LIMITS: Record<string, { max: number; timeWindow: string
   'POST /api/auth/google': { max: 10, timeWindow: '15 minutes' },
   // Listings & Requests
   'POST /api/listings': { max: 10, timeWindow: '60 minutes' },
-  // SEC-RL-02: add explicit cap on new request submissions
-  'POST /api/requests': { max: 20, timeWindow: '60 minutes' },
+  // RT-03: tightened from 20→10 per 60 min — 20 submissions/hour is too aggressive
+  'POST /api/requests': { max: 10, timeWindow: '60 minutes' },
   'PATCH /api/requests/*/event': { max: 20, timeWindow: '60 minutes' },
   'POST /api/disputes': { max: 5, timeWindow: '60 minutes' },
   // Admin — already restricted by RBAC, but defence-in-depth
@@ -38,48 +40,12 @@ export const ROUTE_RATE_LIMITS: Record<string, { max: number; timeWindow: string
 };
 
 export async function registerRateLimit(app: FastifyInstance): Promise<void> {
-  await app.register(rateLimit, {
-    // SEC-RL-02: tighten global default from 100→60 req/60s per key
-    max: env.RATE_LIMIT_MAX,
-    timeWindow: env.RATE_LIMIT_WINDOW_MS,
-    allowList: [],
-    keyGenerator: (request) => {
-      // SEC-RL-01: for login, rate-limit per-email (not per-IP).
-      // On a campus shared NAT, IP-based bucketing locks out ALL students
-      // after 5 wrong credentials from a single bad actor.
-      // Combining email + IP creates independent buckets per credential.
-      if (request.url === '/api/auth/login' || request.url === '/api/auth/resend-otp') {
-        const bodyEmail = (request.body as any)?.email as string | undefined;
-        if (bodyEmail && typeof bodyEmail === 'string') {
-          // Normalise: lowercase + trim to prevent bypass via case or whitespace
-          return `email:${bodyEmail.toLowerCase().trim()}`;
-        }
-      }
-      // Authenticated routes: keyed by userId (survives IP change / VPN)
-      return (request as any).userId ?? request.ip;
-    },
-    errorResponseBuilder: (_request, context) => ({
-      statusCode: 429,
-      error: 'Too many requests',
-      code: 'RATE_LIMIT_EXCEEDED',
-      // SEC-RL-03: human-readable retry hint; also exposed via Retry-After header below
-      message: `Rate limit exceeded. Retry after ${Math.ceil(context.ttl / 1000)}s`,
-      retryAfter: Math.ceil(context.ttl / 1000),
-    }),
-    // SEC-RL-03: send standard Retry-After header so clients/CDNs can back-off
-    addHeadersOnExceeding: {
-      'x-ratelimit-limit': true,
-      'x-ratelimit-remaining': true,
-      'x-ratelimit-reset': true,
-    },
-    addHeaders: {
-      'x-ratelimit-limit': true,
-      'x-ratelimit-remaining': true,
-      'x-ratelimit-reset': true,
-    },
-  });
-
-  // Apply per-route overrides via onRoute hook
+  // RL-HOOK-ORDER-FIX: This hook MUST be registered before app.register(rateLimit).
+  // @fastify/rate-limit registers its own onRoute hook during plugin init; that hook
+  // reads routeOptions.config.rateLimit to apply per-route limits. If our setter hook
+  // runs after the plugin's reader hook (because we registered it after the plugin),
+  // config.rateLimit is empty when the plugin reads it — per-route overrides are silently
+  // ignored and the global default (60/60s) applies to all routes including login.
   app.addHook('onRoute', (routeOptions) => {
     const method = Array.isArray(routeOptions.method)
       ? routeOptions.method[0]
@@ -111,4 +77,42 @@ export async function registerRateLimit(app: FastifyInstance): Promise<void> {
       };
     }
   });
+
+  await app.register(rateLimit, {
+    // SEC-RL-02: tighten global default from 100→60 req/60s per key
+    max: env.RATE_LIMIT_MAX,
+    timeWindow: env.RATE_LIMIT_WINDOW_MS,
+    allowList: [],
+    keyGenerator: (request) => {
+      // CRIT-01 FIX: request.body is always undefined at the onRequest lifecycle stage
+      // where @fastify/rate-limit's keyGenerator runs — body parsing happens later in
+      // preParsing/preValidation. Email-based keying via body is impossible here.
+      //
+      // Per-email throttling for /auth/login and /auth/verify-otp is enforced
+      // directly inside those route handlers using the email field after body parsing.
+      //
+      // Authenticated routes: keyed by userId (survives IP change / VPN)
+      return (request as any).userId ?? request.ip;
+    },
+    errorResponseBuilder: (_request, context) => ({
+      statusCode: 429,
+      error: 'Too many requests',
+      code: 'RATE_LIMIT_EXCEEDED',
+      // SEC-RL-03: human-readable retry hint; also exposed via Retry-After header below
+      message: `Rate limit exceeded. Retry after ${Math.ceil(context.ttl / 1000)}s`,
+      retryAfter: Math.ceil(context.ttl / 1000),
+    }),
+    // SEC-RL-03: send standard Retry-After header so clients/CDNs can back-off
+    addHeadersOnExceeding: {
+      'x-ratelimit-limit': true,
+      'x-ratelimit-remaining': true,
+      'x-ratelimit-reset': true,
+    },
+    addHeaders: {
+      'x-ratelimit-limit': true,
+      'x-ratelimit-remaining': true,
+      'x-ratelimit-reset': true,
+    },
+  });
+
 }

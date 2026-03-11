@@ -10,6 +10,7 @@ import AnimatedCounter from '@/components/AnimatedCounter';
 import FaqItem from '@/components/FaqItem';
 import WordMarquee from '@/components/WordMarquee';
 const messHero = '/Mess.png';
+import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import {
   Search, X, ArrowRight, Star, Clock, Utensils, Leaf,
   ChefHat, Flame, IndianRupee, Users, ChevronDown, ChevronUp,
@@ -178,14 +179,14 @@ const scrollingWords = [
 const MessPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
-  const mainRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'mess' });
-  const apiItems = listingsResponse?.data ?? [];
+  const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    const listItems = apiItems.map((s: any) => ({
+    const listItems = visibleItems.map((s) => ({
       id: s.id,
       title: s.title,
       price: s.price,
@@ -197,7 +198,7 @@ const MessPage = () => {
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery, apiItems]);
+  }, [searchQuery, visibleItems]);
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -263,6 +264,8 @@ const MessPage = () => {
             alt=""
             className="mess-hero-img absolute inset-0 w-full h-[130%] object-cover"
             style={{ opacity: 0 }}
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="absolute inset-0" style={{
             background: 'radial-gradient(ellipse at 70% 30%, rgba(251,191,36,0.06) 0%, transparent 60%)',

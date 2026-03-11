@@ -9,7 +9,7 @@ interface ListingItem {
     price: string;
     category: string;
     image?: string;
-    institution: string;
+    module?: string;
 }
 
 interface ListingGridProps {
@@ -108,7 +108,7 @@ const ListingGrid = memo(function ListingGrid({ items }: ListingGridProps) {
                                         <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                                     </div>
                                     <span className="text-[9px] uppercase font-bold tracking-[0.2em] text-white/40">
-                                        {item.institution}
+                                        MCTRGIT
                                     </span>
                                 </div>
                                 <Shield className="w-3 h-3 text-white/20" />

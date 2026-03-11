@@ -12,7 +12,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '@/lib/prisma';
 import { IDEMPOTENCY } from '@/config/constants';
-import { IdempotencyConflictError } from '@/errors/index';
+import { IdempotencyConflictError, IdempotencyReplayError } from '@/errors/index';
 
 /**
  * preHandler — check for an existing cached response and replay it,
@@ -62,12 +62,13 @@ export async function idempotency(
         });
         return;
       } else {
-        // Replay cached response
-        reply
-          .status(existing.responseStatus)
-          .headers({ 'x-idempotency-replay': 'true' })
-          .send(existing.responseBody);
-        return;
+        // Replay: throw to abort route handler in Fastify v5.
+        // reply.send() alone does not prevent the route handler from running
+        // inside an async preHandler — the hook runner resolves the promise
+        // unconditionally and then calls the route handler regardless of
+        // reply.sent. Throwing causes Fastify to go to setErrorHandler
+        // instead, which reliably bypasses the route handler and its services.
+        throw new IdempotencyReplayError(existing.responseStatus, existing.responseBody);
       }
     }
 
@@ -88,15 +89,21 @@ export async function idempotency(
     // Mark for onSend to update the sentinel
     (request as any)._idempotencyKey = compositeKey;
     (request as any)._idempotencyUserId = userId;
-  } catch (err) {
-    // If a collision happens between findUnique and create (rare but possible),
-    // the unique constraint will catch it.
-    request.log.warn({ key: compositeKey, err }, 'Idempotency lock collision');
-    reply.status(409).send({
-      error: 'Conflict',
-      code: 'IDEMPOTENCY_RACE',
-      message: 'Processing already in progress.',
-    });
+  } catch (err: any) {
+    // HIGH-01 FIX: only treat Prisma unique-constraint violations (P2002) as a
+    // sentinel race. Any other DB error (deadlock, connection drop, timeout) must
+    // bubble up so the global error handler can return a proper 5xx — not a fake 409
+    // that would make the client believe the operation is already in-flight.
+    if (err?.code === 'P2002') {
+      request.log.warn({ key: compositeKey }, 'Idempotency sentinel race — unique constraint hit');
+      reply.status(409).send({
+        error: 'Conflict',
+        code: 'IDEMPOTENCY_RACE',
+        message: 'Processing already in progress.',
+      });
+      return;
+    }
+    throw err;
   }
 }
 
@@ -105,10 +112,26 @@ export async function idempotency(
  * Should be called periodically (e.g., hourly) by a job runner or startup script.
  */
 export async function pruneIdempotencyKeys(): Promise<number> {
-  const result = await prisma.idempotencyKey.deleteMany({
-    where: { expiresAt: { lt: new Date() } },
+  const now = new Date();
+
+  // Remove normally-expired keys.
+  const expired = await prisma.idempotencyKey.deleteMany({
+    where: { expiresAt: { lt: now } },
   });
-  return result.count;
+
+  // MED-05 FIX: also remove stuck 102-Processing sentinels older than 10 minutes.
+  // These are created when the preHandler claims a key but the server crashes
+  // before idempotencyCacheResponse writes the real status. Without this cleanup
+  // they block the client from retrying for the full EXPIRES_HOURS window.
+  const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+  const stuckSentinels = await prisma.idempotencyKey.deleteMany({
+    where: {
+      responseStatus: 102,
+      createdAt: { lt: tenMinutesAgo },
+    },
+  });
+
+  return expired.count + stuckSentinels.count;
 }
 
 /**

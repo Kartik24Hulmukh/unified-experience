@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -58,14 +58,8 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
     const { canPerform } = useRestriction();
     const { user } = useAuth();
     const createListing = useCreateListing();
-    const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    // Cleanup timeout on unmount to prevent setState on unmounted component
-    useEffect(() => {
-        return () => {
-            if (successTimerRef.current) clearTimeout(successTimerRef.current);
-        };
-    }, []);
+    // V3-01: Stable idempotency key — prevents duplicate listings on network retry/double-submit
+    const idempotencyKey = useRef(crypto.randomUUID());
 
     const form = useForm<z.infer<typeof listingSchema>>({
         resolver: zodResolver(listingSchema),
@@ -152,15 +146,17 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
                 category: values.category,
                 module: moduleName.toLowerCase(),
                 description: values.description,
+                idempotencyKey: idempotencyKey.current,
             });
+            // Regenerate key so a subsequent new listing from this mount gets a fresh key
+            idempotencyKey.current = crypto.randomUUID();
 
             toast({
                 title: "Listing Submitted",
                 description: "Your listing has been submitted for admin review. It will appear once approved.",
             });
-            successTimerRef.current = setTimeout(() => {
-                onSuccess();
-            }, 1500);
+            // Close modal immediately after success toast — no artificial delay
+            onSuccess();
         } catch (err) {
             toast({
                 title: "Submission Failed",
@@ -380,7 +376,7 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
                                     </Button>
                                     <Button
                                         type="submit"
-                                        disabled={!canPerform('CREATE_LISTING')}
+                                        disabled={!canPerform('CREATE_LISTING') || createListing.isPending}
                                         className={`h-14 rounded-none font-bold relative overflow-hidden group transition-all duration-500 ${canPerform('CREATE_LISTING')
                                                 ? 'bg-primary hover:bg-teal-400 text-black'
                                                 : 'bg-primary/30 text-black/50 cursor-not-allowed'

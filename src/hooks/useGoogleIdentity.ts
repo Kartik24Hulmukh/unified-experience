@@ -93,104 +93,113 @@ export function useGoogleIdentity() {
 
   const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const initializedRef = useRef(false);
   const resolveRef = useRef<((result: GoogleIdentityResult) => void) | null>(null);
   const rejectRef = useRef<((err: Error) => void) | null>(null);
 
   useEffect(() => {
+    if (!hasRealGIS) setIsReady(false);
+  }, [hasRealGIS, clientId]);
+
+  const ensureInitialized = useCallback(async () => {
     if (!hasRealGIS) {
-      setIsReady(false);
-      return;
+      throw new Error(
+        'Google Sign-In is unavailable. Configure VITE_GOOGLE_CLIENT_ID and ensure GIS script access.',
+      );
     }
 
-    let cancelled = false;
+    await loadGisScript();
 
-    loadGisScript()
-      .then(() => {
-        if (cancelled) return;
+    if (!window.google?.accounts?.id) {
+      setIsReady(false);
+      throw new Error('Google Sign-In failed to initialize.');
+    }
 
-        window.google!.accounts.id.initialize({
-          client_id: clientId!,
-          callback: (response: CredentialResponse) => {
-            if (resolveRef.current) {
-              let email: string | undefined;
-              try {
-                const parts = response.credential.split('.');
-                if (parts.length >= 2) {
-                  const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-                  email = payload.email;
-                }
-              } catch {
-                // Ignore decode errors; backend verification is source of truth.
+    if (!initializedRef.current) {
+      window.google.accounts.id.initialize({
+        client_id: clientId!,
+        callback: (response: CredentialResponse) => {
+          if (resolveRef.current) {
+            let email: string | undefined;
+            try {
+              const parts = response.credential.split('.');
+              if (parts.length >= 2) {
+                const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                email = payload.email;
               }
-
-              resolveRef.current({ credential: response.credential, email });
-              resolveRef.current = null;
-              rejectRef.current = null;
+            } catch {
+              // Ignore decode errors; backend verification is source of truth.
             }
-          },
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          context: 'signin',
-        });
 
-        setIsReady(true);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          console.warn('[GoogleIdentity] GIS script failed to load:', err);
-          setIsReady(false);
-        }
+            resolveRef.current({ credential: response.credential, email });
+            resolveRef.current = null;
+            rejectRef.current = null;
+          }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        context: 'signin',
       });
+      initializedRef.current = true;
+    }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [hasRealGIS, clientId]);
+    setIsReady(true);
+  }, [clientId, hasRealGIS]);
 
   const promptSignIn = useCallback((): Promise<GoogleIdentityResult> => {
     setIsLoading(true);
 
-    return new Promise<GoogleIdentityResult>((resolve, reject) => {
-      if (hasRealGIS && window.google?.accounts?.id) {
-        resolveRef.current = (result) => {
-          setIsLoading(false);
-          resolve(result);
-        };
-        rejectRef.current = (err) => {
-          setIsLoading(false);
-          reject(err);
-        };
+    return ensureInitialized()
+      .then(
+        () =>
+          new Promise<GoogleIdentityResult>((resolve, reject) => {
+            if (window.google?.accounts?.id) {
+              resolveRef.current = (result) => {
+                setIsLoading(false);
+                resolve(result);
+              };
+              rejectRef.current = (err) => {
+                setIsLoading(false);
+                reject(err);
+              };
 
-        window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            if (resolveRef.current) {
+              window.google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                  if (resolveRef.current) {
+                    setIsLoading(false);
+                    rejectRef.current?.(
+                      new Error(
+                        'Google Sign-In was cancelled or unavailable. Ensure you are signed into a Google account in this browser.',
+                      ),
+                    );
+                    resolveRef.current = null;
+                    rejectRef.current = null;
+                  }
+                }
+              });
+            } else {
               setIsLoading(false);
-              rejectRef.current?.(
-                new Error(
-                  'Google Sign-In was cancelled or unavailable. Ensure you are signed into a Google account in this browser.',
-                ),
-              );
-              resolveRef.current = null;
-              rejectRef.current = null;
+              reject(new Error('Google Sign-In is unavailable.'));
             }
-          }
-        });
+          }),
+      )
+      .catch((err) => {
+        setIsLoading(false);
+        throw err instanceof Error ? err : new Error('Google Sign-In is unavailable.');
+      });
+  }, [ensureInitialized]);
 
+  const renderButton = useCallback(
+    async (container: HTMLElement | null) => {
+      if (!container) return;
+
+      try {
+        await ensureInitialized();
+      } catch {
         return;
       }
 
-      setIsLoading(false);
-      reject(
-        new Error(
-          'Google Sign-In is unavailable. Configure VITE_GOOGLE_CLIENT_ID and ensure GIS script access.',
-        ),
-      );
-    });
-  }, [hasRealGIS]);
-
-  const renderButton = useCallback(
-    (container: HTMLElement | null) => {
-      if (!container || !hasRealGIS || !window.google?.accounts?.id) return;
+      if (!window.google?.accounts?.id) return;
 
       window.google.accounts.id.renderButton(container, {
         type: 'standard',
@@ -201,7 +210,7 @@ export function useGoogleIdentity() {
         logo_alignment: 'left',
       });
     },
-    [hasRealGIS],
+    [ensureInitialized],
   );
 
   return {

@@ -1,5 +1,7 @@
+import { env } from '@/config/env';
+
 /**
- * BErozgar — Application Constants
+ * Application Constants
  *
  * Immutable configuration values. Not environment-dependent.
  */
@@ -58,15 +60,23 @@ export const AUDIT_ACTIONS = {
 /** Idempotency key settings */
 export const IDEMPOTENCY = {
   KEY_HEADER: 'x-idempotency-key',
-  EXPIRES_HOURS: 24,
+  EXPIRES_HOURS: 1,   // NEW-BUG-04 FIX: was 24h; processing sentinel only needs 1h so a crash
+                      // doesn't strand the user for a full day. Cached responses share the same
+                      // DB row and expire on the same schedule, which is acceptable.
 } as const;
 
 /**
  * Admin registry — emails that may hold ADMIN role.
  * Users NOT in this list can never be assigned ADMIN or SUPER privilege.
+ * Extend via ADMIN_EMAILS env var (comma-separated) without touching code.
  */
+const HARDCODED_ADMIN_EMAILS: readonly string[] = ['admin@mctrgit.ac.in'] as const;
+
 export const ADMIN_REGISTRY: readonly string[] = [
-  'admin@mctrgit.ac.in',
+  ...HARDCODED_ADMIN_EMAILS,
+  ...(env.ADMIN_EMAILS
+    ? env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+    : []),
 ] as const;
 
 /**

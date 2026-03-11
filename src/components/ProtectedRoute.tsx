@@ -1,8 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, type UserRole } from '@/contexts/AuthContext';
-import { safeNavigate } from '@/lib/utils';
-
 interface ProtectedRouteProps {
   children: React.ReactNode;
   /** Which roles can access this route. Omit = any authenticated user. */
@@ -19,27 +16,6 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading, isHydrated, user } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-  const hasNavigated = useRef(false);
-
-  // Auth bypass removed — production mode
-
-  // Reset navigation flag when location changes
-  useEffect(() => {
-    hasNavigated.current = false;
-  }, [location.pathname]);
-
-  // Handle role-based redirection with useEffect to avoid render-time navigation
-  useEffect(() => {
-    // Wait for hydration to complete before making redirect decisions
-    if (!isHydrated || isLoading || hasNavigated.current) return;
-
-    // Role check - redirect if user doesn't have required role
-    if (isAuthenticated && allowedRoles && user && !allowedRoles.includes(user.role)) {
-      hasNavigated.current = true;
-      safeNavigate(navigate, location.pathname, '/home', { replace: true });
-    }
-  }, [isAuthenticated, isLoading, isHydrated, user, allowedRoles, navigate, location.pathname]);
 
   // Still hydrating from localStorage — show loading spinner
   // Use hardcoded white bg to prevent black flash in dark theme
@@ -58,15 +34,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Role check - don't render children if wrong role (navigation happens in useEffect)
+  // UX-02 FIX: Wrong-role users get an immediate synchronous <Navigate> instead of
+  // rendering a spinner and waiting for a useEffect to fire post-paint. The previous
+  // pattern showed a spinner for 1-2 frames before navigation, causing a visible flash.
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" role="status" aria-label="Redirecting">
-          <span className="sr-only">Redirecting…</span>
-        </div>
-      </div>
-    );
+    return <Navigate to="/home" replace />;
   }
 
   return <>{children}</>;

@@ -41,10 +41,7 @@ export const otpSchema = z
    ═══════════════════════════════════════════════════ */
 
 export const signupSchema = z.object({
-  fullName: safeString(100).regex(
-    /^[\p{L}\p{M}\s'.,-]+$/u,
-    'Name contains invalid characters',
-  ),
+  fullName: safeString(100),
   email: emailSchema,
   password: passwordSchema,
 });
@@ -83,9 +80,17 @@ export const createListingSchema = z.object({
 });
 
 export const updateListingStatusSchema = z.object({
-  status: z.enum(['approved', 'rejected', 'pending_review'], {
-    errorMap: () => ({ message: 'Invalid status. Must be approved, rejected, or pending_review' }),
-  }),
+  // GAP-03: extended to include admin-only transitions (service enforces RBAC on these)
+  status: z.enum(
+    ['approved', 'rejected', 'pending_review', 'flagged', 'removed', 'archived', 'expired'],
+    {
+      errorMap: () => ({
+        message:
+          'Invalid status. Must be: approved, rejected, pending_review, flagged, removed, archived, or expired',
+      }),
+    },
+  ),
+  reason: z.string().trim().max(500).optional(),
 });
 
 /* ═══════════════════════════════════════════════════
@@ -96,9 +101,10 @@ const disputeStatuses = ['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED', 'ESCALA
 const disputeTypes = ['FRAUD', 'ITEM_NOT_AS_DESCRIBED', 'NO_SHOW', 'OTHER'] as const;
 
 export const createDisputeSchema = z.object({
-  requestId: safeString(100).optional(),
-  listingId: safeString(100).optional(),
-  againstId: safeString(100),
+  // GAP-06: UUID validation for entity IDs — prevents non-UUID strings reaching Prisma
+  requestId: z.string().uuid('requestId must be a valid UUID').optional(),
+  listingId: z.string().uuid('listingId must be a valid UUID').optional(),
+  againstId: z.string().uuid('againstId must be a valid UUID'),
   type: z.enum(disputeTypes, {
     errorMap: () => ({ message: 'Invalid dispute type. Must be: FRAUD, ITEM_NOT_AS_DESCRIBED, NO_SHOW, or OTHER' }),
   }),
@@ -119,7 +125,8 @@ export const updateDisputeStatusSchema = z.object({
    ═══════════════════════════════════════════════════ */
 
 export const createRequestSchema = z.object({
-  listingId: safeString(100),
+  // GAP-06: UUID validation — clean 400 instead of Prisma P2023
+  listingId: z.string().uuid('listingId must be a valid UUID'),
 });
 
 const requestEvents = [

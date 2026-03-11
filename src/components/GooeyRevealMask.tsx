@@ -21,25 +21,27 @@ export const GooeyRevealMask = memo(function GooeyRevealMask({
             x: mouseX, y: mouseY,
         }));
 
-        const onMove = (e: MouseEvent) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        };
-        window.addEventListener('mousemove', onMove, { passive: true });
-
         let active = true;
+        let rafHandle = 0;
+        let isLoopActive = false;
+
         const render = () => {
             if (!active) return;
+
+            let anyMoving = false;
 
             followers.forEach((f, i) => {
                 // Each blob follows the previous one (or the mouse for the first)
                 // This gives the "inertia to the edge" and "soft trailing motion"
-                if (i === 0) {
-                    f.x += (mouseX - f.x) * 0.15; // Primary easing
-                    f.y += (mouseY - f.y) * 0.15;
-                } else {
-                    f.x += (followers[i - 1].x - f.x) * 0.35; // Trailing inertia
-                    f.y += (followers[i - 1].y - f.y) * 0.35;
+                const targetX = i === 0 ? mouseX : followers[i - 1].x;
+                const targetY = i === 0 ? mouseY : followers[i - 1].y;
+                const factor  = i === 0 ? 0.15 : 0.35;
+
+                f.x += (targetX - f.x) * factor;
+                f.y += (targetY - f.y) * factor;
+
+                if (Math.abs(targetX - f.x) > 0.05 || Math.abs(targetY - f.y) > 0.05) {
+                    anyMoving = true;
                 }
 
                 if (blobsRef.current[i]) {
@@ -47,12 +49,36 @@ export const GooeyRevealMask = memo(function GooeyRevealMask({
                     blobsRef.current[i].setAttribute('cy', f.y.toString());
                 }
             });
-            requestAnimationFrame(render);
+
+            // PERF: idle-aware — stop the RAF when blobs have settled.
+            // Mouse move restarts the loop, so CPU is only used while animating.
+            if (anyMoving) {
+                rafHandle = requestAnimationFrame(render);
+            } else {
+                isLoopActive = false;
+            }
         };
-        render();
+
+        // Wake up the loop on mousemove (no-op if already running)
+        const wakeUp = () => {
+            if (!isLoopActive && active) {
+                isLoopActive = true;
+                rafHandle = requestAnimationFrame(render);
+            }
+        };
+
+        const onMove = (e: MouseEvent) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            wakeUp();
+        };
+        window.addEventListener('mousemove', onMove, { passive: true });
+        // Start with an initial render so blobs appear at cursor position
+        wakeUp();
 
         return () => {
             active = false;
+            cancelAnimationFrame(rafHandle);
             window.removeEventListener('mousemove', onMove);
         };
     }, []);
@@ -61,9 +87,11 @@ export const GooeyRevealMask = memo(function GooeyRevealMask({
         <svg width="0" height="0" className={className}>
             <defs>
                 <filter id="goo">
-                    {/* Strong blur for the liquid morphing */}
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="25" result="blur" />
-                    {/* High contrast threshold to create the sharp liquid edge */}
+                    {/* PERF: stdDeviation reduced 25→12 — stays in GPU-acceleratable range.
+                        Values above ~15 fall back to CPU rasterization on most browsers. */}
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" />
+                    {/* High contrast threshold to create the sharp liquid edge.
+                        Alpha multiplier reduced 50→25 to compensate for the tighter blur. */}
                     <feColorMatrix
                         in="blur"
                         mode="matrix"
@@ -71,7 +99,7 @@ export const GooeyRevealMask = memo(function GooeyRevealMask({
               1 0 0 0 0  
               0 1 0 0 0  
               0 0 1 0 0  
-              0 0 0 50 -20
+              0 0 0 25 -8
             "
                         result="goo"
                     />

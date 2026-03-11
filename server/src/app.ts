@@ -15,7 +15,7 @@ import authPlugin from '@/plugins/auth';
 import csrfPlugin from '@/plugins/csrf';
 import sanitizePlugin from '@/plugins/sanitize';
 import { idempotency, idempotencyCacheResponse } from '@/middleware/idempotency';
-import { serializeError, AppError } from '@/errors/index';
+import { serializeError, AppError, IdempotencyReplayError } from '@/errors/index';
 
 // Route modules
 import { healthRoutes } from '@/routes/health';
@@ -53,7 +53,12 @@ export async function buildApp() {
           ? { target: 'pino-pretty', options: { colorize: true } }
           : undefined,
     },
-    trustProxy: true,
+    // SEC-PROXY-01: scope trustProxy to loopback + private RFC-1918 ranges only.
+    // Setting trustProxy: true unconditionally accepts X-Forwarded-For from ANY
+    // source, allowing clients to spoof their IP and bypass IP-based rate limits.
+    // Use the TRUST_PROXY env var in production to supply the real proxy CIDR
+    // (e.g. "10.0.0.0/8" for AWS VPC, or the specific nginx/LB address).
+    trustProxy: env.TRUST_PROXY ?? 'loopback,linklocal,uniquelocal',
     bodyLimit: 10_240, // 10 KB — reject oversized payloads early
   });
 
@@ -66,8 +71,12 @@ export async function buildApp() {
     secret: env.JWT_SECRET, // Cookie signing secret
     parseOptions: {},
   });
-  await registerRateLimit(app);
+  // CRIT-01 FIX: authPlugin must register before registerRateLimit so that the
+  // rate-limit keyGenerator can read request.userId (set by authPlugin's onRequest hook).
+  // Previously the reversed order left userId always undefined, collapsing all
+  // authenticated users onto the same anonymous bucket.
   await app.register(authPlugin);
+  await registerRateLimit(app);
   await app.register(csrfPlugin);
   await app.register(sanitizePlugin);
 
@@ -105,6 +114,16 @@ export async function buildApp() {
         code: 'VALIDATION_ERROR',
         details,
       });
+    }
+
+    // Idempotency replay — serve cached response with replay sentinel header.
+    // This is a control-flow throw from the idempotency preHandler, not a
+    // real error. Do NOT log it as an error.
+    if (error instanceof IdempotencyReplayError) {
+      return reply
+        .status(error.httpStatus)
+        .headers({ 'x-idempotency-replay': 'true' })
+        .send(error.responseBody);
     }
 
     // Application errors

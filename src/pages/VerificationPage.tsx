@@ -5,6 +5,7 @@ import { Shield, RefreshCw, ArrowRight, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api-client";
 import { safeNavigate } from "@/lib/utils";
+import { shouldRedirectVerifyPageToSignup } from "@/lib/user-journey";
 import AuthPortal from "@/components/AuthPortal";
 import SplitText from "@/components/SplitText";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ import { toast } from "@/components/ui/use-toast";
 const VerificationPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { verifyOtp, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { verifyOtp, isAuthenticated, isLoading: authLoading, isHydrated } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [otp, setOtp] = useState("");
     const [timeLeft, setTimeLeft] = useState(120);
@@ -28,12 +29,13 @@ const VerificationPage = () => {
     const pendingData = (() => {
         try {
             const raw = sessionStorage.getItem('berozgar_pending');
-            return raw ? JSON.parse(raw) as { email: string; fullName: string; password: string } : null;
+            return raw ? JSON.parse(raw) as { email: string; fullName: string } : null;
         } catch {
             return null;
         }
     })();
     const pendingEmail = pendingData?.email ?? null;
+    const isBusy = isLoading || authLoading;
 
     // Redirect if already authenticated - only once per mount
     useEffect(() => {
@@ -58,20 +60,24 @@ const VerificationPage = () => {
 
     // Guard: if no pending signup data and not authenticated, redirect to signup
     useEffect(() => {
-        if (!pendingData && !isAuthenticated && !authLoading) {
+        if (shouldRedirectVerifyPageToSignup({
+            hasPendingSignup: !!pendingData,
+            isAuthenticated,
+            isHydrated,
+        })) {
             navigate('/signup', { replace: true });
         }
-    }, [pendingData, isAuthenticated, authLoading, navigate]);
+    }, [pendingData, isAuthenticated, isHydrated, navigate]);
 
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
 
-    const handleVerify = async () => {
-        if (otp.length < 6 || hasRedirected.current) return;
+    const handleVerify = async (code = otp) => {
+        if (code.length < 6 || hasRedirected.current) return;
 
         setIsLoading(true);
         try {
-            await verifyOtp(otp);
+            await verifyOtp(code);
             toast({
                 title: "Email Verified!",
                 description: "Your account is ready. You are now logged in.",
@@ -167,7 +173,13 @@ const VerificationPage = () => {
                     <InputOTP
                         maxLength={6}
                         value={otp}
-                        onChange={(val) => setOtp(val)}
+                        onChange={(val) => {
+                            setOtp(val);
+                            if (val.length === 6 && !isBusy && !hasRedirected.current) {
+                                // Auto-submit when all 6 digits are entered
+                                void handleVerify(val);
+                            }
+                        }}
                         className="gap-4"
                     >
                         <InputOTPGroup className="gap-4">
@@ -184,12 +196,12 @@ const VerificationPage = () => {
                     <div className="flex flex-col items-center space-y-4 w-full max-w-sm">
                         <Button
                             onClick={handleVerify}
-                            disabled={isLoading || otp.length < 6}
+                            disabled={isBusy || otp.length < 6}
                             className="w-full bg-primary hover:bg-teal-400 text-black font-bold h-14 rounded-none group relative overflow-hidden transition-all duration-500"
                         >
                             <span className="relative z-10 flex items-center justify-center space-x-2">
-                                {isLoading ? "VERIFYING..." : "VERIFY & LOGIN"}
-                                {!isLoading && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
+                                {isBusy ? "VERIFYING..." : "VERIFY & LOGIN"}
+                                {!isBusy && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
                             </span>
                             <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
                         </Button>
@@ -204,7 +216,7 @@ const VerificationPage = () => {
                                 <span>Resend Code</span>
                             </button>
                             <span className={timeLeft < 30 ? 'text-red-500' : ''}>
-                                {minutes}:{seconds < 10 ? `0${seconds}` : seconds}
+                                Code expires in {minutes}:{seconds < 10 ? `0${seconds}` : seconds}
                             </span>
                         </div>
 

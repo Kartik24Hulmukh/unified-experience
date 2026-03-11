@@ -54,7 +54,7 @@ export async function getProfile(userId: string) {
   const restriction = computeRestriction({
     trustStatus: trust.status,
     activeDisputes: activeDisputesAgainst,
-    adminOverride: false,
+    adminOverride: user.isRestricted,
   });
 
   // Shape the response to match the frontend Profile type
@@ -71,11 +71,15 @@ export async function getProfile(userId: string) {
 
   if (user.role === 'ADMIN') {
     // Admin profile — aggregate system-level stats
-    const [totalListings, activeUsers, openDisputes] = await Promise.all([
-      prisma.listing.count(),
-      prisma.user.count({ where: { verified: true } }),
-      prisma.dispute.count({ where: { status: { in: ['OPEN', 'UNDER_REVIEW'] } } }),
-    ]);
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60_000);
+    const [totalListings, activeUsers, openDisputes, activeExchanges, recentActions] =
+      await Promise.all([
+        prisma.listing.count(),
+        prisma.user.count({ where: { verified: true } }),
+        prisma.dispute.count({ where: { status: { in: ['OPEN', 'UNDER_REVIEW'] } } }),
+        prisma.request.count({ where: { status: { in: ['ACCEPTED', 'MEETING_SCHEDULED'] } } }),
+        prisma.auditLog.count({ where: { actorId: userId, createdAt: { gte: oneDayAgo } } }),
+      ]);
 
     return {
       identity,
@@ -85,14 +89,14 @@ export async function getProfile(userId: string) {
         activeUsers,
         openDisputes,
         avgApprovalTimeHours: 0,
-        recentActions: 0,
+        recentActions,
         systemHealthScore: 100,
         totalStudents: activeUsers,
-        activeExchanges: 0,
+        activeExchanges,
         academicListings: 0,
         systemUptimePercent: 100,
       },
-      privilegeLevel: 'SUPER' as const,
+      privilegeLevel: (user.privilegeLevel?.toLowerCase() ?? 'standard') as 'super' | 'standard',
     };
   }
 

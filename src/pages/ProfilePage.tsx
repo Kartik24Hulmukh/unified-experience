@@ -37,9 +37,37 @@ import {
 } from '@/domain/profile';
 import type { Profile, AdminStudentView } from '@/domain/profile';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/use-toast';
 import SplitText from '@/components/SplitText';
+import {
+  getExchangeRequestActions,
+  partitionExchangeRequests,
+} from '@/lib/user-journey';
 import { logAdminAction } from '@/services/auditService';
+import {
+  useCreateDispute,
+  useRequests,
+  useUpdateRequestEvent,
+  type ExchangeRequest,
+} from '@/hooks/api/useApi';
 
 /* ═══════════════════════════════════════════════════
    Minimal Safe View (fallback)
@@ -57,10 +85,271 @@ function SafeFallbackView({ message }: { message: string }) {
 }
 
 /* ═══════════════════════════════════════════════════
+   Student Requests Inbox
+   Shows sent (buyer) and received (seller) requests with action buttons.
+   ═══════════════════════════════════════════════════ */
+
+const STATUS_COLORS: Record<string, string> = {
+  SENT: 'border-amber-500/30 text-amber-400',
+  ACCEPTED: 'border-emerald-500/30 text-emerald-400',
+  DECLINED: 'border-red-500/30 text-red-400',
+  MEETING_SCHEDULED: 'border-blue-500/30 text-blue-400',
+  COMPLETED: 'border-primary/30 text-primary',
+  CANCELLED: 'border-white/20 text-white/40',
+  WITHDRAWN: 'border-white/20 text-white/40',
+  DISPUTED: 'border-red-500/30 text-red-400',
+  RESOLVED: 'border-emerald-500/30 text-emerald-400',
+  EXPIRED: 'border-white/20 text-white/40',
+  IDLE: 'border-white/20 text-white/40',
+};
+
+function RequestsInbox({ userId }: { userId: string }) {
+  const { data: buyerRes, isLoading: buyerLoading } = useRequests({ role: 'buyer' });
+  const { data: sellerRes, isLoading: sellerLoading } = useRequests({ role: 'seller' });
+  const updateEvent = useUpdateRequestEvent();
+  const createDispute = useCreateDispute();
+  const [disputeRequest, setDisputeRequest] = useState<ExchangeRequest | null>(null);
+  const [disputeType, setDisputeType] = useState<'fraud' | 'item_not_as_described' | 'no_show' | 'other'>('other');
+  const [disputeDescription, setDisputeDescription] = useState('');
+
+  const buyerRequests = buyerRes?.data ?? [];
+  const sellerRequests = sellerRes?.data ?? [];
+  const allRequests = [...sellerRequests, ...buyerRequests];
+  // Deduplicate by id (in case user is both buyer and seller of different items)
+  const seen = new Set<string>();
+  const uniqueRequests = allRequests.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+  const { activeRequests, historyRequests } = partitionExchangeRequests(uniqueRequests);
+
+  const actionLabels: Record<string, { title: string; description: string }> = {
+    ACCEPT: { title: 'Request Accepted', description: 'The buyer can now continue the exchange.' },
+    DECLINE: { title: 'Request Declined', description: 'The request has been closed.' },
+    WITHDRAW: { title: 'Request Withdrawn', description: 'Your request has been withdrawn.' },
+    SCHEDULE: { title: 'Meeting Scheduled', description: 'The exchange is ready for the final handoff.' },
+    CANCEL: { title: 'Exchange Cancelled', description: 'The current exchange has been cancelled.' },
+    CONFIRM: { title: 'Exchange Completed', description: 'The exchange is complete. Your profile activity will refresh automatically.' },
+  };
+
+  const handleAction = (req: ExchangeRequest, event: string) => {
+    if (event === 'DISPUTE') {
+      setDisputeRequest(req);
+      setDisputeType('other');
+      setDisputeDescription('');
+      return;
+    }
+
+    updateEvent.mutate(
+      { id: req.id, event },
+      {
+        onSuccess: () => {
+          const feedback = actionLabels[event];
+          if (feedback) {
+            toast({ title: feedback.title, description: feedback.description });
+          }
+        },
+        onError: (error) => {
+          toast({
+            title: 'Request Update Failed',
+            description: error instanceof Error ? error.message : 'Could not update the exchange request.',
+            variant: 'destructive',
+          });
+        },
+      },
+    );
+  };
+
+  const submitDispute = () => {
+    if (!disputeRequest || !disputeDescription.trim()) return;
+
+    const againstId = disputeRequest.buyerId === userId ? disputeRequest.sellerId : disputeRequest.buyerId;
+
+    createDispute.mutate(
+      {
+        type: disputeType,
+        againstId,
+        requestId: disputeRequest.id,
+        listingId: disputeRequest.listingId,
+        description: disputeDescription.trim(),
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Dispute Filed',
+            description: 'The dispute has been recorded and the exchange is now flagged for review.',
+          });
+          setDisputeRequest(null);
+          setDisputeDescription('');
+          setDisputeType('other');
+        },
+        onError: (error) => {
+          toast({
+            title: 'Dispute Failed',
+            description: error instanceof Error ? error.message : 'Could not file the dispute.',
+            variant: 'destructive',
+          });
+        },
+      },
+    );
+  };
+
+  const renderRequests = (requests: ExchangeRequest[]) => (
+    <div className="space-y-3">
+      {requests.map((req) => {
+        const isBuyer = req.buyerId === userId;
+        const role = isBuyer ? 'Buyer' : 'Seller';
+        const actions = getExchangeRequestActions(req, userId);
+
+        return (
+          <div key={req.id} className="p-6 border border-white/10 bg-black/20 space-y-4">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="space-y-1">
+                <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">
+                  Request ID · {role}
+                </p>
+                <p className="font-mono text-[11px] text-primary font-bold">{req.id.slice(0, 8)}</p>
+                {req.message && (
+                  <p className="text-xs text-white/50 max-w-sm">{req.message}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${STATUS_COLORS[req.status] ?? 'border-white/20 text-white/40'}`}>
+                  {req.status.replace(/_/g, ' ')}
+                </Badge>
+                <span className="text-[9px] font-bold text-white/20">{new Date(req.updatedAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+            {actions.length > 0 && (
+              <div className="flex gap-2 flex-wrap pt-2 border-t border-white/5">
+                {actions.map((action) => (
+                  <button
+                    key={`${req.id}-${action.event}`}
+                    onClick={() => handleAction(req, action.event)}
+                    disabled={updateEvent.isPending || createDispute.isPending}
+                    className={`px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest border transition-colors ${
+                      action.variant === 'destructive'
+                        ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
+                        : 'border-primary/30 text-primary hover:bg-primary/10'
+                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
+        Exchange Requests
+      </h3>
+
+      {buyerLoading || sellerLoading ? (
+        <div className="p-8 border border-white/10 bg-black/20 text-center text-white/30 text-[10px] uppercase tracking-widest">
+          Loading requests…
+        </div>
+      ) : uniqueRequests.length === 0 ? (
+        <div className="p-8 border border-white/10 bg-black/20 text-center space-y-2">
+          <ArrowLeftRight className="w-6 h-6 text-white/10 mx-auto" />
+          <p className="text-white/30 text-[10px] uppercase tracking-widest">No exchange requests yet</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40">Active</p>
+              <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
+                {activeRequests.length} OPEN
+              </Badge>
+            </div>
+            {activeRequests.length > 0 ? renderRequests(activeRequests) : (
+              <div className="p-6 border border-white/10 bg-black/20 text-center text-white/30 text-[10px] uppercase tracking-widest">
+                No active exchange requests
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40">History</p>
+              <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
+                {historyRequests.length} CLOSED
+              </Badge>
+            </div>
+            {historyRequests.length > 0 ? renderRequests(historyRequests) : (
+              <div className="p-6 border border-white/10 bg-black/20 text-center text-white/30 text-[10px] uppercase tracking-widest">
+                No completed or closed exchanges yet
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Dialog open={!!disputeRequest} onOpenChange={(open) => !open && setDisputeRequest(null)}>
+        <DialogContent className="bg-[#0a0a0a] border-white/10 text-white rounded-none sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-bold uppercase tracking-widest">Report Dispute</DialogTitle>
+            <DialogDescription className="text-white/40">
+              Flag this exchange for admin review. This will mark the request as disputed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40">Dispute Type</p>
+              <Select value={disputeType} onValueChange={(value: 'fraud' | 'item_not_as_described' | 'no_show' | 'other') => setDisputeType(value)}>
+                <SelectTrigger className="bg-black/40 border-white/10 rounded-none">
+                  <SelectValue placeholder="Select a dispute type" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0a0a0a] border-white/10 text-white rounded-none">
+                  <SelectItem value="fraud">Fraud</SelectItem>
+                  <SelectItem value="item_not_as_described">Item Not As Described</SelectItem>
+                  <SelectItem value="no_show">No Show</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40">What happened?</p>
+              <Textarea
+                value={disputeDescription}
+                onChange={(event) => setDisputeDescription(event.target.value)}
+                placeholder="Describe the issue so the admin team can review it."
+                className="min-h-32 bg-black/40 border-white/10 rounded-none text-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDisputeRequest(null)}
+              className="rounded-none border-white/10 hover:bg-white/5 uppercase text-[10px] font-bold tracking-widest"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={submitDispute}
+              disabled={createDispute.isPending || !disputeDescription.trim()}
+              className="bg-primary hover:bg-teal-400 text-black rounded-none font-bold uppercase text-[10px] tracking-widest"
+            >
+              {createDispute.isPending ? 'Submitting...' : 'Submit Dispute'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
    Student Profile Sections
    ═══════════════════════════════════════════════════ */
 
-function StudentSections({ profile }: { profile: Profile }) {
+function StudentSections({ profile, userId }: { profile: Profile; userId: string }) {
   if (!isStudentProfile(profile)) return null;
 
   const { data } = profile;
@@ -118,6 +407,9 @@ function StudentSections({ profile }: { profile: Profile }) {
           </div>
         </div>
       </div>
+
+      {/* Requests Inbox */}
+      <RequestsInbox userId={userId} />
     </>
   );
 }
@@ -552,7 +844,7 @@ const ProfilePage = () => {
           <div className="border-t border-white/5" />
 
           {/* Role-specific sections — conditional rendering */}
-          {profile.role === 'student' && <StudentSections profile={profile} />}
+          {profile.role === 'student' && <StudentSections profile={profile} userId={user.id} />}
           {profile.role === 'admin' && <AdminSections profile={profile} />}
         </div>
       </div>
@@ -563,4 +855,4 @@ const ProfilePage = () => {
   );
 };
 
-export default ProfilePage;
+export default ProfilePage;

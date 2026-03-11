@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { safeNavigate } from '@/lib/utils';
-import { CappenSplashReveal } from './CappenSplashReveal';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Module preview images
 import resaleTech from '@/assets/resale-tech.jpg';
@@ -13,6 +13,7 @@ import essentialsTiffin from '@/assets/essentials-tiffin.jpg';
 const academicsPreview = '/Academics.jpg';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
+const SplashCursor = lazy(() => import('@/components/SplashCursor'));
 
 interface Module {
   id: string;
@@ -32,7 +33,25 @@ const modules: Module[] = [
 
 const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: { modules: Module[]; onModuleClick: (path: string) => void; }) {
   const [activeModule, setActiveModule] = useState<string | null>(null);
-  const handleModuleHover = (moduleId: string | null) => { if (moduleId !== activeModule) setActiveModule(moduleId); };
+
+  // MED-07 FIX: replaced per-item inline arrow functions with stable useCallback
+  // handlers that read the target module id/path from data-* attributes.
+  // Inline arrows inside .map() create new function references on every render,
+  // defeating the memo() wrapper and causing every ModuleNavPanel child to
+  // re-render whenever unrelated parent state changes.
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const id = (e.currentTarget as HTMLDivElement).dataset.moduleId ?? null;
+    setActiveModule((prev) => (prev === id ? prev : id));
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setActiveModule((prev) => (prev === null ? prev : null));
+  }, []);
+
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
+    if (path) onModuleClick(path);
+  }, [onModuleClick]);
 
   return (
     <div className="w-full h-full flex flex-row items-stretch">
@@ -43,16 +62,16 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
           </div>
           <nav className="flex flex-col gap-1 md:gap-2">
             {modules.map((module) => (
-              <div key={module.id} className="module-item group relative cursor-pointer" role="button" tabIndex={0} onMouseEnter={() => handleModuleHover(module.id)} onMouseLeave={() => handleModuleHover(null)} onClick={() => onModuleClick(module.path)}>
-                <div className="flex items-center gap-6 md:gap-8 py-4 md:py-6 px-4 md:px-6 group-hover:bg-white/[0.04] transition-all duration-500">
-                  <span className={`font-mono text-base md:text-lg transition-all duration-500 shrink-0 w-8 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/15'}`}>{module.number}</span>
+              <div key={module.id} data-module-id={module.id} data-module-path={module.path} className="module-item group relative cursor-pointer" role="button" tabIndex={0} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={handleClick}>
+                <div className="flex items-center gap-6 md:gap-8 py-4 md:py-6 px-4 md:px-6 group-hover:bg-white/[0.04] transition-[background-color] duration-500">
+                  <span className={`font-mono text-base md:text-lg transition-[color,opacity] duration-500 shrink-0 w-8 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/15'}`}>{module.number}</span>
                   <div className="flex-1">
-                    <h3 className={`text-4xl md:text-5xl lg:text-7xl font-display font-bold uppercase transition-all duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
-                    <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.4em] uppercase mt-2 transition-all duration-500 ${activeModule === module.id ? 'text-white/50' : 'text-white/5'}`}>{module.subtitle}</p>
+                    <h3 className={`text-4xl md:text-5xl lg:text-7xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
+                    <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.4em] uppercase mt-2 transition-[color,opacity] duration-500 ${activeModule === module.id ? 'text-white/50' : 'text-white/5'}`}>{module.subtitle}</p>
                   </div>
-                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-all duration-400 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>→</span>
+                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>→</span>
                 </div>
-                <div className={`h-px w-full transition-all duration-500 ${activeModule === module.id ? 'bg-[#a3ff12]/30' : 'bg-white/5'}`} />
+                <div className={`h-px w-full transition-[background-color] duration-500 ${activeModule === module.id ? 'bg-[#a3ff12]/30' : 'bg-white/5'}`} />
               </div>
             ))}
           </nav>
@@ -89,6 +108,7 @@ const MasterExperience = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isHeavyMounted, setIsHeavyMounted] = useState(false);
+  const isMobile = useIsMobile();
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
@@ -101,9 +121,14 @@ const MasterExperience = () => {
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ scrollTrigger: { trigger: containerRef.current, start: 'top top', end: 'bottom bottom', scrub: 1, onUpdate: (self) => { scrollProgressRef.current = self.progress; } } });
-
-      tl.fromTo(stickyRef.current, { backgroundColor: '#ffffff' }, { backgroundColor: '#050505', duration: 0.8 }, 0);
+      // MED-06 FIX: ScrollTrigger.refresh() forces synchronous style/layout recalculation.
+      // Calling it via tl.add() at position 1.0 runs it mid-scrub while the timeline
+      // is still active, causing forced reflow inside a scroll handler and jank.
+      // Move it to onComplete so it only runs once after the animation fully finishes.
+      const tl = gsap.timeline({
+        scrollTrigger: { trigger: containerRef.current, start: 'top top', end: 'bottom bottom', scrub: 1, onUpdate: (self) => { scrollProgressRef.current = self.progress; } },
+        onComplete: () => ScrollTrigger.refresh(),
+      });
 
       // Fade out the entire hero logic
       tl.to(heroContainerRef.current, { y: '-10vh', scale: 0.8, opacity: 0, duration: 1, ease: 'power3.inOut' }, 0);
@@ -116,25 +141,58 @@ const MasterExperience = () => {
       tl.to(modulesRef.current, { opacity: 1, pointerEvents: 'auto', duration: 0.4 }, 0.6);
       const items = modulesRef.current?.querySelectorAll('.module-item');
       if (items) tl.fromTo(items, { y: 40, opacity: 0, rotateX: 10 }, { y: 0, opacity: 1, rotateX: 0, duration: 0.8, stagger: 0.08, ease: 'power4.out' }, 0.7);
-
-      tl.add(() => ScrollTrigger.refresh(), 1.0);
     });
     return () => ctx.revert();
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[250vh] bg-white">
-      <div ref={stickyRef} className="sticky top-0 h-screen w-full overflow-hidden bg-white">
+    <div ref={containerRef} className="h-[250vh] bg-[#050505]">
+      <div ref={stickyRef} className="sticky top-0 h-screen w-full overflow-hidden bg-[#050505]">
 
         <div ref={baseLayerRef} className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
-          <div ref={heroContainerRef} className="w-full h-full">
-            <CappenSplashReveal texts={['TRUST', 'CENTRIC', 'EXCHANGE']} />
+          <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-[#050505]">
+            {/* WebGL fluid splash — desktop only; mobile skips the heavy GPU sim */}
+            {!isMobile && (
+              <Suspense fallback={null}>
+                <SplashCursor
+                  SIM_RESOLUTION={128}
+                  DYE_RESOLUTION={768}
+                  DENSITY_DISSIPATION={3.5}
+                  VELOCITY_DISSIPATION={2.8}
+                  PRESSURE={0.1}
+                  CURL={3}
+                  SPLAT_RADIUS={0.2}
+                  SPLAT_FORCE={6000}
+                  SHADING={true}
+                  COLOR_UPDATE_SPEED={10}
+                  containerStyle={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+                />
+              </Suspense>
+            )}
+            {/* Hero text */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none select-none">
+              <div className="relative flex flex-col items-center justify-center leading-[0.75] w-full text-center">
+                {['TRUST', 'CENTRIC', 'EXCHANGE'].map((txt, i) => (
+                  <span
+                    key={txt}
+                    className="text-[17vw] md:text-[14vw] font-display font-black uppercase tracking-[-0.04em] whitespace-nowrap block text-white/90"
+                    style={{ marginTop: i > 0 ? '-1vw' : '0' }}
+                  >
+                    {txt}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-8 text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">
+                Scroll to explore
+              </p>
+            </div>
           </div>
         </div>
 
         <div ref={portalRef} className="absolute inset-0 z-30 bg-portal flex items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
           <div ref={symbolRef} className="will-change-transform -mt-[10vh]" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
-            {isHeavyMounted && <Suspense fallback={null}><Portal3D scrollProgressRef={scrollProgressRef} /></Suspense>}
+            {/* Portal3D is heavy — skip on mobile to avoid GPU/WASM overhead */}
+            {!isMobile && isHeavyMounted && <Suspense fallback={null}><Portal3D scrollProgressRef={scrollProgressRef} /></Suspense>}
           </div>
         </div>
 

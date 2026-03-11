@@ -8,6 +8,7 @@ import { Shield, ArrowRight, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { safeNavigate } from "@/lib/utils";
 import { useGoogleIdentity } from "@/hooks/useGoogleIdentity";
+import { useIsMobile } from "@/hooks/use-mobile";
 import SplitText from "@/components/SplitText";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 
 class ErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean }> {
-    constructor(props: any) { super(props); this.state = { hasError: false }; }
+    constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) { super(props); this.state = { hasError: false }; }
     static getDerivedStateFromError() { return { hasError: true }; }
     render() { return this.state.hasError ? this.props.fallback : this.props.children; }
 }
@@ -37,8 +38,9 @@ const loginSchema = z.object({
 const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, googleSignIn, isAuthenticated, isLoading: authLoading } = useAuth();
-    const { promptSignIn, isLoading: isGoogleLoading } = useGoogleIdentity();
+    const { login, googleSignIn, isAuthenticated, isLoading: authLoading, user } = useAuth();
+    const { promptSignIn, isLoading: isGoogleLoading, hasRealGIS } = useGoogleIdentity();
+    const isMobile = useIsMobile();
     const [isLoading, setIsLoading] = useState(false);
     const [showEmailForm, setShowEmailForm] = useState(false);
     const hasRedirected = useRef(false);
@@ -48,9 +50,11 @@ const LoginPage = () => {
     useEffect(() => {
         if (isAuthenticated && !authLoading && !hasRedirected.current) {
             hasRedirected.current = true;
-            safeNavigate(navigate, location.pathname, from);
+            // Admins go to the admin console; regular users go to their intended destination
+            const destination = user?.role === 'admin' ? '/admin' : from;
+            safeNavigate(navigate, location.pathname, destination);
         }
-    }, [isAuthenticated, authLoading, navigate, from, location.pathname]);
+    }, [isAuthenticated, authLoading, navigate, from, location.pathname, user?.role]);
 
     const form = useForm<z.infer<typeof loginSchema>>({
         resolver: zodResolver(loginSchema),
@@ -88,14 +92,16 @@ const LoginPage = () => {
             {/* Ambient Background Gradient for Lanyard Visibility */}
             <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 50%, #00BCD4 0%, transparent 70%)' }} />
 
-            {/* ── 3D Lanyard Campus ID ── */}
-            <div className="absolute inset-0 z-0">
-                <ErrorBoundary fallback={<div className="w-full h-full bg-black" />}>
-                    <Suspense fallback={null}>
-                        <Lanyard position={[0, 0, 25]} gravity={[0, -40, 0]} fov={22} transparent />
-                    </Suspense>
-                </ErrorBoundary>
-            </div>
+            {/* ── 3D Lanyard Campus ID ── desktop only; Rapier physics is too heavy on mobile ── */}
+            {!isMobile && (
+              <div className="absolute inset-0 z-0">
+                  <ErrorBoundary fallback={<div className="w-full h-full bg-black" />}>
+                      <Suspense fallback={null}>
+                          <Lanyard position={[0, 0, 25]} gravity={[0, -40, 0]} fov={22} transparent />
+                      </Suspense>
+                  </ErrorBoundary>
+              </div>
+            )}
 
             {/* ── Watermark ── */}
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none select-none z-[1] opacity-5">
@@ -122,6 +128,7 @@ const LoginPage = () => {
                         <div className="absolute -inset-2 bg-primary/10 rounded-[2rem] blur-2xl" />
 
                         <div className="relative bg-black/60 border border-white/5 p-10 rounded-[1.5rem] shadow-2xl backdrop-blur-2xl">
+                            {hasRealGIS && (
                             <Button
                                 type="button"
                                 onClick={handleGoogleClick}
@@ -136,7 +143,9 @@ const LoginPage = () => {
                                 </svg>
                                 {isGoogleLoading ? "VERIFYING..." : "MCTRGIT SINGLE SIGN-ON"}
                             </Button>
+                            )}
 
+                            {hasRealGIS && (
                             <div className="flex items-center gap-6 mb-6">
                                 <div className="flex-1 h-px bg-white/5" />
                                 <button onClick={() => setShowEmailForm(!showEmailForm)} className="text-[10px] font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors">
@@ -144,6 +153,7 @@ const LoginPage = () => {
                                 </button>
                                 <div className="flex-1 h-px bg-white/5" />
                             </div>
+                            )}
 
                             <div className={`grid transition-all duration-300 ${showEmailForm ? 'grid-rows-[1fr] opacity-100 mb-6' : 'grid-rows-[0fr] opacity-0'}`}>
                                 <div className="overflow-hidden">

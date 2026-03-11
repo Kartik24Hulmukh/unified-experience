@@ -23,9 +23,6 @@ const SplitText = ({
   stagger = 0.03,
   trigger = 'scroll',
 }: SplitTextProps) => {
-  // Empty guard — avoid rendering invisible zero-width characters
-  if (!children || !children.trim()) return null;
-
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
 
@@ -102,20 +99,22 @@ const SplitText = ({
       }
     }, containerRef);
 
+    const textEl = textRef.current; // capture before async cleanup
     return () => {
       // Revert all GSAP animations and ScrollTriggers in this context
       ctx.revert();
       // Reset inline opacity on split elements so text is visible
       // if GSAP context reverts but component stays mounted (e.g., HMR)
-      if (textRef.current) {
-        const els = textRef.current.querySelectorAll('.split-element');
+      if (textEl) {
+        const els = textEl.querySelectorAll('.split-element');
         els.forEach(el => {
           (el as HTMLElement).style.opacity = '1';
         });
       }
     };
   }, [children, type, animation, delay, stagger, trigger]);
-
+  // Empty guard — after hooks to avoid Rules of Hooks violation
+  if (!children || !children.trim()) return null;
   return (
     <div ref={containerRef} className={className}>
       <span ref={textRef} className="inline-block" style={{ perspective: '1000px' }}>

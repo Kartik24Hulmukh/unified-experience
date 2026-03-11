@@ -9,6 +9,7 @@ import { useTypewriter } from '@/hooks/useTypewriter';
 import { Search, X, Shield, Lock, Eye, Users, MapPin, ArrowRight, Terminal, Database, Wifi } from 'lucide-react';
 import housingHandover from '@/assets/housing-handover.jpg';
 import { useListings } from '@/hooks/api/useApi';
+import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 
 // ScrollTrigger registered in lib/gsap-init.ts
@@ -96,7 +97,7 @@ const DataTicker = () => {
 const AccommodationPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
-  const mainRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
   const [activeArea, setActiveArea] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroLoaded, setHeroLoaded] = useState(false);
@@ -105,15 +106,15 @@ const AccommodationPage = () => {
 
   // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'accommodation' });
-  const items = listingsResponse?.data ?? [];
+  const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    return items.filter(
+    return visibleItems.filter(
       item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery, items]);
+  }, [searchQuery, visibleItems]);
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -251,6 +252,8 @@ const AccommodationPage = () => {
             alt=""
             className="accom-hero-img absolute inset-0 w-full h-[130%] object-cover"
             style={{ opacity: 0 }}
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="absolute inset-0" style={{
             background: 'radial-gradient(ellipse at 70% 30%, rgba(34,211,238,0.06) 0%, transparent 60%)',

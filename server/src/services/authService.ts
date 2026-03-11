@@ -86,6 +86,9 @@ async function issueTokens(
         data: { revokedAt: new Date() },
       });
     }
+  }, {
+    maxWait: 10000,
+    timeout: 20000,
   });
 
   // Return the RAW token — only ever sent in an httpOnly cookie
@@ -142,7 +145,7 @@ export async function signup(input: SignupInput): Promise<{ message: string }> {
   // Audit: record signup attempt
   await prisma.auditLog.create({
     data: {
-      actorId: '00000000-0000-0000-0000-000000000000', // Nil UUID for System
+      actorId: null, // SYSTEM
       action: 'AUTH_SIGNUP_REQUEST',
       entityType: 'User',
       metadata: { email: input.email },
@@ -196,14 +199,15 @@ export async function verifyOtp(
       });
       throw new ValidationError('OTP has been invalidated after too many attempts. Please request a new one.');
     }
-    // Increment attempt counter (best-effort — field may not exist in older schemas)
+    // Increment attempt counter (best-effort — rate limit middleware still enforces limits)
     try {
       await prisma.otp.update({
         where: { id: otpRecord.id },
-        data: { attempts: { increment: 1 } } as any,
+        data: { attempts: { increment: 1 } },
       });
-    } catch {
-      // Schema doesn't have an attempts column yet — rate limit is still enforced
+    } catch (err) {
+      // Non-critical: log but don't surface to caller
+      console.warn('Failed to increment OTP attempt counter:', err);
     }
     throw new ValidationError('Invalid OTP code');
   }
@@ -212,11 +216,16 @@ export async function verifyOtp(
   const passwordHash = await hashPassword(input.password);
 
   const user = await prisma.$transaction(async (tx) => {
-    // Mark OTP as used
-    await tx.otp.update({
-      where: { id: otpRecord.id },
+    // CRIT-02 FIX: use updateMany with { usedAt: null } as the guard so that only
+    // ONE concurrent thread can win the atomic mark-used. Any thread that loses
+    // (count === 0) means the OTP was already consumed — throw immediately.
+    const usedOtp = await tx.otp.updateMany({
+      where: { id: otpRecord.id, usedAt: null },
       data: { usedAt: new Date() },
     });
+    if (usedOtp.count === 0) {
+      throw new ValidationError('OTP already used. Please request a new one.');
+    }
 
     const createdUser = await tx.user.upsert({
       where: { email: input.email },
@@ -344,6 +353,19 @@ export async function googleSignIn(
 ): Promise<{ user: any; tokens: AuthTokens }> {
   const profile = await verifyGoogleToken(input.credential);
 
+  // BUG-02 FIX: enforce allowed email domains for Google OAuth sign-in.
+  // Previously, any Google account (gmail.com, company.com, etc.) could
+  // sign in, bypassing the institutional-email restriction enforced for
+  // email/password signup. Now both paths share the same domain gate.
+  const emailDomain = profile.email.split('@')[1];
+  if (ALLOWED_EMAIL_DOMAINS.length > 0 && !ALLOWED_EMAIL_DOMAINS.includes(emailDomain)) {
+    throw new ValidationError('Only institutional email addresses are allowed', {
+      email: [
+        `Email domain '${emailDomain}' is not permitted. Allowed: ${ALLOWED_EMAIL_DOMAINS.join(', ')}`,
+      ],
+    });
+  }
+
   // Upsert user — create if new, link Google ID if existing
   const user = await prisma.user.upsert({
     where: { email: profile.email },
@@ -355,6 +377,12 @@ export async function googleSignIn(
     },
     update: {
       googleId: profile.sub,
+      // HIGH-07 FIX: reset any lockout state on successful Google sign-in.
+      // A user locked out via email/password login can bypass the lock with
+      // Google OAuth — clear the counters so they don't get confusingly locked
+      // on their next email/password attempt after an OAuth session.
+      failedLoginAttempts: 0,
+      lockedUntil: null,
       // Don't overwrite fullName if already set
     },
   });
@@ -431,6 +459,9 @@ export async function refreshAccessToken(
         ipAddress: meta?.ipAddress,
       },
     });
+  }, {
+    maxWait: 10000,
+    timeout: 20000,
   });
 
   const accessToken = signAccessToken({
@@ -502,10 +533,19 @@ export async function getCurrentUser(userId: string) {
     accountAgeDays,
   });
 
+  // V3-15: Write-through — keep trustStatus column in sync for admin tooling and reporting.
+  // The column default is GOOD_STANDING which becomes stale as trust degrades over time.
+  if (user.trustStatus !== trust.status) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { trustStatus: trust.status },
+    }).catch(() => { /* non-critical: best-effort sync, don't fail the auth request */ });
+  }
+
   const restriction = computeRestriction({
     trustStatus: trust.status,
     activeDisputes: activeDisputesAgainst,
-    adminOverride: false,
+    adminOverride: user.isRestricted,   // BUG-FIX: was hardcoded false; read actual DB flag
   });
 
   return {

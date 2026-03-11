@@ -10,11 +10,12 @@ async function main() {
         console.log('Connected successfully!');
         const userCount = await prisma.user.count();
         console.log('User count:', userCount);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Connection failed!');
-        console.error('Error Name:', error.name);
-        console.error('Error Code:', error.code);
-        console.error('Error Message:', error.message);
+        const err = error as Error & { code?: string };
+        console.error('Error Name:', err.name);
+        console.error('Error Code:', err.code);
+        console.error('Error Message:', err.message);
     } finally {
         await prisma.$disconnect();
     }

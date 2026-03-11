@@ -470,7 +470,7 @@ test.describe('BErozgar Full E2E Smoke Test', () => {
     const res = await apiGet(request, '/api/admin/pending', adminAccessToken);
     expect(res.status).toBe(200);
     const pending = Array.isArray(res.body) ? res.body : res.body.data ?? [];
-    const found = pending.find((l: any) => l.id === listingId);
+    const found = pending.find((l: { id: string }) => l.id === listingId);
     expect(found).toBeTruthy();
   });
 
@@ -490,7 +490,7 @@ test.describe('BErozgar Full E2E Smoke Test', () => {
     const res = await apiGet(request, '/api/listings?status=approved');
     expect(res.status).toBe(200);
     const listings = res.body.data ?? [];
-    const found = listings.find((l: any) => l.id === listingId);
+    const found = listings.find((l: { id: string; title: string }) => l.id === listingId);
     expect(found).toBeTruthy();
     expect(found.title).toBe(LISTING.title);
   });
@@ -599,7 +599,7 @@ test.describe('BErozgar Full E2E Smoke Test', () => {
   test('23. Admin resolves dispute (OPEN → UNDER_REVIEW → RESOLVED)', async ({ request }) => {
     const disputes = await apiGet(request, '/api/disputes', adminAccessToken);
     const dispute = (disputes.body.data ?? []).find(
-      (d: any) => d.requestId === requestId,
+      (d: { requestId: string; id: string }) => d.requestId === requestId,
     );
     expect(dispute).toBeTruthy();
 

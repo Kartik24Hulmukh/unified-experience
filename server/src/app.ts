@@ -17,6 +17,12 @@ import sanitizePlugin from '@/plugins/sanitize';
 import { idempotency, idempotencyCacheResponse } from '@/middleware/idempotency';
 import { serializeError, AppError, IdempotencyReplayError } from '@/errors/index';
 
+declare module 'fastify' {
+  interface FastifyRequest {
+    _startTime?: bigint;
+  }
+}
+
 // Route modules
 import { healthRoutes } from '@/routes/health';
 import { authRoutes } from '@/routes/auth';
@@ -84,12 +90,12 @@ export async function buildApp() {
   app.addHook('onRequest', async (request, reply) => {
     reply.header('X-Request-Id', request.id);
     // Track start time for X-Response-Time
-    (request as any)._startTime = process.hrtime.bigint();
+    request._startTime = process.hrtime.bigint();
   });
 
   // ── X-Response-Time header ──────────────────────
   app.addHook('onResponse', async (request, reply) => {
-    const start = (request as any)._startTime as bigint | undefined;
+    const start = request._startTime;
     if (start) {
       const elapsed = Number(process.hrtime.bigint() - start) / 1e6; // ms
       reply.header('X-Response-Time', `${elapsed.toFixed(2)}ms`);

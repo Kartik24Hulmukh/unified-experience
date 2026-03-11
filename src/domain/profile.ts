@@ -209,8 +209,6 @@ export function validateProfileRoleIntegrity(profile: Profile): boolean {
   if (identityRole === 'admin' && profileRole === 'admin') return true;
   // Logged via caller context — pure domain should not import logger
   return false;
-  }
-  return true;
 }
 
 /* ═══════════════════════════════════════════════════

@@ -120,7 +120,7 @@ export async function ensureAdminUser(
     throw new Error(`Admin OTP verify failed (${verifyRes.status}): ${body}`);
   }
 
-  const verifyBody = (await verifyRes.json()) as any;
+  const verifyBody = (await verifyRes.json()) as { user?: { id?: string } };
   const userId = verifyBody.user?.id;
   if (!userId) throw new Error('Admin user ID not returned from verify-otp');
 
@@ -197,7 +197,7 @@ export async function createVerifiedUser(
     throw new Error(`User verify failed (${verifyRes.status}): ${body}`);
   }
 
-  const verifyBody = (await verifyRes.json()) as any;
+  const verifyBody = (await verifyRes.json()) as { user?: { id?: string } };
   return verifyBody.user?.id;
 }
 
@@ -216,7 +216,7 @@ export async function cleanupE2eData(): Promise<void> {
 
   if (userIds.rows.length === 0) return;
 
-  const ids = userIds.rows.map((r: any) => r.id);
+  const ids = userIds.rows.map((r: { id: string }) => r.id);
 
   // Delete in FK-dependency order using ANY(array) for multi-id matching
   await pool.query(

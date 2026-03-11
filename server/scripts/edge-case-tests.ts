@@ -13,7 +13,7 @@ let failed = 0;
 
 // ──── Helpers ────
 
-async function api(method: string, path: string, token: string, body?: any) {
+async function api(method: string, path: string, token: string, body?: unknown) {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
   };

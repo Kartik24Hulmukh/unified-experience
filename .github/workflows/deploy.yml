@@ -61,11 +61,14 @@ jobs:
       # ── Deploy via SSH ───────────────────────────
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_ENV_B64: ${{ secrets.DEPLOY_ENV_FILE }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 10m
+          envs: DEPLOY_ENV_B64
           script: |
             set -euo pipefail
 
@@ -156,9 +159,6 @@ jobs:
             echo "  SHA:  $DEPLOY_SHA"
             echo "  Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "══════════════════════════════════════"
-        envs: DEPLOY_ENV_B64
-        env:
-          DEPLOY_ENV_B64: ${{ secrets.DEPLOY_ENV_FILE }}
 
       # ── Post-deploy notification ─────────────────
       - name: Post-deploy summary

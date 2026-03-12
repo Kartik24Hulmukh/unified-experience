@@ -395,6 +395,21 @@ export async function login(
     throw new UnauthorizedError('Invalid email or password');
   }
 
+  // SELF-HEAL FEATURE: ensure admin/student roles are properly applied
+  // if they were registered while .env wasn't loaded or if registry updated.
+  let isRoleUpdated = false;
+  const isAdmin = ADMIN_REGISTRY.includes(user.email.toLowerCase().trim());
+  const collegeRecord = await lookupCollegeStudent(user.email);
+  if (isAdmin && user.role !== 'ADMIN') {
+    user.role = 'ADMIN';
+    user.privilegeLevel = 'SUPER';
+    isRoleUpdated = true;
+  } else if (!isAdmin && collegeRecord && user.role !== 'STUDENT_VERIFIED') {
+    user.role = 'STUDENT_VERIFIED';
+    user.collegeStudentId = collegeRecord.id;
+    isRoleUpdated = true;
+  }
+
   // DET-1 FIX: pre-compute in-memory token values BEFORE the transaction.
   // Previously counter-reset and issueTokens() were separate DB operations,
   // leaving a crash window where counters are cleared but no refresh token
@@ -405,10 +420,20 @@ export async function login(
 
   await prisma.$transaction(async (tx) => {
     // Reset lockout counters on successful login
+    const updateData: Record<string, unknown> = {};
     if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      updateData.failedLoginAttempts = 0;
+      updateData.lockedUntil = null;
+    }
+    if (isRoleUpdated) {
+      updateData.role = user.role;
+      updateData.privilegeLevel = user.privilegeLevel;
+      updateData.collegeStudentId = user.collegeStudentId;
+    }
+    if (Object.keys(updateData).length > 0) {
       await tx.user.update({
         where: { id: user.id },
-        data: { failedLoginAttempts: 0, lockedUntil: null },
+        data: updateData,
       });
     }
 
@@ -673,6 +698,31 @@ export async function getCurrentUser(userId: string) {
 
   if (!user) {
     throw new NotFoundError('User', userId);
+  }
+
+  // SELF-HEAL FEATURE: ensure admin/student roles are properly applied dynamically.
+  let isRoleUpdated = false;
+  const isAdmin = ADMIN_REGISTRY.includes(user.email.toLowerCase().trim());
+  const collegeRecord = await lookupCollegeStudent(user.email);
+  if (isAdmin && user.role !== 'ADMIN') {
+    user.role = 'ADMIN';
+    user.privilegeLevel = 'SUPER';
+    isRoleUpdated = true;
+  } else if (!isAdmin && collegeRecord && user.role !== 'STUDENT_VERIFIED') {
+    user.role = 'STUDENT_VERIFIED';
+    user.collegeStudentId = collegeRecord.id;
+    isRoleUpdated = true;
+  }
+
+  if (isRoleUpdated) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        role: user.role,
+        privilegeLevel: user.privilegeLevel,
+        collegeStudentId: user.collegeStudentId,
+      },
+    });
   }
 
   const accountAgeDays = Math.floor(

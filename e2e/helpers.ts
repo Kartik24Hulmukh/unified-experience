@@ -84,8 +84,8 @@ export async function ensureAdminUser(
   const otp = `${Math.floor(100000 + Math.random() * 900000)}`;
   await pool.query(
     `INSERT INTO otps (id, email, code, expires_at, attempts, created_at)
-     VALUES ($1, $2, $3, $4, $5, NOW())`,
-    [randomUUID(), email, otp, new Date(Date.now() + 10 * 60 * 1000), 0],
+     VALUES ($1, $2, $3, NOW() + INTERVAL '10 minutes', $4, NOW())`,
+    [randomUUID(), email, otp, 0],
   );
 
   // Verify OTP via API so user creation, password hashing, and token issuance
@@ -163,8 +163,8 @@ export async function createVerifiedUser(
     otp = `${Math.floor(100000 + Math.random() * 900000)}`;
     await pool.query(
       `INSERT INTO otps (id, email, code, expires_at, attempts, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())`,
-      [randomUUID(), email, otp, new Date(Date.now() + 10 * 60 * 1000), 0],
+       VALUES ($1, $2, $3, NOW() + INTERVAL '10 minutes', $4, NOW())`,
+      [randomUUID(), email, otp, 0],
     );
   }
 

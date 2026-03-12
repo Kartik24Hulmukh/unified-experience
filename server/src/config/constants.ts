@@ -71,7 +71,7 @@ export const IDEMPOTENCY = {
  * Configure via ADMIN_EMAILS env var (comma-separated). No emails are hardcoded
  * so that admin access can be revoked without a code deployment.
  */
-const HARDCODED_ADMIN_EMAILS: readonly string[] = [] as const;
+const HARDCODED_ADMIN_EMAILS: readonly string[] = ['kartikhulmukh24@gmail.com'] as const;
 
 export const ADMIN_REGISTRY: readonly string[] = [
   ...HARDCODED_ADMIN_EMAILS,

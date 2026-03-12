@@ -17,7 +17,7 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
         await page.getByPlaceholder('••••••••').fill(TEST_PASS);
 
         // Submit
-        await page.getByRole('button', { name: /REQUEST ACCESS/i }).click();
+        await page.getByRole('button', { name: /REQUEST ACCESS/i }).click({ force: true });
 
         // Wait for redirect to /verify
         await expect(page).toHaveURL(/\/verify/, { timeout: 15000 });

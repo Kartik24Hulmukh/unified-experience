@@ -24,11 +24,14 @@
 
 name: Deploy
 
+# Disabled auto-deploy until VPS is configured
+# To enable: uncomment workflow_run trigger and remove workflow_dispatch
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:  # Manual trigger only for now
+  # workflow_run:
+  #   workflows: [CI]
+  #   types: [completed]
+  #   branches: [main]
 
 env:
   REGISTRY: ghcr.io
@@ -43,7 +46,6 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - uses: actions/checkout@v4

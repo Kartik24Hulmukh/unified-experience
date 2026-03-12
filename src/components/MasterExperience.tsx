@@ -161,11 +161,11 @@ const MasterExperience = () => {
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[250vh] bg-[#050505]">
-      <div ref={stickyRef} className="sticky top-0 h-screen w-full overflow-hidden bg-[#050505]">
+    <div ref={containerRef} className="h-[250vh] bg-white">
+      <div ref={stickyRef} className="sticky top-0 h-screen w-full overflow-hidden bg-white">
 
         <div ref={baseLayerRef} className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
-          <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-[#050505]">
+          <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-white">
             {/* WebGL fluid splash — desktop only; mobile skips the heavy GPU sim */}
             {!isMobile && (
               <Suspense fallback={null}>
@@ -190,14 +190,14 @@ const MasterExperience = () => {
                 {['TRUST', 'CENTRIC', 'EXCHANGE'].map((txt, i) => (
                   <span
                     key={txt}
-                    className="text-[17vw] md:text-[14vw] font-display font-black uppercase tracking-[-0.04em] whitespace-nowrap block text-white/90"
+                    className="text-[17vw] md:text-[14vw] font-display font-black uppercase tracking-[-0.04em] whitespace-nowrap block text-black/90"
                     style={{ marginTop: i > 0 ? '-1vw' : '0' }}
                   >
                     {txt}
                   </span>
                 ))}
               </div>
-              <p className="mt-8 text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">
+              <p className="mt-8 text-[10px] font-mono uppercase tracking-[0.4em] text-black/40">
                 Scroll to explore
               </p>
             </div>

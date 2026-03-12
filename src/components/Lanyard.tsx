@@ -95,15 +95,13 @@ function CampusIDCard() {
       <mesh castShadow>
         <boxGeometry args={[W, H, D]} />
         <meshPhysicalMaterial
-          color="#1a1a2e"
-          emissive="#001122"
-          emissiveIntensity={0.5}
-          roughness={0.1}
-          metalness={0.8}
+          color="#ffffff"
+          emissive="#eef2f5"
+          emissiveIntensity={0.8}
+          roughness={0.2}
+          metalness={0.1}
           clearcoat={1}
-          clearcoatRoughness={0.05}
-          transmission={0.1}
-          thickness={0.1}
+          clearcoatRoughness={0.1}
         />
       </mesh>
 
@@ -120,7 +118,7 @@ function CampusIDCard() {
       <Text
         position={[0, H / 2 - 0.045, Z + 0.002]}
         fontSize={0.038}
-        color="#ffffff"
+        color="#000000"
         anchorX="center"
         anchorY="middle"
         fontWeight="bold"
@@ -131,12 +129,12 @@ function CampusIDCard() {
 
       <mesh position={[0, H / 2 - 0.155, Z]}>
         <planeGeometry args={[W * 0.9, 0.035]} />
-        <meshBasicMaterial color="#ffffff" />
+        <meshBasicMaterial color="#00BCD4" />
       </mesh>
       <Text
         position={[0, H / 2 - 0.155, Z + 0.002]}
         fontSize={0.018}
-        color="#000000"
+        color="#ffffff"
         anchorX="center"
         anchorY="middle"
         fontWeight="bold"
@@ -163,11 +161,11 @@ function CampusIDCard() {
         </mesh>
       </group>
 
-      <Text position={[0.08, 0.22, Z + 0.002]} fontSize={0.012} color="#00BCD4" anchorX="left">NAME</Text>
-      <Text position={[0.08, 0.19, Z + 0.002]} fontSize={0.02} color="#ffffff" anchorX="left" fontWeight="bold">MCTRGIT USER</Text>
+      <Text position={[0.08, 0.22, Z + 0.002]} fontSize={0.012} color="#00798C" anchorX="left">NAME</Text>
+      <Text position={[0.08, 0.19, Z + 0.002]} fontSize={0.02} color="#111111" anchorX="left" fontWeight="bold">MCTRGIT USER</Text>
 
-      <Text position={[0.08, 0.14, Z + 0.002]} fontSize={0.012} color="#00BCD4" anchorX="left">DEPT</Text>
-      <Text position={[0.08, 0.11, Z + 0.002]} fontSize={0.016} color="#ffffff" anchorX="left">Comp. Science</Text>
+      <Text position={[0.08, 0.14, Z + 0.002]} fontSize={0.012} color="#00798C" anchorX="left">DEPT</Text>
+      <Text position={[0.08, 0.11, Z + 0.002]} fontSize={0.016} color="#111111" anchorX="left">Comp. Science</Text>
 
       <mesh ref={dotRef} position={[W / 2 - 0.08, H / 2 - 0.06, Z + 0.002]}>
         <circleGeometry args={[0.015, 12]} />
@@ -178,12 +176,12 @@ function CampusIDCard() {
         {Array.from({ length: 20 }).map((_, i) => (
           <mesh key={i} position={[i * 0.025, 0, 0]}>
             <planeGeometry args={[i % 3 === 0 ? 0.015 : 0.008, 0.08]} />
-            <meshBasicMaterial color="#ffffff" opacity={0.4} transparent />
+            <meshBasicMaterial color="#000000" opacity={0.6} transparent />
           </mesh>
         ))}
       </group>
 
-      <Text position={[0, -H / 2 + 0.04, Z + 0.002]} fontSize={0.01} color="#00BCD4" anchorX="center" letterSpacing={0.5}>
+      <Text position={[0, -H / 2 + 0.04, Z + 0.002]} fontSize={0.01} color="#00798C" anchorX="center" letterSpacing={0.5}>
         BEROZGAR TRUST EXCHANGE
       </Text>
     </group>

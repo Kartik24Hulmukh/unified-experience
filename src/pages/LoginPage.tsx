@@ -108,13 +108,13 @@ const LoginPage = () => {
 
             {/* ── Watermark ── */}
             <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none select-none z-[1] opacity-5">
-                <h1 className="text-[12rem] md:text-[20rem] font-bold text-white uppercase leading-none font-display italic tracking-tighter">
+                <h1 className="text-[6rem] sm:text-[10rem] md:text-[14rem] lg:text-[20rem] font-bold text-white uppercase leading-none font-display italic tracking-tighter">
                     TRUST
                 </h1>
             </div>
 
             {/* ── Login Form Overlay ── */}
-            <div className="absolute inset-0 z-10 flex items-center justify-end p-6 md:p-12 lg:pr-32 pointer-events-none">
+            <div className="absolute inset-0 z-10 flex items-center justify-center lg:justify-end p-4 sm:p-6 md:p-12 lg:pr-32 pointer-events-none">
                 <div className="pointer-events-auto w-full max-w-md">
                     <div className="mb-8 space-y-4">
                         <div className="flex items-center space-x-3 text-primary">
@@ -130,7 +130,7 @@ const LoginPage = () => {
                         {/* Glow effect */}
                         <div className="absolute -inset-2 bg-primary/10 rounded-[2rem] blur-2xl" />
 
-                        <div className="relative bg-black/60 border border-white/5 p-10 rounded-[1.5rem] shadow-2xl backdrop-blur-2xl">
+                        <div className="relative bg-black/60 border border-white/5 p-6 sm:p-10 rounded-[1.5rem] shadow-2xl backdrop-blur-2xl">
                             {hasRealGIS && (
                             <Button
                                 type="button"
@@ -191,7 +191,7 @@ const LoginPage = () => {
                 </div>
             </div>
 
-            <div className="absolute bottom-8 left-12 z-10 flex flex-col space-y-2 text-[9px] uppercase tracking-[0.5em] text-white/10 font-mono">
+            <div className="absolute bottom-8 left-4 sm:left-12 z-10 flex flex-col space-y-2 text-[9px] uppercase tracking-[0.5em] text-white/10 font-mono">
                 <span>SYSTEM_STATUS: ONLINE</span>
                 <span>AUTH_PROTOCOL: HMAC_HMAC_SHA256</span>
             </div>

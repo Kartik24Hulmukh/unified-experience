@@ -574,3 +574,39 @@ html.lenis body {
     display: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE UTILITIES
+   Ensures consistent spacing and sizing on small devices
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Corner brackets scale down on mobile */
+@media (max-width: 639px) {
+  .corner-bracket {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    top: 1rem !important;
+    bottom: 1rem !important;
+  }
+  .corner-bracket[class*="left-8"] {
+    left: 1rem !important;
+  }
+  .corner-bracket[class*="right-8"] {
+    right: 1rem !important;
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

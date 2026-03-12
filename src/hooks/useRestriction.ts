@@ -31,12 +31,23 @@ const UNRESTRICTED: RestrictionResult = {
   reasons: [],
 };
 
+const UNAUTHENTICATED_RESTRICTED: RestrictionResult = {
+  isRestricted: true,
+  blockedActions: ['CREATE_LISTING', 'REQUEST_EXCHANGE', 'REQUEST_CONTACT', 'RAISE_DISPUTE'],
+  reasons: ['Sign in to access this feature.'],
+};
+
 export function useRestriction(): UseRestrictionReturn {
-  const { restriction, user } = useAuth();
+  const { restriction, user, isAuthenticated } = useAuth();
 
   const result = useMemo<RestrictionResult>(() => {
-    // No user or admin → never restricted
-    if (!user || user.role === 'admin') {
+    // Not logged in → fully restricted (can only view)
+    if (!isAuthenticated || !user) {
+      return UNAUTHENTICATED_RESTRICTED;
+    }
+
+    // Admin → never restricted
+    if (user.role === 'admin') {
       return UNRESTRICTED;
     }
 
@@ -47,7 +58,7 @@ export function useRestriction(): UseRestrictionReturn {
 
     // Fallback: not yet loaded from server — assume unrestricted
     return UNRESTRICTED;
-  }, [user, restriction]);
+  }, [user, restriction, isAuthenticated]);
 
   const canPerform = useMemo(
     () => (action: RestrictableAction) => !isActionBlocked(result, action),

@@ -250,7 +250,7 @@ const AccommodationPage = () => {
           <img
             src={housingHandover}
             alt=""
-            className="accom-hero-img absolute inset-0 w-full h-[130%] object-cover"
+            className="accom-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"
             fetchPriority="high"
@@ -272,13 +272,13 @@ const AccommodationPage = () => {
         </div>
 
         {/* Corner brackets */}
-        <div className="absolute top-8 left-8 w-12 h-12 border-l-2 border-t-2 border-cyan-400/30" />
-        <div className="absolute top-8 right-8 w-12 h-12 border-r-2 border-t-2 border-cyan-400/30" />
-        <div className="absolute bottom-8 left-8 w-12 h-12 border-l-2 border-b-2 border-cyan-400/30" />
-        <div className="absolute bottom-8 right-8 w-12 h-12 border-r-2 border-b-2 border-cyan-400/30" />
+        <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-t-2 border-cyan-400/30" />
+        <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-t-2 border-cyan-400/30" />
+        <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-b-2 border-cyan-400/30" />
+        <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-b-2 border-cyan-400/30" />
 
         {/* Top status bar */}
-        <div className="relative z-10 flex items-center justify-between px-8 md:px-16 pt-28 pb-4">
+        <div className="relative z-10 flex items-center justify-between px-4 sm:px-8 md:px-16 pt-28 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30">
@@ -291,7 +291,7 @@ const AccommodationPage = () => {
         </div>
 
         {/* Main hero content */}
-        <div className="relative z-10 flex-1 flex flex-col md:flex-row items-center px-8 md:px-16">
+        <div className="relative z-10 flex-1 flex flex-col md:flex-row items-center px-4 sm:px-8 md:px-16">
           {/* Left — Title block */}
           <div className="w-full md:w-3/5 py-12">
             <div className="overflow-hidden mb-2">
@@ -338,7 +338,7 @@ const AccommodationPage = () => {
             </div>
 
             {/* Stats row */}
-            <div className="flex gap-12 mt-12">
+            <div className="flex flex-wrap gap-8 sm:gap-12 mt-12">
               <div className="stat-block" style={{ opacity: 0 }}>
                 <p className="text-white font-display text-5xl md:text-6xl font-bold">
                   <AnimatedCounter target={105} />
@@ -419,7 +419,7 @@ const AccommodationPage = () => {
       <DataTicker />
 
       {/* ═══════════════ ZONE EXPLORER ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 reveal-section">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 reveal-section">
         <div className="max-w-7xl mx-auto">
           {/* Section header */}
           <div className="flex items-center gap-4 mb-4">
@@ -553,7 +553,7 @@ const AccommodationPage = () => {
       </section>
 
       {/* ═══════════════ SECURITY PROTOCOLS ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 reveal-section">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 reveal-section">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <Database className="w-4 h-4 text-cyan-400/60" />
@@ -616,7 +616,7 @@ const AccommodationPage = () => {
       </section>
 
       {/* ═══════════════ BROWSE LISTINGS ═══════════════ */}
-      <section ref={browseRef} className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 reveal-section">
+      <section ref={browseRef} className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 reveal-section">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="flex items-center gap-4 mb-4">
             <Search className="w-4 h-4 text-cyan-400/60" />
@@ -664,7 +664,7 @@ const AccommodationPage = () => {
       </section>
 
       {/* ═══════════════ DATA MATRIX — What You'll See ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 bg-white/[0.01] reveal-section">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 bg-white/[0.01] reveal-section">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">
@@ -720,7 +720,7 @@ const AccommodationPage = () => {
       </section>
 
       {/* ═══════════════ CTA SECTION ═══════════════ */}
-      <section className="relative py-32 md:py-48 px-8 md:px-16 border-t border-white/5 overflow-hidden">
+      <section className="relative py-20 sm:py-32 md:py-48 px-4 sm:px-8 md:px-16 border-t border-white/5 overflow-hidden">
         {/* Background radial gradient */}
         <div className="absolute inset-0" style={{
           background: 'radial-gradient(ellipse at center, rgba(0,212,170,0.03) 0%, transparent 70%)',

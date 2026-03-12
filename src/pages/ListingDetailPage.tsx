@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { useListing, useCreateRequest } from '@/hooks/api/useApi';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRestriction } from '@/hooks/useRestriction';
 
 const ListingDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -17,6 +19,9 @@ const ListingDetailPage = () => {
 
     const { data: listingResponse, isLoading, isError, error, refetch } = useListing(id ?? '');
     const createRequest = useCreateRequest();
+    const { isAuthenticated } = useAuth();
+    const { canPerform } = useRestriction();
+    const canRequestExchange = canPerform('REQUEST_EXCHANGE');
 
     const [message, setMessage] = useState('');
     const [requestSent, setRequestSent] = useState(false);
@@ -42,6 +47,14 @@ const ListingDetailPage = () => {
 
     const handleRequestExchange = () => {
         if (!id || createRequest.isPending || requestSent) return;
+        if (!isAuthenticated) {
+            toast({ title: 'Sign In Required', description: 'Please sign in to request an exchange.', variant: 'destructive' });
+            return;
+        }
+        if (!canRequestExchange) {
+            toast({ title: 'Action Restricted', description: 'Your account is restricted from requesting exchanges. Verify your college email to unlock this feature.', variant: 'destructive' });
+            return;
+        }
         createRequest.mutate(
             { listingId: id, message: message || undefined },
             {
@@ -169,7 +182,24 @@ const ListingDetailPage = () => {
                             <h3 className="text-lg font-display font-bold uppercase tracking-widest">Request Exchange</h3>
                         </div>
 
-                        {requestSent ? (
+                        {!isAuthenticated ? (
+                            <div className="text-center py-6 space-y-4">
+                                <p className="text-white/50 uppercase text-sm font-bold tracking-widest">Sign in to request an exchange</p>
+                                <p className="text-white/30 text-xs">Only verified RGIT students can request exchanges.</p>
+                                <Link to="/login" className="inline-block px-8 py-3 bg-primary text-black font-bold uppercase text-[10px] tracking-widest hover:bg-teal-400 transition-colors">
+                                    Sign In →
+                                </Link>
+                            </div>
+                        ) : !canRequestExchange ? (
+                            <div className="text-center py-6 space-y-2">
+                                <Shield className="w-8 h-8 text-amber-400/60 mx-auto" />
+                                <p className="text-amber-400/80 text-sm uppercase font-bold tracking-widest">Access Restricted</p>
+                                <p className="text-white/30 text-xs">Verify your college email to unlock exchange requests.</p>
+                                <Link to="/profile" className="inline-block mt-2 text-primary text-[10px] uppercase font-bold tracking-widest hover:underline">
+                                    Verify Email →
+                                </Link>
+                            </div>
+                        ) : requestSent ? (
                             <div className="text-center py-6 space-y-2">
                                 <div className="w-12 h-12 mx-auto border-2 border-emerald-400 rotate-45 flex items-center justify-center">
                                     <Shield className="w-5 h-5 text-emerald-400 -rotate-45" />

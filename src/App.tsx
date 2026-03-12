@@ -168,16 +168,16 @@ const App = () => (
                         {import.meta.env.DEV && <Route path="/splash-test" element={<SplashTestPage />} />}
 
                         {/* Post-login home — MasterExperience + modules */}
-                        <Route path="/home" element={<ProtectedRoute><RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/home" element={<RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary>} />
 
-                        {/* Protected module routes — require authentication */}
-                        <Route path="/resale" element={<ProtectedRoute><RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary></ProtectedRoute>} />
-                        <Route path="/listing/:id" element={<ProtectedRoute><RouteErrorBoundary name="ListingDetail"><ListingDetailPage /></RouteErrorBoundary></ProtectedRoute>} />
-                        <Route path="/accommodation" element={<ProtectedRoute><RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary></ProtectedRoute>} />
-                        <Route path="/essentials" element={<ProtectedRoute><RouteErrorBoundary name="Essentials"><EssentialsPage /></RouteErrorBoundary></ProtectedRoute>} />
-                        <Route path="/academics" element={<ProtectedRoute><RouteErrorBoundary name="Academics"><AcademicsPage /></RouteErrorBoundary></ProtectedRoute>} />
-                        <Route path="/mess" element={<ProtectedRoute><RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary></ProtectedRoute>} />
-                        <Route path="/hospital" element={<ProtectedRoute><RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        {/* Module routes — publicly viewable, actions restricted to authenticated users */}
+                        <Route path="/resale" element={<RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary>} />
+                        <Route path="/listing/:id" element={<RouteErrorBoundary name="ListingDetail"><ListingDetailPage /></RouteErrorBoundary>} />
+                        <Route path="/accommodation" element={<RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary>} />
+                        <Route path="/essentials" element={<RouteErrorBoundary name="Essentials"><EssentialsPage /></RouteErrorBoundary>} />
+                        <Route path="/academics" element={<RouteErrorBoundary name="Academics"><AcademicsPage /></RouteErrorBoundary>} />
+                        <Route path="/mess" element={<RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary>} />
+                        <Route path="/hospital" element={<RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary>} />
 
                         {/* Profile — any authenticated user */}
                         <Route path="/profile" element={<ProtectedRoute><RouteErrorBoundary name="Profile"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />

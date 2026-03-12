@@ -56,7 +56,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
   return (
     <div className="w-full h-full flex flex-row items-stretch">
       <div className="w-full lg:w-[62%] h-full flex flex-col justify-center">
-        <div className="max-w-[900px] w-full px-12 md:px-20 lg:px-24">
+        <div className="max-w-[900px] w-full px-6 sm:px-12 md:px-20 lg:px-24">
           <div className="module-item mb-6 border-l-2 border-[#a3ff12] pl-6 opacity-60">
             <p className="text-[#a3ff12] text-[10px] font-mono uppercase tracking-[0.4em] mb-1">CORE_SYST_V_01 // SECURE_LINK</p>
           </div>
@@ -66,7 +66,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
                 <div className="flex items-center gap-6 md:gap-8 py-4 md:py-6 px-4 md:px-6 group-hover:bg-white/[0.04] transition-[background-color] duration-500">
                   <span className={`font-mono text-base md:text-lg transition-[color,opacity] duration-500 shrink-0 w-8 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/15'}`}>{module.number}</span>
                   <div className="flex-1">
-                    <h3 className={`text-4xl md:text-5xl lg:text-7xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
+                    <h3 className={`text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
                     <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.4em] uppercase mt-2 transition-[color,opacity] duration-500 ${activeModule === module.id ? 'text-white/50' : 'text-white/5'}`}>{module.subtitle}</p>
                   </div>
                   <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>→</span>

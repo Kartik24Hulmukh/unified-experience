@@ -364,7 +364,7 @@ const LandingPage = () => {
         />
 
         {/* ── Ambient glow ── */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] rounded-full pointer-events-none"
           style={{
             background: 'radial-gradient(circle, rgba(0,191,255,0.025) 0%, transparent 70%)',
           }}

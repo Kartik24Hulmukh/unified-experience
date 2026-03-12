@@ -9,6 +9,7 @@ import ListingGrid from '@/components/ListingGrid';
 import resaleTech from '@/assets/resale-tech.jpg';
 import { Plus, X } from 'lucide-react';
 import { useRestriction } from '@/hooks/useRestriction';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useListings } from '@/hooks/api/useApi';
 import { countBrowseListingsByCategory, getBrowseVisibleListings } from '@/lib/browse-listings';
@@ -33,6 +34,7 @@ const ResalePage = () => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 5000]);
   const { canPerform } = useRestriction();
+  const { isAuthenticated } = useAuth();
   const canCreateListing = canPerform('CREATE_LISTING');
 
   // Fetch listings from API
@@ -117,7 +119,7 @@ const ResalePage = () => {
             ref={imageRef}
             src={resaleTech}
             alt="Resource Resale"
-            className="w-full h-[130%] object-cover opacity-70"
+            className="w-full h-full sm:h-[130%] object-cover opacity-70"
             loading="eager"
             fetchPriority="high"
           />
@@ -134,12 +136,12 @@ const ResalePage = () => {
         />
 
         {/* Content */}
-        <div className="relative z-20 h-full flex flex-col justify-end pb-20 px-8 md:px-16">
+        <div className="relative z-20 h-full flex flex-col justify-end pb-20 px-4 sm:px-8 md:px-16">
           <div className="max-w-4xl">
             <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-4">
               Module 01
             </p>
-            <h1 className="text-portal-foreground font-display text-6xl md:text-9xl font-bold leading-none mb-6">
+            <h1 className="text-portal-foreground font-display text-4xl sm:text-6xl md:text-9xl font-bold leading-none mb-6">
               <SplitText animation="fadeUp" trigger="load" delay={0.3}>
                 RESALE
               </SplitText>
@@ -150,7 +152,7 @@ const ResalePage = () => {
           </div>
 
           {/* Scroll indicator */}
-          <div className="absolute bottom-8 right-8 flex items-center gap-4">
+          <div className="absolute bottom-8 right-4 sm:right-8 flex items-center gap-4">
             <span className="text-portal-foreground/40 text-xs uppercase tracking-widest">Explore</span>
             <div className="w-12 h-px bg-portal-foreground/30" />
           </div>
@@ -158,7 +160,7 @@ const ResalePage = () => {
       </section>
 
       {/* Categories Grid - Asymmetric layout */}
-      <section ref={categoriesRef} className="py-32 px-8 md:px-16">
+      <section ref={categoriesRef} className="py-20 sm:py-32 px-4 sm:px-8 md:px-16">
         <div className="max-w-7xl mx-auto">
           <div className="mb-16">
             <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-4">
@@ -212,7 +214,7 @@ const ResalePage = () => {
 
       {/* How It Works - Horizontal scroll section */}
       <section className="py-32 bg-portal-foreground/5">
-        <div className="px-8 md:px-16 mb-16">
+        <div className="px-4 sm:px-8 md:px-16 mb-16">
           <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-4">
             Trust Flow
           </p>
@@ -221,7 +223,7 @@ const ResalePage = () => {
           </h2>
         </div>
 
-        <div className="flex gap-8 overflow-x-auto px-8 md:px-16 pb-8 scrollbar-hide">
+        <div className="flex gap-4 sm:gap-8 overflow-x-auto px-4 sm:px-8 md:px-16 pb-8 scrollbar-hide">
           {[
             { step: '01', title: 'List Your Item', desc: 'Upload details, set your price, await approval' },
             { step: '02', title: 'Verification', desc: 'Admin reviews and approves your listing' },
@@ -231,7 +233,7 @@ const ResalePage = () => {
           ].map((item) => (
             <div
               key={item.step}
-              className="flex-shrink-0 w-80 p-8 border border-portal-foreground/10 bg-portal hover:border-portal-foreground/30 transition-colors duration-300"
+              className="flex-shrink-0 w-64 sm:w-80 p-6 sm:p-8 border border-portal-foreground/10 bg-portal hover:border-portal-foreground/30 transition-colors duration-300"
             >
               <span className="text-portal-foreground/20 font-display text-6xl font-bold">
                 {item.step}
@@ -248,7 +250,7 @@ const ResalePage = () => {
       </section>
 
       {/* Browse Section */}
-      <section className="py-32 px-8 md:px-16 border-t border-white/5">
+      <section className="py-20 sm:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5">
         <div className="max-w-7xl mx-auto space-y-16">
           <ModuleSearchFilter
             onSearch={setSearchQuery}
@@ -285,7 +287,7 @@ const ResalePage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-32 px-8 md:px-16">
+      <section className="py-20 sm:py-32 px-4 sm:px-8 md:px-16">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-portal-foreground font-display text-4xl md:text-6xl font-bold mb-8">
             Ready to Exchange?
@@ -295,6 +297,10 @@ const ResalePage = () => {
           </p>
           <button
             onClick={() => {
+              if (!isAuthenticated) {
+                toast({ title: 'Sign In Required', description: 'Please sign in to list items for exchange.', variant: 'destructive' });
+                return;
+              }
               if (!canCreateListing) {
                 toast({ title: 'Action Unavailable', description: 'Your account is currently restricted from creating listings.', variant: 'destructive' });
                 return;

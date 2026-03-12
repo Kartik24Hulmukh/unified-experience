@@ -368,7 +368,7 @@ function StudentSections({ profile, userId }: { profile: Profile; userId: string
         <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
           Activity Summary
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat, i) => (
             <div key={i} className="p-6 border border-white/10 bg-black/20 space-y-2 group hover:border-primary/30 transition-all duration-500">
               <div className="flex items-center space-x-2">
@@ -441,7 +441,7 @@ function AdminSections({ profile }: { profile: Profile }) {
               READ-ONLY
             </Badge>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { label: 'Total Students', value: data.totalStudents.toLocaleString() },
               { label: 'Active Exchanges', value: data.activeExchanges.toString() },
@@ -497,7 +497,7 @@ function AdminSections({ profile }: { profile: Profile }) {
         <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
           Governance Metrics
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat, i) => (
             <div key={i} className="p-6 border border-white/10 bg-black/20 space-y-2 group hover:border-primary/30 transition-all duration-500">
               <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">{stat.label}</p>
@@ -642,7 +642,7 @@ function AdminDrilldownView({ view }: { view: AdminStudentView }) {
         <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
           Activity Summary
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {stats.map((stat, i) => (
             <div key={i} className="p-6 border border-white/10 bg-black/20 space-y-2">
               <div className="flex items-center space-x-2">
@@ -769,7 +769,7 @@ const ProfilePage = () => {
 
     return (
       <div className="min-h-screen bg-portal text-white">
-        <div ref={containerRef} className="max-w-6xl mx-auto px-6 md:px-12 py-24">
+        <div ref={containerRef} className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 py-24">
           <div className="profile-content space-y-12">
             <AdminDrilldownView view={drilldownView} />
           </div>
@@ -818,7 +818,7 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-portal text-white">
-      <div ref={containerRef} className="max-w-6xl mx-auto px-6 md:px-12 py-24">
+      <div ref={containerRef} className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 py-24">
         <div className="profile-content space-y-12">
           {/* Identity Header */}
           <div className="space-y-4">
@@ -827,7 +827,7 @@ const ProfilePage = () => {
                 <User className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-4xl md:text-5xl font-display font-bold uppercase italic leading-none">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold uppercase italic leading-none">
                   <SplitText trigger="load">{profile.identity.fullName.toUpperCase()}</SplitText>
                 </h1>
                 <div className="flex items-center space-x-3 mt-2">

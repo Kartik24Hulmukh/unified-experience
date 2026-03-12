@@ -13,7 +13,7 @@ import { hashToken } from '@/lib/token-hash';
 import { verifyGoogleToken } from '@/lib/google-oauth';
 import { generateOtp, getOtpExpiry, isOtpExpired } from '@/lib/otp';
 import { sendOtpEmail } from '@/lib/email';
-import { AUTH } from '@/config/constants';
+import { AUTH, ADMIN_REGISTRY } from '@/config/constants';
 import { env } from '@/config/env';
 import {
   UnauthorizedError,
@@ -244,9 +244,10 @@ export async function verifyOtp(
   // Atomic: mark OTP used + upsert user (prevents double-use race)
   const passwordHash = await hashPassword(input.password);
 
-  // Check college registry to determine role
+  // Check college registry and admin registry to determine role
   const collegeRecord = await lookupCollegeStudent(input.email);
-  const assignedRole = collegeRecord ? 'STUDENT_VERIFIED' : 'PUBLIC_USER';
+  const isAdmin = ADMIN_REGISTRY.includes(input.email.toLowerCase().trim());
+  const assignedRole = isAdmin ? 'ADMIN' : (collegeRecord ? 'STUDENT_VERIFIED' : 'PUBLIC_USER');
 
   // HIGH-A FIX: pre-compute all in-memory token values BEFORE the transaction.
   const accessToken = signAccessToken({
@@ -276,6 +277,7 @@ export async function verifyOtp(
         fullName: input.fullName,
         password: passwordHash,
         role: assignedRole,
+        ...(isAdmin ? { privilegeLevel: 'SUPER' as const } : {}),
         collegeStudentId: collegeRecord?.id ?? null,
         verified: true,
       },
@@ -283,6 +285,7 @@ export async function verifyOtp(
         fullName: input.fullName,
         password: passwordHash,
         role: assignedRole,
+        ...(isAdmin ? { privilegeLevel: 'SUPER' as const } : {}),
         collegeStudentId: collegeRecord?.id ?? null,
         verified: true,
       },
@@ -471,9 +474,10 @@ export async function googleSignIn(
 ): Promise<{ user: ReturnType<typeof sanitizeUser>; tokens: AuthTokens }> {
   const profile = await verifyGoogleToken(input.credential);
 
-  // Determine role based on college registry — no domain restriction.
+  // Determine role based on college registry and admin registry.
   const collegeRecord = await lookupCollegeStudent(profile.email);
-  const assignedRole = collegeRecord ? 'STUDENT_VERIFIED' : 'PUBLIC_USER';
+  const isAdmin = ADMIN_REGISTRY.includes(profile.email.toLowerCase().trim());
+  const assignedRole = isAdmin ? 'ADMIN' : (collegeRecord ? 'STUDENT_VERIFIED' : 'PUBLIC_USER');
 
   // Upsert user — create if new, link Google ID if existing
   const user = await prisma.user.upsert({
@@ -483,13 +487,18 @@ export async function googleSignIn(
       fullName: profile.name,
       googleId: profile.sub,
       role: assignedRole,
+      ...(isAdmin ? { privilegeLevel: 'SUPER' as const } : {}),
       collegeStudentId: collegeRecord?.id ?? null,
       verified: true,
     },
     update: {
       googleId: profile.sub,
-      // Update role if user was PUBLIC_USER and is now in registry
-      ...(collegeRecord ? { role: 'STUDENT_VERIFIED' as const, collegeStudentId: collegeRecord.id } : {}),
+      // Update role based on admin registry or college registry
+      ...(isAdmin
+        ? { role: 'ADMIN' as const, privilegeLevel: 'SUPER' as const }
+        : collegeRecord
+          ? { role: 'STUDENT_VERIFIED' as const, collegeStudentId: collegeRecord.id }
+          : {}),
       // HIGH-07 FIX: reset any lockout state on successful Google sign-in.
       failedLoginAttempts: 0,
       lockedUntil: null,

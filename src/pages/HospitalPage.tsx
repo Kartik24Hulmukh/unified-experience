@@ -283,7 +283,7 @@ const HospitalPage = () => {
           <img
             src={hospitalHero}
             alt=""
-            className="hosp-hero-img absolute inset-0 w-full h-[130%] object-cover"
+            className="hosp-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"
             fetchPriority="high"
@@ -300,13 +300,13 @@ const HospitalPage = () => {
         </div>
 
         {/* Corner brackets */}
-        <div className="absolute top-8 left-8 w-12 h-12 border-l-2 border-t-2 border-emerald-400/30 z-10" />
-        <div className="absolute top-8 right-8 w-12 h-12 border-r-2 border-t-2 border-emerald-400/30 z-10" />
-        <div className="absolute bottom-8 left-8 w-12 h-12 border-l-2 border-b-2 border-emerald-400/30 z-10" />
-        <div className="absolute bottom-8 right-8 w-12 h-12 border-r-2 border-b-2 border-emerald-400/30 z-10" />
+        <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-t-2 border-emerald-400/30 z-10" />
+        <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-t-2 border-emerald-400/30 z-10" />
+        <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-b-2 border-emerald-400/30 z-10" />
+        <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-b-2 border-emerald-400/30 z-10" />
 
         {/* Top status bar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-8 md:px-16 pt-28 pb-4">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 sm:px-8 md:px-16 pt-28 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30">Module 06 — Healthcare</span>
@@ -317,7 +317,7 @@ const HospitalPage = () => {
         </div>
 
         {/* Hero content */}
-        <div className="relative z-10 w-full px-8 md:px-16 pb-20 md:pb-28">
+        <div className="relative z-10 w-full px-4 sm:px-8 md:px-16 pb-20 md:pb-28">
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
@@ -369,7 +369,7 @@ const HospitalPage = () => {
             </div>
           </div>
 
-          <button onClick={scrollToBrowse} className="group absolute bottom-8 right-8 md:right-16 flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors">
+          <button onClick={scrollToBrowse} className="group absolute bottom-8 right-4 sm:right-8 md:right-16 flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors">
             <span className="text-[9px] font-mono uppercase tracking-[0.4em]">Explore</span>
             <div className="w-px h-12 bg-gradient-to-b from-white/30 to-transparent group-hover:from-emerald-400/50 transition-colors" />
           </button>
@@ -383,7 +383,7 @@ const HospitalPage = () => {
       <WordMarquee words={scrollingWords} accentBgClass="bg-emerald-400/20" />
 
       {/* ═══════════════ nvg8-STYLE VALUE PROP ═══════════════ */}
-      <section className="py-24 md:py-40 px-8 md:px-16 hosp-reveal">
+      <section className="py-16 sm:py-24 md:py-40 px-4 sm:px-8 md:px-16 hosp-reveal">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-24 items-center">
             {/* Left — big statement */}
@@ -443,7 +443,7 @@ const HospitalPage = () => {
       </section>
 
       {/* ═══════════════ SERVICE CATEGORIES ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 hosp-reveal">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 hosp-reveal">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <Activity className="w-4 h-4 text-emerald-400/60" />
@@ -490,7 +490,7 @@ const HospitalPage = () => {
       </section>
 
       {/* ═══════════════ HEALTH TIPS ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 bg-white/[0.01] hosp-reveal">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 bg-white/[0.01] hosp-reveal">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">
@@ -523,7 +523,7 @@ const HospitalPage = () => {
       </section>
 
       {/* ═══════════════ BROWSE FACILITIES ═══════════════ */}
-      <section ref={browseRef} className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 hosp-reveal">
+      <section ref={browseRef} className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 hosp-reveal">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="flex items-center gap-4 mb-4">
             <Search className="w-4 h-4 text-emerald-400/60" />
@@ -571,7 +571,7 @@ const HospitalPage = () => {
       </section>
 
       {/* ═══════════════ FAQ ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 hosp-reveal">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 hosp-reveal">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <BriefcaseMedical className="w-4 h-4 text-emerald-400/60" />
@@ -590,7 +590,7 @@ const HospitalPage = () => {
       </section>
 
       {/* ═══════════════ DISCLAIMER ═══════════════ */}
-      <section className="py-12 px-8 md:px-16 border-t border-white/5 hosp-reveal">
+      <section className="py-12 px-4 sm:px-8 md:px-16 border-t border-white/5 hosp-reveal">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-start gap-3 p-6 border border-red-500/10 bg-red-500/[0.02]">
             <AlertTriangle className="w-4 h-4 text-red-400/40 mt-0.5 flex-shrink-0" />
@@ -609,7 +609,7 @@ const HospitalPage = () => {
       </section>
 
       {/* ═══════════════ CTA ═══════════════ */}
-      <section className="relative py-32 md:py-48 px-8 md:px-16 border-t border-white/5 overflow-hidden">
+      <section className="relative py-20 sm:py-32 md:py-48 px-4 sm:px-8 md:px-16 border-t border-white/5 overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(16,185,129,0.04) 0%, transparent 70%)' }} />
         <div className="absolute inset-0 opacity-[0.02]" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',

@@ -148,7 +148,7 @@ const EssentialsPage = () => {
           <img
             src={essentialsTiffin}
             alt=""
-            className="ess-hero-img absolute inset-0 w-full h-[130%] object-cover"
+            className="ess-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"
             fetchPriority="high"
@@ -163,13 +163,13 @@ const EssentialsPage = () => {
         </div>
 
         {/* Corner brackets */}
-        <div className="absolute top-8 left-8 w-12 h-12 border-l-2 border-t-2 border-violet-400/30 z-10" />
-        <div className="absolute top-8 right-8 w-12 h-12 border-r-2 border-t-2 border-violet-400/30 z-10" />
-        <div className="absolute bottom-8 left-8 w-12 h-12 border-l-2 border-b-2 border-violet-400/30 z-10" />
-        <div className="absolute bottom-8 right-8 w-12 h-12 border-r-2 border-b-2 border-violet-400/30 z-10" />
+        <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-t-2 border-violet-400/30 z-10" />
+        <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-t-2 border-violet-400/30 z-10" />
+        <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-b-2 border-violet-400/30 z-10" />
+        <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-b-2 border-violet-400/30 z-10" />
 
         {/* Status bar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-8 md:px-16 pt-28 pb-4">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 sm:px-8 md:px-16 pt-28 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30">Module 03 — Essentials Hub</span>
@@ -180,7 +180,7 @@ const EssentialsPage = () => {
         </div>
 
         {/* Hero content */}
-        <div className="relative z-10 w-full px-8 md:px-16 pb-20 md:pb-28">
+        <div className="relative z-10 w-full px-4 sm:px-8 md:px-16 pb-20 md:pb-28">
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
@@ -241,7 +241,7 @@ const EssentialsPage = () => {
       <WordMarquee words={scrollingWords} duration={30} accentBgClass="bg-violet-400/20" />
 
       {/* ═══════════════ MODULES OVERVIEW ═══════════════ */}
-      <section className="py-24 md:py-40 px-8 md:px-16 ess-reveal">
+      <section className="py-16 sm:py-24 md:py-40 px-4 sm:px-8 md:px-16 ess-reveal">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <Wifi className="w-4 h-4 text-violet-400/60" />
@@ -372,7 +372,7 @@ const EssentialsPage = () => {
       </section>
 
       {/* ═══════════════ QUICK TIPS ═══════════════ */}
-      <section className="tips-section py-24 md:py-32 px-8 md:px-16 border-t border-white/5 bg-white/[0.01] ess-reveal">
+      <section className="tips-section py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 bg-white/[0.01] ess-reveal">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">

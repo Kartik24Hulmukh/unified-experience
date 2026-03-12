@@ -178,8 +178,8 @@ const CampusEventsSection = () => {
 
           {/* ── Section header column ──────────────────────────────────────── */}
           <div
-            className="evt-header shrink-0 h-full flex flex-col justify-center px-16 lg:px-20"
-            style={{ width: '460px' }}
+            className="evt-header shrink-0 h-full flex flex-col justify-center px-8 sm:px-12 lg:px-20"
+            style={{ width: 'clamp(280px, 38vw, 460px)' }}
           >
             <p className="text-[#a3ff12] font-mono text-[9px] uppercase tracking-[0.45em] mb-5">
               CAMPUS_SYS // EVT_MODULE_V01
@@ -227,8 +227,8 @@ const CampusEventsSection = () => {
                 key={event.id}
                 className="evt-card shrink-0 mx-4 flex flex-col justify-between relative overflow-hidden group"
                 style={{
-                  width: '370px',
-                  height: '62vh',
+                  width: 'clamp(280px, 32vw, 370px)',
+                  height: 'clamp(380px, 62vh, 600px)',
                   border: '1px solid rgba(255,255,255,0.08)',
                   background: 'rgba(255,255,255,0.02)',
                 }}
@@ -248,7 +248,7 @@ const CampusEventsSection = () => {
                 />
 
                 {/* Card content */}
-                <div className="relative z-10 p-10 flex flex-col h-full">
+                <div className="relative z-10 p-5 sm:p-8 lg:p-10 flex flex-col h-full">
 
                   {/* Top row: index + type badge */}
                   <div className="flex items-start justify-between mb-8">
@@ -274,7 +274,7 @@ const CampusEventsSection = () => {
                   {/* Title */}
                   <h3
                     className="font-display font-bold uppercase leading-[0.88] tracking-[-0.03em] mb-3 text-portal-foreground transition-colors duration-500 group-hover:text-white"
-                    style={{ fontSize: '2.1rem' }}
+                    style={{ fontSize: 'clamp(1.4rem, 2.5vw, 2.1rem)' }}
                   >
                     {event.title}
                   </h3>

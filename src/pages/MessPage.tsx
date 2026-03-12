@@ -262,7 +262,7 @@ const MessPage = () => {
           <img
             src={messHero}
             alt=""
-            className="mess-hero-img absolute inset-0 w-full h-[130%] object-cover"
+            className="mess-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"
             fetchPriority="high"
@@ -279,13 +279,13 @@ const MessPage = () => {
         </div>
 
         {/* Corner brackets */}
-        <div className="absolute top-8 left-8 w-12 h-12 border-l-2 border-t-2 border-amber-400/30 z-10" />
-        <div className="absolute top-8 right-8 w-12 h-12 border-r-2 border-t-2 border-amber-400/30 z-10" />
-        <div className="absolute bottom-8 left-8 w-12 h-12 border-l-2 border-b-2 border-amber-400/30 z-10" />
-        <div className="absolute bottom-8 right-8 w-12 h-12 border-r-2 border-b-2 border-amber-400/30 z-10" />
+        <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-t-2 border-amber-400/30 z-10" />
+        <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-t-2 border-amber-400/30 z-10" />
+        <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-b-2 border-amber-400/30 z-10" />
+        <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-b-2 border-amber-400/30 z-10" />
 
         {/* Top status bar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-8 md:px-16 pt-28 pb-4">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 sm:px-8 md:px-16 pt-28 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30">
@@ -298,7 +298,7 @@ const MessPage = () => {
         </div>
 
         {/* Hero content */}
-        <div className="relative z-10 w-full px-8 md:px-16 pb-20 md:pb-28">
+        <div className="relative z-10 w-full px-4 sm:px-8 md:px-16 pb-20 md:pb-28">
           <div className="max-w-5xl">
             {/* nvg8-style big words stacking */}
             <div className="space-y-1 mb-8">
@@ -353,7 +353,7 @@ const MessPage = () => {
           </div>
 
           {/* Scroll CTA */}
-          <button onClick={scrollToBrowse} className="group absolute bottom-8 right-8 md:right-16 flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors">
+          <button onClick={scrollToBrowse} className="group absolute bottom-8 right-4 sm:right-8 md:right-16 flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors">
             <span className="text-[9px] font-mono uppercase tracking-[0.4em]">Explore</span>
             <div className="w-px h-12 bg-gradient-to-b from-white/30 to-transparent group-hover:from-amber-400/50 transition-colors" />
           </button>
@@ -364,7 +364,7 @@ const MessPage = () => {
       <WordMarquee words={scrollingWords} accentBgClass="bg-amber-400/20" />
 
       {/* ═══════════════ nvg8-STYLE FUN FACT / VALUE PROP ═══════════════ */}
-      <section className="py-24 md:py-40 px-8 md:px-16 mess-reveal">
+      <section className="py-16 sm:py-24 md:py-40 px-4 sm:px-8 md:px-16 mess-reveal">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-24 items-center">
             {/* Left — big statement text (nvg8 "fun fact" style) */}
@@ -417,7 +417,7 @@ const MessPage = () => {
       </section>
 
       {/* ═══════════════ HIGHLIGHTS / TRUST ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 mess-reveal">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <Flame className="w-4 h-4 text-amber-400/60" />
@@ -455,7 +455,7 @@ const MessPage = () => {
       </section>
 
       {/* ═══════════════ MEAL PLANS (nvg8 Products-style) ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 mess-reveal">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">
@@ -524,7 +524,7 @@ const MessPage = () => {
       </section>
 
       {/* ═══════════════ BROWSE LISTINGS ═══════════════ */}
-      <section ref={browseRef} className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 mess-reveal">
+      <section ref={browseRef} className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="flex items-center gap-4 mb-4">
             <Search className="w-4 h-4 text-amber-400/60" />
@@ -571,7 +571,7 @@ const MessPage = () => {
       </section>
 
       {/* ═══════════════ FAQ (nvg8-style accordion) ═══════════════ */}
-      <section className="py-24 md:py-32 px-8 md:px-16 border-t border-white/5 mess-reveal">
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <ChefHat className="w-4 h-4 text-amber-400/60" />
@@ -590,7 +590,7 @@ const MessPage = () => {
       </section>
 
       {/* ═══════════════ DISCLAIMER ═══════════════ */}
-      <section className="py-12 px-8 md:px-16 border-t border-white/5 mess-reveal">
+      <section className="py-12 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-start gap-3 p-6 border border-amber-400/10 bg-amber-400/[0.02]">
             <ChefHat className="w-4 h-4 text-amber-400/40 mt-0.5 flex-shrink-0" />
@@ -609,7 +609,7 @@ const MessPage = () => {
       </section>
 
       {/* ═══════════════ CTA ═══════════════ */}
-      <section className="relative py-32 md:py-48 px-8 md:px-16 border-t border-white/5 overflow-hidden">
+      <section className="relative py-20 sm:py-32 md:py-48 px-4 sm:px-8 md:px-16 border-t border-white/5 overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(245,158,11,0.04) 0%, transparent 70%)' }} />
         <div className="absolute inset-0 opacity-[0.02]" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',

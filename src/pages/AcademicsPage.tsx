@@ -99,7 +99,7 @@ const AcademicsPage = () => {
           <img
             src={academicsHero}
             alt=""
-            className="acad-hero-img absolute inset-0 w-full h-[130%] object-cover"
+            className="acad-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
           />
           <div className="absolute inset-0" style={{
@@ -129,13 +129,13 @@ const AcademicsPage = () => {
         </div>
 
         {/* Corner brackets */}
-        <div className="absolute top-8 left-8 w-12 h-12 border-l-2 border-t-2 border-violet-400/30 z-10" />
-        <div className="absolute top-8 right-8 w-12 h-12 border-r-2 border-t-2 border-violet-400/30 z-10" />
-        <div className="absolute bottom-8 left-8 w-12 h-12 border-l-2 border-b-2 border-violet-400/30 z-10" />
-        <div className="absolute bottom-8 right-8 w-12 h-12 border-r-2 border-b-2 border-violet-400/30 z-10" />
+        <div className="absolute top-4 left-4 sm:top-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-t-2 border-violet-400/30 z-10" />
+        <div className="absolute top-4 right-4 sm:top-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-t-2 border-violet-400/30 z-10" />
+        <div className="absolute bottom-4 left-4 sm:bottom-8 sm:left-8 w-6 h-6 sm:w-12 sm:h-12 border-l-2 border-b-2 border-violet-400/30 z-10" />
+        <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-6 h-6 sm:w-12 sm:h-12 border-r-2 border-b-2 border-violet-400/30 z-10" />
 
         {/* Top status bar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-8 md:px-16 pt-28 pb-4">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 sm:px-8 md:px-16 pt-28 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30">
@@ -148,13 +148,13 @@ const AcademicsPage = () => {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 min-h-screen flex flex-col justify-center px-8 md:px-16 py-20">
+        <div className="relative z-10 min-h-screen flex flex-col justify-center px-4 sm:px-8 md:px-16 py-20">
           <div className="max-w-4xl">
             <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-4">
               Module 04
             </p>
 
-            <h1 className="text-portal-foreground font-display text-6xl md:text-9xl font-bold leading-none mb-8">
+            <h1 className="text-portal-foreground font-display text-4xl sm:text-6xl md:text-9xl font-bold leading-none mb-8">
               <SplitText animation="reveal" trigger="load" type="chars" stagger={0.02}>
                 ACADEMICS
               </SplitText>
@@ -190,7 +190,7 @@ const AcademicsPage = () => {
       </section>
 
       {/* Resources Grid - Bento-style */}
-      <section ref={cardsRef} className="py-32 px-8 md:px-16">
+      <section ref={cardsRef} className="py-20 sm:py-32 px-4 sm:px-8 md:px-16">
         <div className="max-w-7xl mx-auto">
           <div className="mb-16">
             <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-4">
@@ -241,7 +241,7 @@ const AcademicsPage = () => {
 
       {/* Semester Navigator - If branch selected */}
       {selectedBranch && (
-        <section className="py-32 px-8 md:px-16 bg-portal-foreground/5">
+        <section className="py-20 sm:py-32 px-4 sm:px-8 md:px-16 bg-portal-foreground/5">
           <div className="max-w-7xl mx-auto">
             <div className="mb-16">
               <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-4">
@@ -269,7 +269,7 @@ const AcademicsPage = () => {
       )}
 
       {/* Contribution note */}
-      <section className="py-32 px-8 md:px-16">
+      <section className="py-20 sm:py-32 px-4 sm:px-8 md:px-16">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-block p-6 border border-portal-foreground/10 mb-8">
             <p className="text-portal-foreground/40 text-xs uppercase tracking-widest">Note</p>

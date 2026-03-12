@@ -137,7 +137,7 @@ const FooterSection = () => {
         }}
       />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-8">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-8">
 
         {/* ── Eyebrow ────────────────────────────────────────────────────────── */}
         <p className="ftr-eyebrow text-[#a3ff12] font-mono text-[9px] uppercase tracking-[0.45em] mb-7 text-center opacity-0">

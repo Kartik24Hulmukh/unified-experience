@@ -16,47 +16,84 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...\n');
 
+  // ── RGIT College Student Registry ─────────────────
+  // Official student records — used to auto-verify RGIT students on signup
+  const rgitStudents = [
+    { name: 'Kartik Hulmukh', officialEmail: 'kartikhulmukh24@gmail.com', department: 'Computer Science', year: '3rd', phone: null },
+    { name: 'Test Student', officialEmail: 'testuser@mctrgit.ac.in', department: 'Computer Science', year: '2nd', phone: null },
+    { name: 'Buyer Student', officialEmail: 'buyer@mctrgit.ac.in', department: 'IT', year: '2nd', phone: null },
+    { name: 'Rahul Sharma', officialEmail: 'rahul.sharma@mctrgit.ac.in', department: 'Computer Science', year: '3rd', phone: null },
+    { name: 'Priya Patel', officialEmail: 'priya.patel@mctrgit.ac.in', department: 'IT', year: '2nd', phone: null },
+    { name: 'Amit Kumar', officialEmail: 'amit.kumar@mctrgit.ac.in', department: 'Electronics', year: '4th', phone: null },
+    { name: 'Neha Deshmukh', officialEmail: 'neha.deshmukh@mctrgit.ac.in', department: 'Mechanical', year: '3rd', phone: null },
+    { name: 'Vikram Singh', officialEmail: 'vikram.singh@mctrgit.ac.in', department: 'Civil', year: '2nd', phone: null },
+    { name: 'Sneha Reddy', officialEmail: 'sneha.reddy@mctrgit.ac.in', department: 'Computer Science', year: '4th', phone: null },
+    { name: 'Rohan Joshi', officialEmail: 'rohan.joshi@mctrgit.ac.in', department: 'IT', year: '3rd', phone: null },
+  ];
+
+  console.log('  Seeding RGIT College Student Registry...');
+  for (const student of rgitStudents) {
+    await prisma.collegeStudent.upsert({
+      where: { officialEmail: student.officialEmail },
+      update: { name: student.name, department: student.department, year: student.year },
+      create: student,
+    });
+    console.log(`  ✓ RGIT Student: ${student.name} (${student.officialEmail})`);
+  }
+
   // ── Users ─────────────────────────────────────────
 
   const adminPw = await argon2.hash('Admin@1234');
+  const adminCollegeRecord = await prisma.collegeStudent.findUnique({
+    where: { officialEmail: 'kartikhulmukh24@gmail.com' },
+  });
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@mctrgit.ac.in' },
-    update: { role: 'ADMIN', verified: true, privilegeLevel: 'SUPER' },
+    where: { email: 'kartikhulmukh24@gmail.com' },
+    update: { role: 'ADMIN', verified: true, privilegeLevel: 'SUPER', collegeStudentId: adminCollegeRecord?.id ?? null },
     create: {
-      email: 'admin@mctrgit.ac.in',
-      fullName: 'Admin BErozgar',
+      email: 'kartikhulmukh24@gmail.com',
+      fullName: 'Kartik Hulmukh',
       password: adminPw,
       role: 'ADMIN',
       verified: true,
       privilegeLevel: 'SUPER',
+      collegeStudentId: adminCollegeRecord?.id ?? null,
     },
   });
   console.log(`  ✓ Admin:  ${admin.email} (${admin.id})`);
 
+  const sellerCollegeRecord = await prisma.collegeStudent.findUnique({
+    where: { officialEmail: 'testuser@mctrgit.ac.in' },
+  });
   const sellerPw = await argon2.hash('Seller@1234');
   const seller = await prisma.user.upsert({
     where: { email: 'testuser@mctrgit.ac.in' },
-    update: { verified: true },
+    update: { verified: true, collegeStudentId: sellerCollegeRecord?.id ?? null },
     create: {
       email: 'testuser@mctrgit.ac.in',
       fullName: 'Test Seller',
       password: sellerPw,
       role: 'STUDENT_VERIFIED',
       verified: true,
+      collegeStudentId: sellerCollegeRecord?.id ?? null,
     },
   });
   console.log(`  ✓ Seller: ${seller.email} (${seller.id})`);
 
+  const buyerCollegeRecord = await prisma.collegeStudent.findUnique({
+    where: { officialEmail: 'buyer@mctrgit.ac.in' },
+  });
   const buyerPw = await argon2.hash('Buyer@1234');
   const buyer = await prisma.user.upsert({
     where: { email: 'buyer@mctrgit.ac.in' },
-    update: { verified: true },
+    update: { verified: true, collegeStudentId: buyerCollegeRecord?.id ?? null },
     create: {
       email: 'buyer@mctrgit.ac.in',
       fullName: 'Buyer Student',
       password: buyerPw,
       role: 'STUDENT_VERIFIED',
       verified: true,
+      collegeStudentId: buyerCollegeRecord?.id ?? null,
     },
   });
   console.log(`  ✓ Buyer:  ${buyer.email} (${buyer.id})`);

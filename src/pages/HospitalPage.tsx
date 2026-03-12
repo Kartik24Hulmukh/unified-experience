@@ -22,74 +22,7 @@ import {
 
 /* ── Data ─────────────────────────────────────────────── */
 
-const hospitals = [
-  {
-    id: 'hp1',
-    title: 'Campus Medical Center',
-    price: '50',
-    category: 'On-Campus',
-    institution: 'Campus Unit',
-    distance: '0 km',
-    emergency: false,
-    hours: '9 AM - 5 PM',
-    services: ['General OPD', 'First Aid', 'Basic Tests'],
-  },
-  {
-    id: 'hp2',
-    title: 'Bombay Hospital & MRC',
-    price: '500',
-    category: 'Hospital',
-    institution: 'Premium',
-    distance: '4.2 km',
-    emergency: true,
-    hours: '24/7',
-    services: ['Emergency', 'Surgery', 'ICU', 'Diagnostics'],
-  },
-  {
-    id: 'hp3',
-    title: 'City Pediatric Clinic',
-    price: '300',
-    category: 'Clinic',
-    institution: 'Private Partner',
-    distance: '2.5 km',
-    emergency: false,
-    hours: '10 AM - 8 PM',
-    services: ['General', 'Dental', 'Eye Care'],
-  },
-  {
-    id: 'hp4',
-    title: 'LifeLine Pharmacy 24/7',
-    price: '0',
-    category: 'Pharmacy',
-    institution: 'Verified Store',
-    distance: '0.3 km',
-    emergency: false,
-    hours: '24/7',
-    services: ['Medicines', 'First Aid Kits', 'Health Supplements'],
-  },
-  {
-    id: 'hp5',
-    title: 'MedPlus Diagnostics',
-    price: '200',
-    category: 'Diagnostics',
-    institution: 'Student Discount',
-    distance: '1.8 km',
-    emergency: false,
-    hours: '7 AM - 9 PM',
-    services: ['Blood Tests', 'X-Ray', 'MRI', 'ECG'],
-  },
-  {
-    id: 'hp6',
-    title: 'Government General Hospital',
-    price: '20',
-    category: 'Hospital',
-    institution: 'Public',
-    distance: '5.5 km',
-    emergency: true,
-    hours: '24/7',
-    services: ['Emergency', 'General Ward', 'Outpatient', 'Surgery'],
-  },
-];
+const hospitals = [   { id: 'hp1', title: 'Thunga STH Hospital', price: '500', category: 'Hospital', institution: 'Premium', distance: '500m' },  { id: 'hp2', title: 'Bhartiya Arogya Nidhi', price: '300', category: 'Hospital', institution: 'Premium', distance: '2km' },  { id: 'hp3', title: 'Bellevue Multidisciplinary', price: '400', category: 'Hospital', institution: 'General', distance: '2km' },  { id: 'hp4', title: 'BSES MG Hospital', price: '200', category: 'Hospital', institution: 'General', distance: '2.9km' },  { id: 'hp5', title: 'Dr. R.N. Cooper Hospital', price: '0', category: 'Hospital', institution: 'Public', distance: '3.0km' }];
 
 const emergencyContacts = [
   { label: 'Campus Medical', number: '108 (On Campus)', icon: Cross, priority: 'high' },
@@ -205,13 +138,13 @@ const HospitalPage = () => {
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    const listItems = visibleItems.map((h) => ({
+    const listItems = [...hospitals.map(h => ({id: h.id, title: h.title, price: h.price, category: h.category, institution: h.institution, image: '/Hospital.png'})), ...visibleItems.map((h) => ({
       id: h.id,
       title: h.title,
       price: h.price,
       category: h.category,
       institution: h.institution,
-    }));
+    }))];
     return listItems.filter(
       item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -21,74 +21,7 @@ import {
 
 /* ── Data ─────────────────────────────────────────────── */
 
-const messServices = [
-  {
-    id: 'm1',
-    title: 'Annapurna Veg Mess',
-    price: '3000',
-    category: 'Vegetarian',
-    institution: 'Student Favorite',
-    type: 'Veg',
-    meals: 'Lunch + Dinner',
-    rating: 4.5,
-    distance: '0.8 km',
-  },
-  {
-    id: 'm2',
-    title: 'Home-Style Tiffin Service',
-    price: '2800',
-    category: 'Tiffin',
-    institution: 'Home Cooked',
-    type: 'Veg',
-    meals: 'Lunch + Dinner',
-    rating: 4.7,
-    distance: '1.2 km',
-  },
-  {
-    id: 'm3',
-    title: 'Campus Night Canteen',
-    price: '50',
-    category: 'Canteen',
-    institution: 'Internal',
-    type: 'Veg & Non-Veg',
-    meals: 'Snacks + Dinner',
-    rating: 3.8,
-    distance: '0 km',
-  },
-  {
-    id: 'm4',
-    title: 'Sai Krupa Mess',
-    price: '2500',
-    category: 'Vegetarian',
-    institution: 'Budget Pick',
-    type: 'Veg',
-    meals: 'Lunch + Dinner',
-    rating: 4.0,
-    distance: '1.5 km',
-  },
-  {
-    id: 'm5',
-    title: 'Mumbai Dabba Express',
-    price: '3500',
-    category: 'Tiffin',
-    institution: 'Premium',
-    type: 'Veg & Non-Veg',
-    meals: 'Lunch',
-    rating: 4.8,
-    distance: '3 km',
-  },
-  {
-    id: 'm6',
-    title: 'Shree Balaji Bhojanalaya',
-    price: '2200',
-    category: 'Vegetarian',
-    institution: 'Verified',
-    type: 'Pure Veg',
-    meals: 'Breakfast + Lunch + Dinner',
-    rating: 4.2,
-    distance: '0.5 km',
-  },
-];
+const messServices = [   { id: 'm1', title: 'Digitiffin - Andheri Tiffin', price: '3000', category: 'Tiffin', institution: 'Verified', meals: 'Lunch+Dinner' },  { id: 'm2', title: 'KTR (Karnataka Tiffin Room)', price: '3500', category: 'Mess', institution: 'Premium', meals: 'All' },  { id: 'm3', title: 'Balanced Meal', price: '2800', category: 'Tiffin', institution: 'Verified', meals: 'Lunch+Dinner' },  { id: 'm4', title: 'Mummas Tiffin & Cakes', price: '2500', category: 'Tiffin', institution: 'Home Cooked', meals: 'Lunch' },  { id: 'm5', title: 'Gharondaa Tiffin Services', price: '3200', category: 'Tiffin', institution: 'Verified', meals: 'Lunch+Dinner' },  { id: 'm6', title: 'Homefoodi', price: '4000', category: 'Delivery', institution: 'Premium', meals: 'Flexible' }];
 
 const highlights = [
   {
@@ -186,13 +119,21 @@ const MessPage = () => {
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    const listItems = visibleItems.map((s) => ({
+    const defaultMesses = messServices.map((s, index) => ({
       id: s.id,
       title: s.title,
       price: s.price,
       category: s.category,
       institution: s.institution,
+      image: index % 2 === 0 ? '/DabbaGo.jpeg' : '/happyGrub.jpeg',
     }));
+    const listItems = [...defaultMesses, ...visibleItems.map((s) => ({
+      id: s.id,
+      title: s.title,
+      price: s.price,
+      category: s.category,
+      institution: s.institution,
+    }))];
     return listItems.filter(
       item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -510,7 +451,9 @@ const MessPage = () => {
                   ))}
                 </div>
 
-                <button className={`w-full py-3 text-[10px] font-mono uppercase tracking-widest border transition-all duration-300 ${
+                <button
+                  onClick={scrollToBrowse}
+                  className={`w-full py-3 text-[10px] font-mono uppercase tracking-widest border transition-all duration-300 ${
                   plan.popular
                     ? 'border-amber-400/50 text-amber-400 hover:bg-amber-400/10'
                     : 'border-white/10 text-white/40 hover:border-white/30 hover:text-white/70'

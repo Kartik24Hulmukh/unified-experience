@@ -1,0 +1,56 @@
+  
+  // ScrollTrigger registered in lib/gsap-init.ts
+  
+  /* ── Data ─────────────────────────────────────────────── */
+  
+> const hospitals = [
+    {
+      id: 'hp1',
+      title: 'Campus Medical Center',
+      price: '50',
+      category: 'On-Campus',
+      institution: 'Campus Unit',
+      distance: '0 km',
+      emergency: false,
+      hours: '9 AM - 5 PM',
+      services: ['General OPD', 'First Aid', 'Basic Tests'],
+    },
+    {
+      id: 'hp2',
+      title: 'Bombay Hospital & MRC',
+      price: '500',
+      category: 'Hospital',
+      institution: 'Premium',
+      distance: '4.2 km',
+      emergency: true,
+      hours: '24/7',
+      services: ['Emergency', 'Surgery', 'ICU', 'Diagnostics'],
+    },
+    {
+      id: 'hp3',
+      title: 'City Pediatric Clinic',
+      price: '300',
+      category: 'Clinic',
+      institution: 'Private Partner',
+      distance: '2.5 km',
+      emergency: false,
+      hours: '10 AM - 8 PM',
+      services: ['General', 'Dental', 'Eye Care'],
+    },
+    {
+      id: 'hp4',
+      title: 'LifeLine Pharmacy 24/7',
+      price: '0',
+      category: 'Pharmacy',
+      institution: 'Verified Store',
+      distance: '0.3 km',
+      emergency: false,
+      hours: '24/7',
+      services: ['Medicines', 'First Aid Kits', 'Health Supplements'],
+    },
+    {
+      id: 'hp5',
+      title: 'MedPlus Diagnostics',
+      price: '200',
+      category: 'Diagnostics',
+      institution: 'Student Discount',

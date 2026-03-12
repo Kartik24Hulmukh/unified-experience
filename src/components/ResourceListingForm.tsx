@@ -46,13 +46,27 @@ const listingSchema = z.object({
     }),
 });
 
+interface CategoryOption {
+    value: string;
+    label: string;
+}
+
+const DEFAULT_CATEGORIES: CategoryOption[] = [
+    { value: 'books', label: 'Engineering Books' },
+    { value: 'calculators', label: 'Calculators' },
+    { value: 'instruments', label: 'Instruments' },
+    { value: 'electronics', label: 'Electronics' },
+];
+
 interface ListingFormProps {
     moduleName: string;
     moduleColor?: string;
     onSuccess: () => void;
+    /** Category options shown in the dropdown; defaults to resale categories */
+    categories?: CategoryOption[];
 }
 
-const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }: ListingFormProps) => {
+const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess, categories = DEFAULT_CATEGORIES }: ListingFormProps) => {
     const [step, setStep] = useState(1);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const { canPerform } = useRestriction();
@@ -250,10 +264,9 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess }:
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent className="bg-[#0a0a0a] border-white/10 text-white rounded-none">
-                                                        <SelectItem value="books">Engineering Books</SelectItem>
-                                                        <SelectItem value="calculators">Calculators</SelectItem>
-                                                        <SelectItem value="instruments">Instruments</SelectItem>
-                                                        <SelectItem value="electronics">Electronics</SelectItem>
+                                                        {categories.map(cat => (
+                                                            <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage className="text-red-400 text-[10px]" />

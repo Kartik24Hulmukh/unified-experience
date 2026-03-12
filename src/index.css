@@ -188,7 +188,7 @@ html.lenis body {
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   h1,
@@ -582,7 +582,7 @@ html.lenis body {
 
 /* Prevent horizontal overflow on mobile */
 html, body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Corner brackets scale down on mobile */

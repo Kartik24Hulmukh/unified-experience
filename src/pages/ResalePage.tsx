@@ -307,10 +307,9 @@ const ResalePage = () => {
               }
               setIsModalOpen(true);
             }}
-            disabled={!canCreateListing}
-            className={`px-12 py-5 font-display uppercase tracking-wider text-sm group relative overflow-hidden transition-colors ${canCreateListing
+            className={`px-12 py-5 font-display uppercase tracking-wider text-sm group relative overflow-hidden transition-colors ${isAuthenticated && canCreateListing
                 ? 'bg-portal-foreground text-portal hover:bg-teal-400'
-                : 'bg-portal-foreground/30 text-portal/50 cursor-not-allowed'
+                : 'bg-portal-foreground/30 text-portal/50'
               }`}
           >
             <span className="relative z-10 flex items-center justify-center">

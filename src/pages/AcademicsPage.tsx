@@ -1,14 +1,27 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo } from 'react';
+import { useRef, useLayoutEffect, useState, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
 import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
+import ListingFormModal from '@/components/ListingFormModal';
+import ResourceListingForm from '@/components/ResourceListingForm';
 const academicsHero = '/Academics.jpg';
-import { Search, X } from 'lucide-react';
+import { Search, X, Plus } from 'lucide-react';
 import { useListings } from '@/hooks/api/useApi';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRestriction } from '@/hooks/useRestriction';
+import { toast } from '@/components/ui/use-toast';
+
+const ACADEMIC_CATEGORIES = [
+  { value: 'notes', label: 'Lecture Notes' },
+  { value: 'questionbank', label: 'Question Banks' },
+  { value: 'textbook', label: 'Textbooks' },
+  { value: 'syllabus', label: 'Syllabus' },
+  { value: 'other', label: 'Other Resources' },
+];
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -30,21 +43,51 @@ const resources = [
 const AcademicsPage = () => {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const { isAuthenticated } = useAuth();
+  const { canPerform } = useRestriction();
+  const canCreateListing = canPerform('CREATE_LISTING');
 
   // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'academics' });
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    return visibleItems.filter(item =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery, visibleItems]);
+    const defaultAcademics = [
+      {
+        id: 'acad1',
+        title: 'BTech First Year Notes',
+        price: '350',
+        category: 'notes',
+        institution: 'MCTRGIT',
+        image: '/Academics.jpg'
+      },
+      {
+        id: 'acad2',
+        title: 'Engineering Mechanics Books',
+        price: '500',
+        category: 'books',
+        institution: 'MCTRGIT',
+        image: '/Academics.jpg'
+      }
+    ];
+    const combinedVisible = [...defaultAcademics, ...visibleItems];
+
+    return combinedVisible.filter(item => {
+      const matchesSearch =
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase());
+      // Branch filter: check if category or title contains the selected branch code
+      const matchesBranch = !selectedBranch ||
+        item.category.toLowerCase().includes(selectedBranch.toLowerCase()) ||
+        item.title.toLowerCase().includes(selectedBranch.toLowerCase());
+      return matchesSearch && matchesBranch;
+    });
+  }, [searchQuery, selectedBranch, visibleItems]);
 
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {
@@ -268,20 +311,55 @@ const AcademicsPage = () => {
         </section>
       )}
 
-      {/* Contribution note */}
+      {/* CTA Section — create academic resource listing */}
       <section className="py-20 sm:py-32 px-4 sm:px-8 md:px-16">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-block p-6 border border-portal-foreground/10 mb-8">
-            <p className="text-portal-foreground/40 text-xs uppercase tracking-widest">Note</p>
-          </div>
-          <h2 className="text-portal-foreground font-display text-3xl md:text-4xl font-bold mb-6">
-            Admin-Approved Content Only
+          <h2 className="text-portal-foreground font-display text-4xl md:text-6xl font-bold mb-8">
+            Share Your Resources
           </h2>
-          <p className="text-portal-foreground/50 text-lg max-w-xl mx-auto">
-            All resources are reviewed for accuracy and compliance with academic guidelines before being made available.
+          <p className="text-portal-foreground/50 text-lg mb-4 max-w-xl mx-auto">
+            Have notes, question banks, or textbooks to share? List them for verified MCTRGIT students.
           </p>
+          <p className="text-portal-foreground/30 text-xs uppercase tracking-widest mb-12">
+            All submissions go through admin review before becoming visible.
+          </p>
+          <button
+            onClick={() => {
+              if (!isAuthenticated) {
+                toast({ title: 'Sign In Required', description: 'Please sign in to share academic resources.', variant: 'destructive' });
+                return;
+              }
+              if (!canCreateListing) {
+                toast({ title: 'Action Unavailable', description: 'Your account is restricted from creating listings.', variant: 'destructive' });
+                return;
+              }
+              setIsModalOpen(true);
+            }}
+            className="px-12 py-5 font-display uppercase tracking-wider text-sm group relative overflow-hidden transition-colors bg-portal-foreground text-portal hover:bg-violet-400"
+          >
+            <span className="relative z-10 flex items-center justify-center">
+              Share a Resource <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
+            </span>
+            <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 opacity-20" />
+          </button>
         </div>
       </section>
+
+      {/* Listing Form Modal */}
+      <ListingFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Share Academic Resource"
+      >
+        <ResourceListingForm
+          moduleName="Academics"
+          categories={ACADEMIC_CATEGORIES}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            refetch();
+          }}
+        />
+      </ListingFormModal>
     </div>
   );
 };

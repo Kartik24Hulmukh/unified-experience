@@ -6,7 +6,12 @@ import ListingGrid from '@/components/ListingGrid';
 import GlitchText from '@/components/GlitchText';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import { useTypewriter } from '@/hooks/useTypewriter';
-import { Search, X, Shield, Lock, Eye, Users, MapPin, ArrowRight, Terminal, Database, Wifi } from 'lucide-react';
+import { Search, X, Shield, Lock, Eye, Users, MapPin, ArrowRight, Terminal, Database, Wifi, Plus } from 'lucide-react';
+import ListingFormModal from '@/components/ListingFormModal';
+import ResourceListingForm from '@/components/ResourceListingForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRestriction } from '@/hooks/useRestriction';
+import { toast } from '@/components/ui/use-toast';
 import housingHandover from '@/assets/housing-handover.jpg';
 import { useListings } from '@/hooks/api/useApi';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
@@ -92,6 +97,13 @@ const DataTicker = () => {
 
 /* ── Animated Counter (imported from @/components/AnimatedCounter) ── */
 
+const ACCOMMODATION_CATEGORIES = [
+  { value: 'pg', label: 'PG Accommodation' },
+  { value: 'flat', label: 'Flat / Apartment' },
+  { value: 'flatmate', label: 'Flatmate Search' },
+  { value: 'hostel', label: 'Hostel Room' },
+];
+
 /* ── Main Page ───────────────────────────────────────── */
 
 const AccommodationPage = () => {
@@ -109,7 +121,27 @@ const AccommodationPage = () => {
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    return visibleItems.filter(
+    const defaultAcc = [
+      {
+        id: 'acc1',
+        title: 'Premium PG near Campus',
+        price: '8000',
+        category: 'pg',
+        institution: 'MCTRGIT',
+        image: '/logo.png' 
+      },
+      {
+        id: 'acc2',
+        title: '2BHK Flat for Students',
+        price: '15000',
+        category: 'flat',
+        institution: 'MCTRGIT',
+        image: '/logo.png'
+      }
+    ];
+    const combinedVisible = [...defaultAcc, ...visibleItems];
+
+    return combinedVisible.filter(
       item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -119,6 +151,11 @@ const AccommodationPage = () => {
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { canPerform } = useRestriction();
+  const canCreateListing = canPerform('CREATE_LISTING');
 
   /* GSAP Master Timeline */
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
@@ -765,8 +802,31 @@ const AccommodationPage = () => {
               </span>
             </button>
 
-            <button className="px-10 py-4 border border-white/10 text-white/50 font-display uppercase tracking-wider text-xs font-bold hover:border-white/30 hover:text-white/80 transition-all duration-300">
+            <button
+              onClick={scrollToBrowse}
+              className="px-10 py-4 border border-white/10 text-white/50 font-display uppercase tracking-wider text-xs font-bold hover:border-white/30 hover:text-white/80 transition-all duration-300"
+            >
               Learn More
+            </button>
+          </div>
+
+          <div className="mt-6 flex items-center justify-center">
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  toast({ title: 'Sign In Required', description: 'Please sign in to list your property.', variant: 'destructive' });
+                  return;
+                }
+                if (!canCreateListing) {
+                  toast({ title: 'Action Unavailable', description: 'Your account is currently restricted from creating listings.', variant: 'destructive' });
+                  return;
+                }
+                setIsModalOpen(true);
+              }}
+              className="group flex items-center gap-3 px-8 py-3 border border-cyan-400/30 text-cyan-400/80 text-[10px] font-mono uppercase tracking-widest hover:bg-cyan-400/10 hover:border-cyan-400/50 transition-all duration-300"
+            >
+              <Plus className="w-3 h-3 group-hover:rotate-90 transition-transform duration-300" />
+              List Your Property
             </button>
           </div>
 
@@ -780,6 +840,21 @@ const AccommodationPage = () => {
           </div>
         </div>
       </section>
+
+      <ListingFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="List Your Property"
+      >
+        <ResourceListingForm
+          moduleName="Accommodation"
+          categories={ACCOMMODATION_CATEGORIES}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            refetch();
+          }}
+        />
+      </ListingFormModal>
     </div>
   );
 };

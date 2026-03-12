@@ -892,6 +892,15 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
 
+      // MED-01 FIX: Manually clean up textures and framebuffers before losing context to prevent memory leaks
+      try {
+        if (dye) { gl.deleteFramebuffer(dye.read?.fbo); gl.deleteTexture(dye.read?.texture); gl.deleteFramebuffer(dye.write?.fbo); gl.deleteTexture(dye.write?.texture); }
+        if (velocity) { gl.deleteFramebuffer(velocity.read?.fbo); gl.deleteTexture(velocity.read?.texture); gl.deleteFramebuffer(velocity.write?.fbo); gl.deleteTexture(velocity.write?.texture); }
+        if (divergence) { gl.deleteFramebuffer(divergence.fbo); gl.deleteTexture(divergence.texture); }
+        if (pressure) { gl.deleteFramebuffer(pressure.read?.fbo); gl.deleteTexture(pressure.read?.texture); gl.deleteFramebuffer(pressure.write?.fbo); gl.deleteTexture(pressure.write?.texture); }
+        if (curl) { gl.deleteFramebuffer(curl.fbo); gl.deleteTexture(curl.texture); }
+      } catch (e) { /* Safe ignore */ }
+
       // LOW-RAF FIX: forcibly release the WebGL context to prevent context
       // exhaustion and ensure the rAF loop cannot call GL methods on a dead context.
       try {

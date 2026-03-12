@@ -117,8 +117,8 @@ const PageTransition = ({ children }: PageTransitionProps) => {
       // Safety fallback: if timeline doesn't complete within 1.5s, force recovery
       // (total timeline is ~1.3s; 1.5s gives margin without locking slow-device users out)
       safetyTimer = setTimeout(() => {
-        if (timelineRef.current === tl && tl.isActive()) {
-          tl.progress(1).kill();
+        if (timelineRef.current === tl) {
+          tl.kill();
           setIsTransitioning(false);
           unlockNavigation();
           lenisInstance?.start();

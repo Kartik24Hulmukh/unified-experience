@@ -180,13 +180,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     (async () => {
       try {
+        // LOW-01 FIX: explicit aggressive timeout for hydration to prevent blank UI hangs on cold starts/dropped connections
+        // Increased from 5s to 15s to allow for local dev cold starts
+        const HYDRATION_TIMEOUT = 15000;
+
         // Step 1: If no in-memory access token, try to refresh first
         if (!sessionManager.getAccessToken()) {
           try {
             const refreshRes = await api.post<{ accessToken: string; csrfToken?: string }>(
               '/auth/refresh',
               undefined,
-              { skipAuth: true, signal: controller.signal }
+              { skipAuth: true, signal: controller.signal, timeout: HYDRATION_TIMEOUT }
             );
             sessionManager.setTokens(refreshRes.accessToken);
             // Refresh might not return csrfToken directly, but we accept it if it does
@@ -205,7 +209,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (controller.signal.aborted) return;
 
         // Step 2: Validate session and fetch user truth from server
-        const response = await api.get<AuthMeResponse>('/auth/me', { signal: controller.signal });
+        const response = await api.get<AuthMeResponse>('/auth/me', { 
+          signal: controller.signal,
+          timeout: HYDRATION_TIMEOUT 
+        });
         const user = normalizeUser(response.user);
         const { trust, restriction } = response;
 

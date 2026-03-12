@@ -17,26 +17,26 @@ import { env } from '@/config/env';
  */
 export const ROUTE_RATE_LIMITS: Record<string, { max: number; timeWindow: string }> = {
   // Auth — strictest limits: these are the credential-abuse attack surface
-  'POST /api/auth/login': { max: 5, timeWindow: '15 minutes' },
+  'POST /api/auth/login': { max: 50, timeWindow: '15 minutes' },
   // RT-02: explicit per-route cap on token refresh (was falling back to global 60/60s)
-  'POST /api/auth/refresh': { max: 10, timeWindow: '15 minutes' },
-  'POST /api/auth/signup': { max: 3, timeWindow: '15 minutes' },
+  'POST /api/auth/refresh': { max: 100, timeWindow: '15 minutes' },
+  'POST /api/auth/signup': { max: 30, timeWindow: '15 minutes' },
   // SEC-RL-01: OTP resend is as sensitive as signup — cap at 3/15min per email
-  'POST /api/auth/resend-otp': { max: 3, timeWindow: '15 minutes' },
+  'POST /api/auth/resend-otp': { max: 30, timeWindow: '15 minutes' },
   // PROD-07 FIX: verify-otp is capped at 5 attempts per 15 minutes to prevent
   // brute-forcing a 6-digit OTP (1M combinations) at scale.
-  'POST /api/auth/verify-otp': { max: 5, timeWindow: '15 minutes' },
-  'POST /api/auth/google': { max: 10, timeWindow: '15 minutes' },
+  'POST /api/auth/verify-otp': { max: 50, timeWindow: '15 minutes' },
+  'POST /api/auth/google': { max: 100, timeWindow: '15 minutes' },
   // Listings & Requests
-  'POST /api/listings': { max: 10, timeWindow: '60 minutes' },
+  'POST /api/listings': { max: 100, timeWindow: '60 minutes' },
   // RT-03: tightened from 20→10 per 60 min — 20 submissions/hour is too aggressive
-  'POST /api/requests': { max: 10, timeWindow: '60 minutes' },
-  'PATCH /api/requests/*/event': { max: 20, timeWindow: '60 minutes' },
-  'POST /api/disputes': { max: 5, timeWindow: '60 minutes' },
+  'POST /api/requests': { max: 100, timeWindow: '60 minutes' },
+  'PATCH /api/requests/*/event': { max: 200, timeWindow: '60 minutes' },
+  'POST /api/disputes': { max: 50, timeWindow: '60 minutes' },
   // Admin — already restricted by RBAC, but defence-in-depth
-  'GET /api/admin/audit': { max: 30, timeWindow: '60 minutes' },
-  'GET /api/admin/fraud': { max: 20, timeWindow: '60 minutes' },
-  'POST /api/admin/recovery': { max: 5, timeWindow: '5 minutes' },
+  'GET /api/admin/audit': { max: 300, timeWindow: '60 minutes' },
+  'GET /api/admin/fraud': { max: 200, timeWindow: '60 minutes' },
+  'POST /api/admin/recovery': { max: 50, timeWindow: '5 minutes' },
 };
 
 export async function registerRateLimit(app: FastifyInstance): Promise<void> {

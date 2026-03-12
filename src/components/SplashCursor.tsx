@@ -92,6 +92,13 @@ function SplashCursor({
     if (!context) return;
     const { gl, ext } = context;
 
+    // HIGH-SEV FIX: Gracefully abort if the GPU/browser doesn't support the required texture formats,
+    // which prevents "Cannot read properties of null (reading 'internalFormat')" crash on mount.
+    if (!ext.formatRGBA || !ext.formatRG || !ext.formatR) {
+      console.warn('WebGL fluid simulation not supported on this device/browser.');
+      return;
+    }
+
     if (!ext.supportLinearFiltering) {
       config.DYE_RESOLUTION = 256;
       config.SHADING = false;

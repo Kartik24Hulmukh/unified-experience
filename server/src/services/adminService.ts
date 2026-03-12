@@ -18,11 +18,12 @@ import { computeRestriction } from '@/domain/restrictionEngine';
    ═══════════════════════════════════════════════════ */
 
 export async function getPendingListings() {
-  return prisma.listing.findMany({
+  const listings = await prisma.listing.findMany({
     where: { status: 'PENDING_REVIEW' },
     include: { owner: { select: { id: true, fullName: true, email: true } } },
     orderBy: { createdAt: 'asc' },
   });
+  return listings.map((l) => ({ ...l, price: l.price.toString() }));
 }
 
 /* ═══════════════════════════════════════════════════

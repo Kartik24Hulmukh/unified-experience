@@ -248,36 +248,36 @@ const SignupPage = () => {
                 </div>
 
                 {/* Right Column: Information */}
-                <div className="order-1 lg:order-2 flex flex-col space-y-8 lg:pl-12">
+                <div className="order-1 lg:order-2 flex flex-col space-y-6 lg:space-y-8 lg:pl-12 text-center lg:text-left">
                     <div className="space-y-4">
-                        <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight font-display uppercase italic italic-syne">
+                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-tight font-display uppercase italic italic-syne">
                             <SplitText className="inline-block" trigger="load">
                                 REQUEST ACCESS
                             </SplitText>
                         </h1>
 
-                        <p className="text-white/60 text-lg max-w-md font-body leading-relaxed">
+                        <p className="text-white/60 text-lg max-w-md mx-auto lg:mx-0 font-body leading-relaxed">
                             Use your <span className="text-primary font-semibold">@mctrgit.ac.in</span> Google account for instant verified access.
                             Email signup is also available with OTP verification.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 pt-6">
+                    <div className="grid grid-cols-1 gap-4 pt-6 text-left max-w-sm mx-auto lg:mx-0 w-full">
                         {[
                             "Campus domain (@mctrgit.ac.in) required",
                             "Google Sign-In — instant, no OTP needed",
                             "Email signup with OTP verification",
                             "Privacy-first, zero data commercialization"
                         ].map((feature, i) => (
-                            <div key={i} className="flex items-start space-x-3 text-white/70">
+                            <div key={i} className="flex items-start space-x-3 text-white/70 bg-white/5 p-4 rounded-xl lg:bg-transparent lg:p-0">
                                 <Check className="w-5 h-5 text-primary shrink-0" />
                                 <span className="text-sm font-body tracking-wide">{feature}</span>
                             </div>
                         ))}
                     </div>
 
-                    <div className="relative h-48 w-48 opacity-40 hover:opacity-100 transition-opacity duration-700 self-center lg:self-start flex items-center justify-center">
-                        <Shield className="w-24 h-24 text-primary/30" strokeWidth={1} />
+                    <div className="relative h-32 w-32 md:h-48 md:w-48 opacity-40 hover:opacity-100 transition-opacity duration-700 self-center lg:self-start flex items-center justify-center pt-4">
+                        <Shield className="w-16 h-16 md:w-24 md:h-24 text-primary/30" strokeWidth={1} />
                     </div>
                 </div>
             </div>

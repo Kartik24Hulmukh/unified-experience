@@ -162,9 +162,9 @@ const FooterSection = () => {
         </p>
 
         {/* ── Stats row ──────────────────────────────────────────────────────── */}
-        <div className="ftr-stats flex flex-wrap justify-center gap-12 mb-16">
+        <div className="ftr-stats grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-12 mb-16 max-w-4xl mx-auto">
           {STATS.map((s) => (
-            <div key={s.label} className="ftr-stat text-left opacity-0">
+            <div key={s.label} className="ftr-stat text-center sm:text-left opacity-0 flex flex-col items-center sm:items-start">
               <p className="text-portal-foreground/25 font-mono text-[9px] uppercase tracking-[0.4em] mb-2">
                 {s.label}
               </p>
@@ -191,7 +191,7 @@ const FooterSection = () => {
         </div>
 
         {/* ── Core Principles ────────────────────────────────────────────────── */}
-        <div className="ftr-principles grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
+        <div className="ftr-principles grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-20">
           {PRINCIPLES.map((p) => (
             <div key={p.title} className="ftr-principle border-l border-[#a3ff12]/20 pl-4 opacity-0">
               <h3 className="text-portal-foreground font-display text-xs uppercase tracking-wider mb-1">

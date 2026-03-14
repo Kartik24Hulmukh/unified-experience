@@ -48,9 +48,9 @@ const AuthPortal = ({ children }: AuthPortalProps) => {
             {/* The Black Portal */}
             <div
                 ref={portalRef}
-                className="absolute inset-0 bg-black flex flex-col items-center justify-center p-6 md:p-12"
+                className="absolute inset-0 bg-black flex flex-col items-center p-6 md:p-12 overflow-y-auto touch-pan-y"
             >
-                <div ref={contentRef} className="w-full max-w-4xl mx-auto h-full flex flex-col justify-center">
+                <div ref={contentRef} className="w-full max-w-4xl mx-auto min-h-full flex flex-col justify-start md:justify-center py-12 md:py-0">
                     {children}
                 </div>
             </div>

@@ -25,6 +25,8 @@ export interface RestrictionInput {
   trustStatus: TrustStatus;
   activeDisputes: number;
   adminOverride: boolean;
+  /** User role — PUBLIC_USER is restricted from sensitive actions */
+  userRole?: string;
 }
 
 export interface RestrictionResult {
@@ -59,6 +61,17 @@ const ALL_BLOCKED_ACTIONS: RestrictableAction[] = [
    Input Guard
    ═══════════════════════════════════════════════════ */
 
+/** Actions blocked specifically for PUBLIC_USER (non-verified) accounts */
+const PUBLIC_USER_BLOCKED_ACTIONS: RestrictableAction[] = [
+  'CREATE_LISTING',
+  'REQUEST_EXCHANGE',
+  'RAISE_DISPUTE',
+];
+
+/* ═══════════════════════════════════════════════════
+   Input Guard
+   ═══════════════════════════════════════════════════ */
+
 function sanitizeCount(value: number): number {
   if (!Number.isFinite(value) || value < 0) return 0;
   return Math.floor(value);
@@ -75,7 +88,8 @@ function sanitizeCount(value: number): number {
  *   1. Admin override → always restricted
  *   2. Trust status RESTRICTED → restricted
  *   3. Active disputes >= threshold → restricted
- *   4. Otherwise → not restricted
+ *   4. PUBLIC_USER role → restricted from sensitive actions
+ *   5. Otherwise → not restricted
  *
  * Deterministic: same input always yields same output.
  */
@@ -84,6 +98,7 @@ export function computeRestriction(rawInput: RestrictionInput): RestrictionResul
     trustStatus: rawInput.trustStatus,
     activeDisputes: sanitizeCount(rawInput.activeDisputes),
     adminOverride: Boolean(rawInput.adminOverride),
+    userRole: rawInput.userRole,
   };
   const reasons: string[] = [];
 
@@ -107,7 +122,13 @@ export function computeRestriction(rawInput: RestrictionInput): RestrictionResul
     return { isRestricted: true, blockedActions: ALL_BLOCKED_ACTIONS, reasons };
   }
 
-  // ── 4. Not restricted ────────────────────────────
+  // ── 4. PUBLIC_USER role restriction ──────────────
+  if (input.userRole === 'PUBLIC_USER') {
+    reasons.push('Verify your college email to unlock full features like resale and exchange.');
+    return { isRestricted: true, blockedActions: PUBLIC_USER_BLOCKED_ACTIONS, reasons };
+  }
+
+  // ── 5. Not restricted ────────────────────────────
   return { isRestricted: false, blockedActions: [], reasons: [] };
 }
 

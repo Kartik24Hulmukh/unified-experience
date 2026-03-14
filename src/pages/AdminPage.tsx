@@ -300,6 +300,15 @@ const AdminPage = () => {
                                 className="bg-black/40 border-white/10 text-[10px] font-bold tracking-widest pl-10 h-10 rounded-none focus-visible:ring-1 focus-visible:ring-primary uppercase disabled:opacity-30 disabled:cursor-not-allowed"
                             />
                         </div>
+                          <div className="flex items-center gap-3">
+                              <div className="hidden lg:flex flex-col items-end">
+                                  <span className="text-[8px] uppercase tracking-[0.2em] opacity-40 font-mono">Identity</span>
+                                  <span className="text-[10px] font-bold uppercase tracking-widest">{user?.fullName?.split(' ')[0] || 'Admin'}</span>
+                              </div>
+                              <div className="relative w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-white text-black text-xs font-bold uppercase transition-all duration-300 hover:scale-110 cursor-default">
+                                  {user?.fullName?.[0] || 'K'}
+                              </div>
+                          </div>
                         {/* UX-04: 'Matrix Filter' button was non-functional (no onClick). Now visually
                             disabled until filter logic is implemented to prevent dead button confusion. */}
                         <Button

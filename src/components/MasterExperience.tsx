@@ -65,8 +65,8 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
               <div key={module.id} data-module-id={module.id} data-module-path={module.path} className="module-item group relative cursor-pointer" role="button" tabIndex={0} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={handleClick}>
                 <div className="flex items-center gap-6 md:gap-8 py-4 md:py-6 px-4 md:px-6 group-hover:bg-white/[0.04] transition-[background-color] duration-500">
                   <span className={`font-mono text-base md:text-lg transition-[color,opacity] duration-500 shrink-0 w-8 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/15'}`}>{module.number}</span>
-                  <div className="flex-1">
-                    <h3 className={`text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform truncate ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
                     <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.4em] uppercase mt-2 transition-[color,opacity] duration-500 ${activeModule === module.id ? 'text-white/50' : 'text-white/5'}`}>{module.subtitle}</p>
                   </div>
                   <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>→</span>

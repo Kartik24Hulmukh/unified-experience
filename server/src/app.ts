@@ -102,6 +102,12 @@ export async function buildApp() {
     }
   });
 
+  // ── Idempotency Response Cache (onSend) ──────────
+  // MUST be registered at the app level to capture responses across all plugins.
+  app.addHook('onSend', async (request, reply, payload) => {
+    return idempotencyCacheResponse(request, reply, payload as string | Buffer | null);
+  });
+
   // ── Global Error Handler ────────────────────────
   app.setErrorHandler(async (error: FastifyError | Error, request, reply) => {
     const fastifyErr = error as FastifyError;
@@ -158,26 +164,14 @@ export async function buildApp() {
   // Health checks (no prefix, no auth)
   await app.register(healthRoutes);
 
-  // API routes under /api prefix
-  await app.register(
-    async (api) => {
-      // NOTE: authenticate and idempotency are applied at the route level.
-      // onSend remains global to catch all marked responses.
-      api.addHook('onSend', async (request, reply, payload) => {
-        return idempotencyCacheResponse(request, reply, payload as string | Buffer | null);
-      });
-
-      // Register routes
-      await api.register(authRoutes, { prefix: '/auth' });
-      await api.register(listingRoutes, { prefix: '/' });
-      await api.register(requestRoutes, { prefix: '/' });
-      await api.register(disputeRoutes, { prefix: '/' });
-      await api.register(profileRoutes, { prefix: '/' });
-      await api.register(adminRoutes, { prefix: '/admin' });
-      await api.register(analyticsRoutes, { prefix: '/analytics' });
-    },
-    { prefix: '/api' },
-  );
+  // API routes
+  await app.register(authRoutes, { prefix: '/api/auth' });
+  await app.register(listingRoutes, { prefix: '/api' });
+  await app.register(requestRoutes, { prefix: '/api' });
+  await app.register(disputeRoutes, { prefix: '/api' });
+  await app.register(profileRoutes, { prefix: '/api' });
+  await app.register(adminRoutes, { prefix: '/api/admin' });
+  await app.register(analyticsRoutes, { prefix: '/api/analytics' });
 
   return app;
 }

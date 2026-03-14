@@ -66,8 +66,7 @@ const ContextNav = memo(function ContextNav() {
   const isHomepage = location.pathname === '/home';
 
   // Pages with dark backgrounds need light nav text immediately
-  const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics'];
-  const isDarkBgPage = darkBgPages.includes(location.pathname);
+    const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics', '/admin', '/profile'];
 
   // Track scroll position and update nav style
   useEffect(() => {
@@ -176,7 +175,9 @@ const ContextNav = memo(function ContextNav() {
   }, [logout, navigate, queryClient]);
 
   // ── Early return AFTER all hooks ──
-  if (isAuthPage || isLandingPage) return null;
+  if (isAuthPage || isLandingPage || location.pathname === '/admin') return null;
+
+  const isNavDark = isDark || isMenuOpen;
 
   // During the hero phase on homepage, the splash effect handles masking
   // The REAL nav stays fully interactive and visible.
@@ -186,7 +187,7 @@ const ContextNav = memo(function ContextNav() {
       {/* Fixed Navigation Bar */}
       <nav
         ref={navRef}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isDark ? 'text-portal-foreground' : 'text-foreground'
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'
           }`}
         style={{
           pointerEvents: 'auto',  // ★ Always clickable
@@ -202,8 +203,8 @@ const ContextNav = memo(function ContextNav() {
           >
             <span className="sr-only">BErozgar</span>
             <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 md:w-8 md:h-8 border-2 ${isDark ? 'border-portal-foreground' : 'border-foreground'} rotate-45 flex items-center justify-center`}>
-                <div className={`w-2 h-2 md:w-3 md:h-3 ${isDark ? 'bg-portal-foreground' : 'bg-foreground'}`} />
+              <div className={`w-6 h-6 md:w-8 md:h-8 border-2 ${isNavDark ? 'border-portal-foreground' : 'border-foreground'} rotate-45 flex items-center justify-center`}>
+                <div className={`w-2 h-2 md:w-3 md:h-3 ${isNavDark ? 'bg-portal-foreground' : 'bg-foreground'}`} />
               </div>
               <span className="hidden md:block uppercase">BErozgar</span>
             </div>
@@ -211,11 +212,11 @@ const ContextNav = memo(function ContextNav() {
 
           {/* Center - Current section indicator */}
           <div className="hidden md:flex items-center gap-4">
-            <div className={`h-px w-12 ${isDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
+            <div className={`h-px w-12 ${isNavDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
             <span ref={sectionLabelRef} className="text-xs uppercase tracking-widest opacity-60 font-body">
               Welcome
             </span>
-            <div className={`h-px w-12 ${isDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
+            <div className={`h-px w-12 ${isNavDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
           </div>
 
           {/* Nav Actions */}
@@ -235,8 +236,8 @@ const ContextNav = memo(function ContextNav() {
                     {user?.fullName?.split(' ')[0] || 'Profile'}
                   </span>
                 </div>
-                <div className={`relative w-8 h-8 rounded-full border border-current flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:border-[#a3ff12] ${isDark ? 'border-portal-foreground' : 'border-foreground'}`}>
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${isDark ? 'bg-portal-foreground text-portal' : 'bg-black text-white'}`}>
+                <div className={`relative w-8 h-8 rounded-full border border-current flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:border-[#a3ff12] ${isNavDark ? 'border-portal-foreground' : 'border-foreground'}`}>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${isNavDark ? 'bg-portal-foreground text-portal' : 'bg-black text-white'}`}>
                     {user?.fullName?.[0] || 'U'}
                   </div>
                 </div>
@@ -245,7 +246,7 @@ const ContextNav = memo(function ContextNav() {
               <Link
                 to="/login"
                 onClick={(e) => handleNavClick(e, '/login')}
-                className={`text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity font-body p-2 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+                className={`text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity font-body p-2 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
               >
                 Login
               </Link>
@@ -253,7 +254,7 @@ const ContextNav = memo(function ContextNav() {
 
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className={`hidden sm:block p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+              className={`hidden sm:block p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
               aria-label="Toggle structural mode"
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -262,7 +263,7 @@ const ContextNav = memo(function ContextNav() {
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
-                className={`hidden sm:block p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+                className={`hidden sm:block p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
                 aria-label="Logout"
               >
                 <LogOut className="w-5 h-5" />
@@ -270,7 +271,7 @@ const ContextNav = memo(function ContextNav() {
             )}
 
             <div className="hidden sm:block">
-              <NotificationCenter isDark={isDark} />
+              <NotificationCenter isDark={isNavDark} />
             </div>
 
             {/* Menu Button */}
@@ -296,10 +297,10 @@ const ContextNav = memo(function ContextNav() {
           </div>
 
           {/* Progress bar */}
-          <div className={`absolute bottom-0 left-0 h-px ${isDark ? 'bg-portal-foreground/20' : 'bg-foreground/20'} w-full`}>
+          <div className={`absolute bottom-0 left-0 h-px ${isNavDark ? 'bg-portal-foreground/20' : 'bg-foreground/20'} w-full`}>
             <div
               ref={progressBarRef}
-              className={`h-full ${isDark ? 'bg-portal-foreground' : 'bg-foreground'} transition-all duration-100`}
+              className={`h-full ${isNavDark ? 'bg-portal-foreground' : 'bg-foreground'} transition-all duration-100`}
               style={{ width: '0%' }}
             />
           </div>

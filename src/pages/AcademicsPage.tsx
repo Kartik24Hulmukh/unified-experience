@@ -93,7 +93,7 @@ const AcademicsPage = () => {
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal + parallax
-      gsap.fromTo('.acad-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 2, ease: 'power3.out' });
+      gsap.fromTo('.acad-hero-img', { scale: 1.05, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 1, ease: 'power2.out' });
       gsap.to('.acad-hero-img', {
         yPercent: 15,
         ease: 'none',
@@ -197,7 +197,7 @@ const AcademicsPage = () => {
               Module 04
             </p>
 
-            <h1 className="text-portal-foreground font-display text-4xl sm:text-6xl md:text-9xl font-bold leading-none mb-8">
+            <h1 className="text-portal-foreground font-display text-5xl sm:text-6xl md:text-9xl font-bold leading-none mb-8">
               <SplitText animation="reveal" trigger="load" type="chars" stagger={0.02}>
                 ACADEMICS
               </SplitText>
@@ -260,10 +260,8 @@ const AcademicsPage = () => {
               priceRange={[0, 1000]}
             />
 
-            {isLoading ? (
+            {isLoading && filteredItems.length === 0 ? (
               <LoadingSpinner className="py-16" />
-            ) : isError ? (
-              <ErrorFallback error={error} onRetry={() => refetch()} compact />
             ) : (
               <>
                 <ListingGrid items={filteredItems} />

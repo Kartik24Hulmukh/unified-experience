@@ -162,7 +162,7 @@ const AccommodationPage = () => {
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal
-      gsap.fromTo('.accom-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.4, duration: 2, ease: 'power3.out' });
+      gsap.fromTo('.accom-hero-img', { scale: 1.05, opacity: 0 }, { scale: 1, opacity: 0.4, duration: 1, ease: 'power2.out' });
       gsap.to('.accom-hero-img', {
         yPercent: 15,
         ease: 'none',
@@ -336,7 +336,7 @@ const AccommodationPage = () => {
                 {'ACCOMMO'.split('').map((char, i) => (
                   <span
                     key={`a-${i}`}
-                    className="accom-title-char inline-block text-white font-display text-6xl sm:text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold leading-[0.85] tracking-tight"
+                    className="accom-title-char inline-block text-white font-display text-5xl sm:text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold leading-[0.9] tracking-tight"
                     style={{ opacity: 0 }}
                   >
                     {char}
@@ -349,7 +349,7 @@ const AccommodationPage = () => {
                 {'DATION'.split('').map((char, i) => (
                   <span
                     key={`b-${i}`}
-                    className="accom-title-char inline-block text-white font-display text-6xl sm:text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold leading-[0.85] tracking-tight"
+                    className="accom-title-char inline-block text-white font-display text-5xl sm:text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold leading-[0.9] tracking-tight"
                     style={{ opacity: 0 }}
                   >
                     {char}
@@ -677,10 +677,8 @@ const AccommodationPage = () => {
             priceRange={[0, 30000]}
           />
 
-          {isLoading ? (
+          {isLoading && filteredItems.length === 0 ? (
             <LoadingSpinner className="py-16" />
-          ) : isError ? (
-            <ErrorFallback error={error} onRetry={() => refetch()} compact />
           ) : (
             <>
               <ListingGrid items={filteredItems} />
@@ -720,7 +718,7 @@ const AccommodationPage = () => {
             </p>
           </div>
 
-          <div className="info-grid grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="info-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {[
               { label: 'Area', value: 'Location Name', icon: MapPin },
               { label: 'Rent Range', value: '₹X,XXX - ₹X,XXX', icon: Database },
@@ -737,7 +735,7 @@ const AccommodationPage = () => {
                   <p className="text-white/25 text-[9px] uppercase tracking-[0.3em] font-mono mb-3">
                     {item.label}
                   </p>
-                  <p className="text-white font-display text-sm md:text-base font-bold group-hover:text-cyan-400/90 transition-colors">
+                  <p className="text-white font-display text-xs sm:text-sm md:text-base font-bold group-hover:text-cyan-400/90 transition-colors">
                     {item.value}
                   </p>
                 </div>

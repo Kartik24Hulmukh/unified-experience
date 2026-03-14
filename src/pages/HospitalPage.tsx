@@ -161,7 +161,7 @@ const HospitalPage = () => {
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal + parallax
-      gsap.fromTo('.hosp-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 2, ease: 'power3.out' });
+      gsap.fromTo('.hosp-hero-img', { scale: 1.05, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 1, ease: 'power2.out' });
       gsap.to('.hosp-hero-img', {
         yPercent: 15,
         ease: 'none',
@@ -479,13 +479,11 @@ const HospitalPage = () => {
             priceRange={[0, 1000]}
           />
 
-          {isLoading ? (
+          {isLoading && filteredItems.length === 0 ? (
             <div className="py-16 flex flex-col items-center gap-4">
               <LoadingSpinner />
               <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading medical facilities…</p>
             </div>
-          ) : isError ? (
-            <ErrorFallback error={error} onRetry={refetch} compact />
           ) : (
             <>
               <ListingGrid items={filteredItems} />

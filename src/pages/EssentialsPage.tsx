@@ -97,7 +97,7 @@ const EssentialsPage = () => {
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal with opacity
-      gsap.fromTo('.ess-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.5, duration: 2, ease: 'power3.out' });
+      gsap.fromTo('.ess-hero-img', { scale: 1.05, opacity: 0 }, { scale: 1, opacity: 0.5, duration: 1, ease: 'power2.out' });
 
       // Hero bg parallax
       gsap.to('.ess-hero-img', {
@@ -184,12 +184,12 @@ const EssentialsPage = () => {
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
-                <span className="ess-title-word block text-white font-display text-5xl sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
+                <span className="ess-title-word block text-white font-display text-4xl sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   CAMPUS
                 </span>
               </div>
               <div className="overflow-hidden">
-                <span className="ess-title-word block font-display text-5xl sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
+                <span className="ess-title-word block font-display text-4xl sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-300">ESSENTIALS</span>
                 </span>
               </div>
@@ -406,7 +406,7 @@ const EssentialsPage = () => {
       </section>
 
       {/* ═══════════════ DISCLAIMER ═══════════════ */}
-      <section className="py-12 px-8 md:px-16 border-t border-white/5">
+      <section className="py-12 px-4 sm:px-8 md:px-16 border-t border-white/5">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-start gap-3 p-6 border border-white/5 bg-white/[0.01]">
             <AlertTriangle className="w-4 h-4 text-white/15 mt-0.5 flex-shrink-0" />
@@ -419,7 +419,7 @@ const EssentialsPage = () => {
       </section>
 
       {/* ═══════════════ CTA ═══════════════ */}
-      <section className="relative py-32 md:py-48 px-8 md:px-16 border-t border-white/5 overflow-hidden">
+      <section className="relative py-32 md:py-48 px-4 sm:px-8 md:px-16 border-t border-white/5 overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(139,92,246,0.04) 0%, transparent 70%)' }} />
         <div className="absolute inset-0 opacity-[0.02]" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',

@@ -262,7 +262,7 @@ const LandingPage = () => {
           <div className="text-center space-y-0">
             <div className="overflow-hidden">
               <div ref={line1Ref} className="opacity-0">
-                <span className="text-white/30 font-display text-[clamp(2.5rem,10vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
+                <span className="text-white/30 font-display text-[clamp(2rem,12vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
                   BUILDING
                 </span>
               </div>
@@ -270,7 +270,7 @@ const LandingPage = () => {
 
             <div className="overflow-hidden">
               <div ref={line2Ref} className="opacity-0">
-                <span className="text-white font-display text-[clamp(2.5rem,10vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
+                <span className="text-white font-display text-[clamp(2rem,12vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
                   CAMPUS
                 </span>
               </div>
@@ -278,7 +278,7 @@ const LandingPage = () => {
 
             <div className="overflow-hidden flex items-center justify-center gap-4 md:gap-8">
               <div ref={line3Ref} className="opacity-0">
-                <span className="text-white font-display text-[clamp(2.5rem,10vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
+                <span className="text-white font-display text-[clamp(2rem,12vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
                   TRUST
                 </span>
               </div>
@@ -312,11 +312,11 @@ const LandingPage = () => {
           <div ref={ctaRef} className="mt-10 md:mt-14 opacity-0">
             <button
               onClick={handleEnter}
-              className="group relative px-12 py-5 border-2 border-white/20 uppercase font-display text-sm tracking-[0.4em] text-white/80 transition-all duration-600 hover:border-white/60 hover:tracking-[0.6em] cursor-pointer overflow-hidden"
+              className="group relative px-8 md:px-12 py-4 md:py-5 border-2 border-white/20 uppercase font-display text-xs md:text-sm tracking-[0.3em] md:tracking-[0.4em] text-white/80 transition-all duration-600 hover:border-white/60 hover:tracking-[0.6em] cursor-pointer overflow-hidden"
             >
-              <span className="relative z-10 flex items-center gap-4 transition-colors duration-500 group-hover:text-black">
+              <span className="relative z-10 flex items-center gap-3 md:gap-4 transition-colors duration-500 group-hover:text-black">
                 ENTER CAMPUS OS
-                <span className="inline-block transition-transform duration-500 group-hover:translate-x-3 text-xl leading-none">→</span>
+                <span className="inline-block transition-transform duration-500 group-hover:translate-x-3 text-lg md:text-xl leading-none">→</span>
               </span>
               {/* Fill animation on hover */}
               <div className="absolute inset-0 bg-white scale-x-0 origin-left transition-transform duration-600 group-hover:scale-x-100" />

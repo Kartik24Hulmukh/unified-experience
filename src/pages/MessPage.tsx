@@ -150,7 +150,7 @@ const MessPage = () => {
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Hero image reveal + parallax
-      gsap.fromTo('.mess-hero-img', { scale: 1.1, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 2, ease: 'power3.out' });
+      gsap.fromTo('.mess-hero-img', { scale: 1.05, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 1, ease: 'power2.out' });
       gsap.to('.mess-hero-img', {
         yPercent: 15,
         ease: 'none',
@@ -242,14 +242,14 @@ const MessPage = () => {
         <div className="relative z-10 w-full px-4 sm:px-8 md:px-16 pb-20 md:pb-28">
           <div className="max-w-5xl">
             {/* nvg8-style big words stacking */}
-            <div className="space-y-1 mb-8">
+            <div className="space-y-2 mb-8">
               <div className="overflow-hidden">
-                <span className="mess-title-word block text-white font-display text-6xl sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0 }}>
+                <span className="mess-title-word block text-white font-display text-5xl sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0 }}>
                   MESS &
                 </span>
               </div>
               <div className="overflow-hidden">
-                <span className="mess-title-word block font-display text-6xl sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0 }}>
+                <span className="mess-title-word block font-display text-5xl sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0 }}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-300">TIFFIN</span>
                 </span>
               </div>
@@ -294,7 +294,7 @@ const MessPage = () => {
           </div>
 
           {/* Scroll CTA */}
-          <button onClick={scrollToBrowse} className="group absolute bottom-8 right-4 sm:right-8 md:right-16 flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors">
+          <button onClick={scrollToBrowse} className="group absolute bottom-12 right-6 sm:bottom-8 sm:right-8 md:right-16 flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors">
             <span className="text-[9px] font-mono uppercase tracking-[0.4em]">Explore</span>
             <div className="w-px h-12 bg-gradient-to-b from-white/30 to-transparent group-hover:from-amber-400/50 transition-colors" />
           </button>
@@ -326,7 +326,7 @@ const MessPage = () => {
 
             {/* Right — floating feature pills (nvg8 badge style) */}
             <div className="relative">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { label: 'Hygiene Scores', icon: ShieldCheck },
                   { label: 'Live Menus', icon: Utensils },
@@ -489,13 +489,11 @@ const MessPage = () => {
             priceRange={[0, 5000]}
           />
 
-          {isLoading ? (
+          {isLoading && filteredItems.length === 0 ? (
             <div className="py-16 flex flex-col items-center gap-4">
               <LoadingSpinner />
               <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading mess services…</p>
             </div>
-          ) : isError ? (
-            <ErrorFallback error={error} onRetry={refetch} compact />
           ) : (
             <>
               <ListingGrid items={filteredItems} />

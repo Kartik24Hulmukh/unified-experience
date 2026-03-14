@@ -93,7 +93,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
               }`}
             >
               <div className="hud-image-box w-full h-full rounded-none overflow-hidden">
-                <img src={module.preview} alt={module.title} className="w-full h-full object-cover grayscale-[0.2]" loading="lazy" />
+                <img src={module.preview} alt={module.title} className="w-full h-full object-cover grayscale-[0.2]" fetchPriority="high" loading="eager" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
               </div>
             </div>
@@ -167,18 +167,18 @@ const MasterExperience = () => {
         <div ref={baseLayerRef} className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
           <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-portal">
             {/* WebGL fluid splash — desktop only; mobile skips the heavy GPU sim */}
-            {!isMobile && (
+            {isHeavyMounted && (
               <Suspense fallback={null}>
                 <SplashCursor
-                  SIM_RESOLUTION={128}
-                  DYE_RESOLUTION={768}
-                  DENSITY_DISSIPATION={3.5}
-                  VELOCITY_DISSIPATION={2.8}
+                  SIM_RESOLUTION={isMobile ? 64 : 128}
+                  DYE_RESOLUTION={isMobile ? 256 : 768}
+                  DENSITY_DISSIPATION={isMobile ? 4.5 : 3.5}
+                  VELOCITY_DISSIPATION={isMobile ? 3.5 : 2.8}
                   PRESSURE={0.1}
-                  CURL={3}
-                  SPLAT_RADIUS={0.2}
+                  CURL={isMobile ? 1 : 3}
+                  SPLAT_RADIUS={isMobile ? 0.4 : 0.2}
                   SPLAT_FORCE={6000}
-                  SHADING={true}
+                  SHADING={!isMobile}
                   COLOR_UPDATE_SPEED={10}
                   containerStyle={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
                 />
@@ -190,8 +190,8 @@ const MasterExperience = () => {
                 {['TRUST', 'CENTRIC', 'EXCHANGE'].map((txt, i) => (
                   <span
                     key={txt}
-                    className="text-[17vw] md:text-[14vw] font-display font-black uppercase tracking-[-0.04em] whitespace-nowrap block text-white/90"
-                    style={{ marginTop: i > 0 ? '-1vw' : '0' }}
+                    className={`${txt === 'EXCHANGE' ? 'text-[11vw] sm:text-[14vw]' : 'text-[14vw]'} md:text-[14vw] font-display font-black uppercase tracking-[-0.04em] whitespace-nowrap block text-white/90`}
+                    style={{ marginTop: i > 0 ? (isMobile ? '1vw' : '-1vw') : '0', lineHeight: isMobile ? '1.1' : '0.75' }}
                   >
                     {txt}
                   </span>
@@ -207,7 +207,7 @@ const MasterExperience = () => {
         <div ref={portalRef} className="absolute inset-0 z-30 bg-portal flex items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
           <div ref={symbolRef} className="will-change-transform -mt-[10vh]" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
             {/* Portal3D is heavy — skip on mobile to avoid GPU/WASM overhead */}
-            {!isMobile && isHeavyMounted && <Suspense fallback={null}><Portal3D scrollProgressRef={scrollProgressRef} /></Suspense>}
+            {isHeavyMounted && <Suspense fallback={null}><Portal3D scrollProgressRef={scrollProgressRef} /></Suspense>}
           </div>
         </div>
 

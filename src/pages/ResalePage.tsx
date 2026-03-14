@@ -265,10 +265,8 @@ const ResalePage = () => {
             priceRange={[0, 5000]}
           />
 
-          {isLoading ? (
+          {isLoading && filteredItems.length === 0 ? (
             <LoadingSpinner className="py-16" />
-          ) : isError ? (
-            <ErrorFallback error={error} onRetry={() => refetch()} compact />
           ) : (
             <>
               <ListingGrid items={filteredItems} />

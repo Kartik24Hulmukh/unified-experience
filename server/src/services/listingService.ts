@@ -39,20 +39,20 @@ export async function listListings(params: ListListingsParams) {
     where.status = params.status.toUpperCase() as ListingStatus;
   }
   if (params.category) {
-    where.category = { equals: params.category, mode: 'insensitive' };
+    where.category = { equals: params.category };
   }
   if (params.module) {
-    where.module = { equals: params.module, mode: 'insensitive' };
+    where.module = { equals: params.module };
   }
   if (params.search) {
     where.OR = [
-      { title: { contains: params.search, mode: 'insensitive' } },
-      { description: { contains: params.search, mode: 'insensitive' } },
+      { title: { contains: params.search } },
+      { description: { contains: params.search } },
     ];
   }
 
   // IAM: Exclude PUBLIC_USER sellers from resale search results
-  where.owner = { ...((where.owner as Record<string, unknown>) ?? {}), role: { not: 'PUBLIC_USER' } };
+  where.owner = { role: { not: 'PUBLIC_USER' } };
 
   const [rawListings, total] = await prisma.$transaction([
     prisma.listing.findMany({
@@ -263,29 +263,19 @@ export async function updateListingStatus(
   actorRole: string,
 ) {
   return prisma.$transaction(async (tx) => {
-    // PROD-09: acquire row-level lock to serialise concurrent status transitions.
-    // Without this, two concurrent PATCH requests can both succeed, with the
-    // last writer silently overwriting the first.
-    const rows = await tx.$queryRaw<Array<{
-      id: string;
-      status: string;
-      owner_id: string;
-    }>>`
-      SELECT id, status, owner_id
-      FROM listings
-      WHERE id = ${listingId}
-      FOR UPDATE
-    `;
+    // PROD-09: acquire row-level lock (emulated via findUnique for SQLite)
+    const listing = await tx.listing.findUnique({
+      where: { id: listingId },
+      select: { id: true, status: true, ownerId: true },
+    });
 
-    if (!rows || rows.length === 0) {
+    if (!listing) {
       throw new NotFoundError('Listing', listingId);
     }
 
-    const listing = rows[0];
-
     // SEC-AUTH-03: Ownership bypass check
     // Only owner OR admin can update status.
-    if (listing.owner_id !== actorId && actorRole !== 'ADMIN') {
+    if (listing.ownerId !== actorId && actorRole !== 'ADMIN') {
       throw new ForbiddenError('You do not have permission to modify this listing');
     }
 

@@ -202,8 +202,8 @@ const ContextNav = memo(function ContextNav() {
           >
             <span className="sr-only">BErozgar</span>
             <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 border-2 ${isDark ? 'border-portal-foreground' : 'border-foreground'} rotate-45 flex items-center justify-center`}>
-                <div className={`w-3 h-3 ${isDark ? 'bg-portal-foreground' : 'bg-foreground'}`} />
+              <div className={`w-6 h-6 md:w-8 md:h-8 border-2 ${isDark ? 'border-portal-foreground' : 'border-foreground'} rotate-45 flex items-center justify-center`}>
+                <div className={`w-2 h-2 md:w-3 md:h-3 ${isDark ? 'bg-portal-foreground' : 'bg-foreground'}`} />
               </div>
               <span className="hidden md:block uppercase">BErozgar</span>
             </div>
@@ -219,7 +219,7 @@ const ContextNav = memo(function ContextNav() {
           </div>
 
           {/* Nav Actions */}
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-2 md:gap-6">
             {/* Auth Action */}
             {isAuthenticated ? (
               <Link
@@ -245,7 +245,7 @@ const ContextNav = memo(function ContextNav() {
               <Link
                 to="/login"
                 onClick={(e) => handleNavClick(e, '/login')}
-                className={`text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity font-body ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+                className={`text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity font-body p-2 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
               >
                 Login
               </Link>
@@ -253,7 +253,7 @@ const ContextNav = memo(function ContextNav() {
 
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className={`p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+              className={`hidden sm:block p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
               aria-label="Toggle structural mode"
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -262,14 +262,16 @@ const ContextNav = memo(function ContextNav() {
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
-                className={`p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
+                className={`hidden sm:block p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isDark ? 'text-portal-foreground' : 'text-foreground'}`}
                 aria-label="Logout"
               >
                 <LogOut className="w-5 h-5" />
               </button>
             )}
 
-            <NotificationCenter isDark={isDark} />
+            <div className="hidden sm:block">
+              <NotificationCenter isDark={isDark} />
+            </div>
 
             {/* Menu Button */}
             <button
@@ -277,7 +279,7 @@ const ContextNav = memo(function ContextNav() {
               className="relative z-50 flex items-center gap-3 group"
               aria-label="Toggle menu"
             >
-              <span className={`text-xs uppercase tracking-widest transition-opacity ${isMenuOpen ? 'opacity-0' : 'opacity-60'} font-body`}>
+              <span className={`hidden sm:block text-xs uppercase tracking-widest transition-opacity ${isMenuOpen ? 'opacity-0' : 'opacity-60'} font-body`}>
                 Menu
               </span>
               <div className="relative w-8 h-8 flex items-center justify-center">
@@ -337,11 +339,32 @@ const ContextNav = memo(function ContextNav() {
 
           {/* Menu footer */}
           <div className="mt-16 md:mt-24 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-            <div>
-              <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-2">Institution</p>
-              <p className="text-portal-foreground font-display text-lg">MCTRGIT</p>
+            <div className="flex flex-col gap-4">
+              <p className="text-portal-foreground/40 text-xs uppercase tracking-widest">Controls</p>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="flex items-center gap-2 p-3 border border-portal-foreground/20 text-portal-foreground hover:bg-portal-foreground/10 transition-colors sm:hidden"
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  <span className="text-[10px] uppercase font-mono tracking-widest">Mode</span>
+                </button>
+                {isAuthenticated && (
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 p-3 border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors sm:hidden"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="text-[10px] uppercase font-mono tracking-widest">Logout</span>
+                  </button>
+                )}
+              </div>
+              <div className="hidden sm:block">
+                <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-2">Institution</p>
+                <p className="text-portal-foreground font-display text-lg">MCTRGIT</p>
+              </div>
             </div>
-            <div>
+            <div className="hidden sm:block">
               <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-2">Platform</p>
               <p className="text-portal-foreground font-display text-lg">Trust-Centric Exchange</p>
             </div>

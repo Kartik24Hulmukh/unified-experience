@@ -288,15 +288,11 @@ const LandingPage = () => {
                 ref={portalContainerRef}
                 className="relative w-[clamp(60px,8vw,120px)] h-[clamp(60px,8vw,120px)] shrink-0 opacity-0"
               >
-                {isMobile ? (
-                  <div className="w-full h-full border-2 border-white/20 rotate-45" />
-                ) : (
-                  <Suspense fallback={
-                    <div className="w-full h-full border-2 border-white/20 rotate-45 animate-pulse" />
-                  }>
-                    <Portal3D className="w-full h-full" />
-                  </Suspense>
-                )}
+                <Suspense fallback={
+                  <div className="w-full h-full border-2 border-white/20 rotate-45 animate-pulse" />
+                }>
+                  <Portal3D className="w-full h-full" />
+                </Suspense>
               </div>
             </div>
           </div>

@@ -142,8 +142,10 @@ const AcademicsPage = () => {
           <img
             src={academicsHero}
             alt=""
-            className="acad-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
-            style={{ opacity: 0 }}
+            fetchPriority="high"
+            loading="eager"
+            className="acad-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover block"
+            style={{ opacity: 0, contentVisibility: 'auto' }}
           />
           <div className="absolute inset-0" style={{
             background: 'radial-gradient(ellipse at 70% 30%, rgba(139,92,246,0.06) 0%, transparent 60%)',
@@ -262,6 +264,10 @@ const AcademicsPage = () => {
 
             {isLoading && filteredItems.length === 0 ? (
               <LoadingSpinner className="py-16" />
+            ) : isError ? (
+              <div className="py-16 max-w-xl mx-auto">
+                <ErrorFallback error={error} onRetry={refetch} />
+              </div>
             ) : (
               <>
                 <ListingGrid items={filteredItems} />

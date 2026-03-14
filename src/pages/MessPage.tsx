@@ -494,6 +494,10 @@ const MessPage = () => {
               <LoadingSpinner />
               <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading mess services…</p>
             </div>
+          ) : isError ? (
+            <div className="py-16 max-w-xl mx-auto">
+              <ErrorFallback error={error} onRetry={refetch} />
+            </div>
           ) : (
             <>
               <ListingGrid items={filteredItems} />

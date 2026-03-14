@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, QueryCache, useQueryClient } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProfileProvider } from "@/contexts/ProfileContext";
@@ -34,6 +34,7 @@ const SignupPage = lazy(() => import('./pages/SignupPage'));
 const VerificationPage = lazy(() => import('./pages/VerificationPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const MessPage = lazy(() => import('./pages/MessPage'));
+const JobsPage = lazy(() => import('./pages/JobsPage'));
 const HospitalPage = lazy(() => import('./pages/HospitalPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
@@ -169,6 +170,7 @@ const App = () => (
 
                         {/* Post-login home — MasterExperience + modules */}
                         <Route path="/home" element={<RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary>} />
+                        <Route path="/dashboard" element={<Navigate to="/home" replace />} />
 
                         {/* Module routes — publicly viewable, actions restricted to authenticated users */}
                         <Route path="/resale" element={<RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary>} />
@@ -176,6 +178,7 @@ const App = () => (
                         <Route path="/accommodation" element={<RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary>} />
                         <Route path="/essentials" element={<RouteErrorBoundary name="Essentials"><EssentialsPage /></RouteErrorBoundary>} />
                         <Route path="/academics" element={<RouteErrorBoundary name="Academics"><AcademicsPage /></RouteErrorBoundary>} />
+                        <Route path="/jobs" element={<RouteErrorBoundary name="Jobs"><JobsPage /></RouteErrorBoundary>} />
                         <Route path="/mess" element={<RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary>} />
                         <Route path="/hospital" element={<RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary>} />
 

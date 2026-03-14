@@ -679,6 +679,10 @@ const AccommodationPage = () => {
 
           {isLoading && filteredItems.length === 0 ? (
             <LoadingSpinner className="py-16" />
+          ) : isError ? (
+            <div className="py-16 max-w-xl mx-auto">
+              <ErrorFallback error={error} onRetry={refetch} />
+            </div>
           ) : (
             <>
               <ListingGrid items={filteredItems} />

@@ -66,6 +66,7 @@ async function main() {
     where: { officialEmail: 'testuser@mctrgit.ac.in' },
   });
   const sellerPw = await argon2.hash('Seller@1234');
+  console.log('  Upserting seller with role: STUDENT_VERIFIED');
   const seller = await prisma.user.upsert({
     where: { email: 'testuser@mctrgit.ac.in' },
     update: { verified: true, collegeStudentId: sellerCollegeRecord?.id ?? null },

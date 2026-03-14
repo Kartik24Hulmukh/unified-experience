@@ -106,6 +106,15 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     '/signup',
     { preValidation: validate(signupSchema) },
     async (request, reply) => {
+      const { email } = request.body as { email: string };
+      if (!checkEmailRateLimit(email)) {
+        return reply.status(429).send({
+          error: 'Too Many Requests',
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many signup attempts for this email. Please wait and try again.',
+        });
+      }
+
       const result = await authService.signup(request.body as SignupInput);
       return reply.status(200).send(result);
     },

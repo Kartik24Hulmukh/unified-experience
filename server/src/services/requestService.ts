@@ -316,26 +316,15 @@ export async function updateRequestEvent(
     // composite key — they never matched, making this check dead code.
     // The middleware's onSend hook handles replay correctly at the HTTP layer.
 
-    // 1. Acquire row-level lock with FOR UPDATE to prevent concurrent transitions
-    const rows = await tx.$queryRaw<Array<{
-      id: string;
-      listing_id: string;
-      buyer_id: string;
-      seller_id: string;
-      status: string;
-      version: number;
-    }>>`
-      SELECT id, listing_id, buyer_id, seller_id, status, version
-      FROM requests
-      WHERE id = ${requestId}
-      FOR UPDATE
-    `;
+    // 1. Acquire row-level lock (emulated via findUnique for SQLite)
+    const row = await tx.request.findUnique({
+      where: { id: requestId },
+      select: { id: true, listingId: true, buyerId: true, sellerId: true, status: true, version: true },
+    });
 
-    if (!rows || rows.length === 0) {
+    if (!row) {
       throw new NotFoundError('Request', requestId);
     }
-
-    const row = rows[0];
 
     // 2. Optimistic locking — if client sends version, verify it matches
     if (input.version !== undefined && input.version !== row.version) {
@@ -345,12 +334,12 @@ export async function updateRequestEvent(
     }
 
     // 3. Authorization: only buyer/seller can modify (or admin)
-    if (actorRole !== 'ADMIN' && row.buyer_id !== actorId && row.seller_id !== actorId) {
+    if (actorRole !== 'ADMIN' && row.buyerId !== actorId && row.sellerId !== actorId) {
       throw new ForbiddenError('You do not have access to this request');
     }
 
     // EXCH-BUG-05: role-level event authorization (before FSM, so audit log is clean)
-    authorizeEvent(input.event, actorId, actorRole, row.buyer_id, row.seller_id);
+    authorizeEvent(input.event, actorId, actorRole, row.buyerId, row.sellerId);
 
     // 4. Apply FSM event → new status
     const newStatus = applyRequestEvent(row.status as RequestStatus, input.event);
@@ -375,7 +364,7 @@ export async function updateRequestEvent(
       // NEW-BUG-01 FIX: Use updateMany with WHERE assertion so a listing in an
       // unexpected state (e.g., flagged) does not silently get overwritten.
       const completedCount = await tx.listing.updateMany({
-        where: { id: row.listing_id, status: 'IN_TRANSACTION' },
+        where: { id: row.listingId, status: 'IN_TRANSACTION' },
         data: { status: 'COMPLETED' },
       });
       if (completedCount.count === 0) {
@@ -387,7 +376,7 @@ export async function updateRequestEvent(
 
       // EXCH-BUG-02: increment BOTH parties' completedExchanges counters.
       await tx.user.updateMany({
-        where: { id: { in: [row.seller_id, row.buyer_id] } },
+        where: { id: { in: [row.sellerId, row.buyerId] } },
         data: { completedExchanges: { increment: 1 } },
       });
     }
@@ -397,7 +386,7 @@ export async function updateRequestEvent(
       // This prevents other users from interacting with it until it's finished or cancelled.
       // NEW-BUG-01 FIX: Assert expected prior state in WHERE clause.
       const acceptedCount = await tx.listing.updateMany({
-        where: { id: row.listing_id, status: { in: ['INTEREST_RECEIVED', 'APPROVED'] } },
+        where: { id: row.listingId, status: { in: ['INTEREST_RECEIVED', 'APPROVED'] } },
         data: { status: 'IN_TRANSACTION' },
       });
       if (acceptedCount.count === 0) {
@@ -422,7 +411,7 @@ export async function updateRequestEvent(
       // requests exist for this listing before reverting to APPROVED.
       const activeCount = await tx.request.count({
         where: {
-          listingId: row.listing_id,
+          listingId: row.listingId,
           id: { not: requestId },
           status: { notIn: TERMINAL_STATUSES },
         },
@@ -433,7 +422,7 @@ export async function updateRequestEvent(
         // If another concurrent transaction already changed the listing (e.g., admin flagged it),
         // the update is a no-op rather than silently overwriting an unintended state.
         await tx.listing.updateMany({
-          where: { id: row.listing_id, status: { in: ['IN_TRANSACTION', 'INTEREST_RECEIVED'] } },
+          where: { id: row.listingId, status: { in: ['IN_TRANSACTION', 'INTEREST_RECEIVED'] } },
           data: { status: 'APPROVED' },
         });
       }

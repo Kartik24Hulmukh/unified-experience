@@ -80,7 +80,7 @@ const ListingDetailPage = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-portal flex items-center justify-center">
+            <div className="min-h-[100dvh] bg-portal flex items-center justify-center">
                 <LoadingSpinner />
             </div>
         );
@@ -88,7 +88,7 @@ const ListingDetailPage = () => {
 
     if (isError || !listing) {
         return (
-            <div className="min-h-screen bg-portal flex items-center justify-center p-8">
+            <div className="min-h-[100dvh] bg-portal flex items-center justify-center p-8">
                 <ErrorFallback error={error} onRetry={refetch} />
             </div>
         );
@@ -105,7 +105,7 @@ const ListingDetailPage = () => {
     };
 
     return (
-        <div ref={containerRef} className="min-h-screen bg-portal text-white">
+        <div ref={containerRef} className="min-h-[100dvh] bg-portal text-white">
             {/* Header */}
             <header className="px-8 md:px-16 py-8 border-b border-white/5">
                 <Button

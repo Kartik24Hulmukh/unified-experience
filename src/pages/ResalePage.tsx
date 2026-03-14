@@ -110,9 +110,9 @@ const ResalePage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-screen bg-portal">
+    <div ref={mainRef} className="min-h-[100dvh] bg-portal">
       {/* Hero Section - Full bleed with diagonal split */}
-      <section ref={heroRef} className="relative h-screen overflow-hidden">
+      <section ref={heroRef} className="relative h-[100dvh] overflow-hidden">
         {/* Background Image with Parallax */}
         <div className="absolute inset-0 z-0">
           <img

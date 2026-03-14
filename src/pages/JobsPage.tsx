@@ -31,7 +31,7 @@ const JobsPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-screen bg-cyber-black text-cyber-gray-300 pt-32 pb-20 selection:bg-cyber-blue/30 overflow-hidden font-mono">
+    <div ref={mainRef} className="min-h-[100dvh] bg-cyber-black text-cyber-gray-300 pt-32 pb-20 selection:bg-cyber-blue/30 overflow-hidden font-mono">
       {/* Background grid effect */}
       <div className="fixed inset-0 pointer-events-none opacity-20" style={{
         backgroundImage: 'linear-gradient(rgba(24, 219, 166, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(24, 219, 166, 0.1) 1px, transparent 1px)',

@@ -11,7 +11,7 @@ const SplashCursor = lazy(() => import('@/components/SplashCursor'));
  */
 export default function SplashTestPage() {
     return (
-        <div className="relative h-screen w-full overflow-hidden bg-black select-none">
+        <div className="relative h-[100dvh] w-full overflow-hidden bg-black select-none">
             {/* Real Live Preview: Splash Simulation Overlay */}
             <Suspense fallback={null}>
                 <SplashCursor

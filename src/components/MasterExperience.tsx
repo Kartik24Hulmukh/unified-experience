@@ -162,7 +162,7 @@ const MasterExperience = () => {
 
   return (
     <div ref={containerRef} className="h-[250vh] bg-portal">
-      <div ref={stickyRef} className="sticky top-0 h-screen w-full overflow-hidden bg-portal">
+      <div ref={stickyRef} className="sticky top-0 h-[100dvh] w-full overflow-hidden bg-portal">
 
         <div ref={baseLayerRef} className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
           <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-portal">

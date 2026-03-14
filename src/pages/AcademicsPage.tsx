@@ -134,9 +134,9 @@ const AcademicsPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-screen bg-portal">
+    <div ref={mainRef} className="min-h-[100dvh] bg-portal">
       {/* Hero - Typography-focused with branch codes as design elements */}
-      <section ref={heroRef} className="relative min-h-screen overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[100dvh] overflow-hidden">
         {/* Background image + overlay */}
         <div className="absolute inset-0 z-0">
           <img
@@ -193,7 +193,7 @@ const AcademicsPage = () => {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 min-h-screen flex flex-col justify-center px-4 sm:px-8 md:px-16 py-20">
+        <div className="relative z-10 min-h-[100dvh] flex flex-col justify-center px-4 sm:px-8 md:px-16 py-20">
           <div className="max-w-4xl">
             <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-4">
               Module 04

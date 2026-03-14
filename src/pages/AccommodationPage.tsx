@@ -278,10 +278,10 @@ const AccommodationPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-screen bg-black text-white overflow-hidden relative">
+    <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
 
       {/* ═══════════════ HERO SECTION ═══════════════ */}
-      <section ref={heroRef} className="relative min-h-screen flex flex-col justify-between overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[100dvh] flex flex-col justify-between overflow-hidden">
         {/* Background image + overlays */}
         <div className="absolute inset-0 z-0">
           <img

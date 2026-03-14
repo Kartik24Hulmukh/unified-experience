@@ -197,7 +197,7 @@ const LandingPage = () => {
   };
 
   return (
-    <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-[#050505] select-none">
+    <div ref={containerRef} className="relative h-[100dvh] w-full overflow-hidden bg-[#050505] select-none">
       {/* ═══════════════════════════════════════════
           LOADER OVERLAY 
           ═══════════════════════════════════════════ */}

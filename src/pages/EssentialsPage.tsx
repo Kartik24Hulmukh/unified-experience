@@ -139,10 +139,10 @@ const EssentialsPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-screen bg-black text-white overflow-hidden relative">
+    <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
 
       {/* ═══════════════ HERO ═══════════════ */}
-      <section ref={heroRef} className="relative min-h-screen flex items-end overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[100dvh] flex items-end overflow-hidden">
         {/* Background — essentials-tiffin.jpg at low opacity */}
         <div className="absolute inset-0 z-0">
           <img

@@ -167,7 +167,7 @@ const CampusEventsSection = () => {
       />
 
       {/* ── Sticky viewport ─────────────────────────────────────────────────── */}
-      <div className="sticky top-0 h-screen overflow-hidden">
+      <div className="sticky top-0 h-[100dvh] overflow-hidden">
 
         {/* Horizontal flex track */}
         <div

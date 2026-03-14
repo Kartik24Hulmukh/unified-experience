@@ -237,7 +237,7 @@ const AdminPage = () => {
     }, []);
 
     return (
-        <div ref={containerRef} className="min-h-screen bg-portal flex text-white overflow-hidden">
+        <div ref={containerRef} className="min-h-[100dvh] bg-portal flex text-white overflow-hidden">
             {/* Sidebar Architecture */}
             <aside className="admin-sidebar w-64 border-r border-white/5 bg-black/40 flex flex-col">
                 <div className="p-8 border-b border-white/5 space-y-4">
@@ -280,7 +280,7 @@ const AdminPage = () => {
             </aside>
 
             {/* Main Command Center */}
-            <main className="admin-main flex-1 flex flex-col h-screen overflow-y-auto scrollbar-hide">
+            <main className="admin-main flex-1 flex flex-col h-[100dvh] overflow-y-auto scrollbar-hide">
                 <header className="px-12 py-10 flex justify-between items-end border-b border-white/5">
                     <div className="space-y-4">
                         <h1 className="text-5xl font-display font-bold uppercase italic italic-syne leading-none">
@@ -402,7 +402,7 @@ const AdminPage = () => {
                                                                         <DialogTitle className="font-display text-3xl font-bold uppercase italic italic-syne">ENTITY INSPECTION</DialogTitle>
                                                                         <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">Protocol ID: {listing.id}</DialogDescription>
                                                                     </DialogHeader>
-                                                                    <div className="grid grid-cols-2 gap-8 py-8 border-y border-white/5 my-4">
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 border-y border-white/5 my-4">
                                                                         <div className="space-y-4">
                                                                             <div>
                                                                                 <p className="text-[9px] text-white/30 uppercase font-bold font-display">Resource Details</p>

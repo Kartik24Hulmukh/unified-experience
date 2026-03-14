@@ -76,7 +76,7 @@ import {
 
 function SafeFallbackView({ message }: { message: string }) {
   return (
-    <div className="min-h-screen bg-portal flex items-center justify-center">
+    <div className="min-h-[100dvh] bg-portal flex items-center justify-center">
       <div className="text-center space-y-4 max-w-md">
         <Shield className="w-12 h-12 text-white/20 mx-auto" />
         <p className="text-white/40 text-sm font-body">{message}</p>
@@ -753,7 +753,7 @@ const ProfilePage = () => {
   if (isAdminDrilldown) {
     if (drilldownLoading) {
       return (
-        <div className="min-h-screen bg-portal flex items-center justify-center">
+        <div className="min-h-[100dvh] bg-portal flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
         </div>
       );
@@ -768,7 +768,7 @@ const ProfilePage = () => {
     }
 
     return (
-      <div className="min-h-screen bg-portal text-white">
+      <div className="min-h-[100dvh] bg-portal text-white">
         <div ref={containerRef} className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 py-24">
           <div className="profile-content space-y-12">
             <AdminDrilldownView view={drilldownView} />
@@ -788,7 +788,7 @@ const ProfilePage = () => {
   // ── Self Profile Mode ─────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-portal flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-portal flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
       </div>
     );
@@ -817,7 +817,7 @@ const ProfilePage = () => {
   const roleConfig = ROLE_CONFIGS[profile.role];
 
   return (
-    <div className="min-h-screen bg-portal text-white">
+    <div className="min-h-[100dvh] bg-portal text-white">
       <div ref={containerRef} className="max-w-6xl mx-auto px-4 sm:px-6 md:px-12 py-24">
         <div className="profile-content space-y-12">
           {/* Identity Header */}

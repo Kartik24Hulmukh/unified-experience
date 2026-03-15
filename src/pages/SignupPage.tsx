@@ -100,8 +100,8 @@ const SignupPage = () => {
     return (
         <AuthPortal>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                {/* Left Column: Form */}
-                <div className="order-2 lg:order-1 relative group">
+                {/* Form Column */}
+                <div className="order-1 relative group">
                     <div className="absolute -inset-1 bg-gradient-to-l from-primary/20 to-teal-500/20 rounded-2xl blur-xl transition-all duration-1000 group-hover:opacity-100 opacity-50" />
 
                     <div className="relative bg-[#0a0a0a] border border-white/10 p-8 md:p-12 rounded-2xl shadow-2xl backdrop-blur-3xl overflow-hidden">
@@ -130,6 +130,7 @@ const SignupPage = () => {
                         )}
 
                         {/* ── Email Toggle ── */}
+                        {hasRealGIS && (
                         <div className="flex items-center gap-4 mb-4">
                             <div className="flex-1 h-px bg-white/10" />
                             <button
@@ -142,6 +143,7 @@ const SignupPage = () => {
                             </button>
                             <div className="flex-1 h-px bg-white/10" />
                         </div>
+                        )}
 
                         {/* ── Collapsible Email Form ── */}
                         <div
@@ -247,8 +249,8 @@ const SignupPage = () => {
                     </div>
                 </div>
 
-                {/* Right Column: Information */}
-                <div className="order-1 lg:order-2 flex flex-col space-y-6 lg:space-y-8 lg:pl-12 text-center lg:text-left">
+                {/* Information Column */}
+                <div className="order-2 flex flex-col space-y-6 lg:space-y-8 lg:pl-12 text-center lg:text-left">
                     <div className="space-y-4">
                         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-tight font-display uppercase italic italic-syne">
                             <SplitText className="inline-block" trigger="load">

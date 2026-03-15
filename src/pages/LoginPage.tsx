@@ -51,13 +51,14 @@ const LoginPage = () => {
     const from = (location.state as { from?: string })?.from || "/home";
 
     useEffect(() => {
-        if (isAuthenticated && !authLoading && !hasRedirected.current) {
-            hasRedirected.current = true;
-            // Admins go to the admin console; regular users go to their intended destination
-            const destination = user?.role === 'admin' ? '/admin' : from;
-            safeNavigate(navigate, location.pathname, destination);
+        if (isAuthenticated && !authLoading && user) {
+            if (!hasRedirected.current) {
+                hasRedirected.current = true;
+                const destination = user.role === 'admin' ? '/admin' : from;
+                navigate(destination, { replace: true });
+            }
         }
-    }, [isAuthenticated, authLoading, navigate, from, location.pathname, user?.role]);
+    }, [isAuthenticated, authLoading, navigate, from, user]);
 
     const form = useForm<z.infer<typeof loginSchema>>({
         resolver: zodResolver(loginSchema),
@@ -65,12 +66,16 @@ const LoginPage = () => {
     });
 
     async function onSubmit(values: z.infer<typeof loginSchema>) {
-        if (hasRedirected.current) return;
         setIsLoading(true);
         try {
             await login(values.email, values.password);
             toast({ title: "Access Granted", description: "Welcome to the BErozgar Trust Exchange." });
+            
+            // Immediately navigate here as a fallback
+            const destination = user?.role === 'admin' ? '/admin' : from;
+            navigate(destination, { replace: true });
         } catch (err) {
+            hasRedirected.current = false;
             const msg = err instanceof Error ? err.message : "Invalid credentials. Please try again.";
             toast({ title: "Access Denied", description: msg, variant: "destructive" });
         } finally {
@@ -79,12 +84,16 @@ const LoginPage = () => {
     }
 
     async function handleGoogleClick() {
-        if (hasRedirected.current || isGoogleLoading) return;
+        if (isGoogleLoading) return;
         try {
             const result = await promptSignIn();
             await googleSignIn(result.credential);
             toast({ title: "Google Sign-In Successful", description: `Signed in as ${result.email || 'your Google account'}` });
+            
+            const destination = user?.role === 'admin' ? '/admin' : from;
+            navigate(destination, { replace: true });
         } catch (err) {
+            hasRedirected.current = false;
             const msg = err instanceof Error ? err.message : "Could not authenticate with Google.";
             toast({ title: "Google Sign-In Failed", description: msg, variant: "destructive" });
         }

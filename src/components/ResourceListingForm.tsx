@@ -250,7 +250,7 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess, c
                                     )}
                                 />
 
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <FormField
                                         control={form.control}
                                         name="category"
@@ -343,7 +343,7 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess, c
                                     <p className="text-[9px] text-white/20 uppercase tracking-[0.2em] italic">Capture original asset images. Stock photos result in approval rejection.</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -391,7 +391,7 @@ const ResourceListingForm = ({ moduleName, moduleColor = "#00d4aa", onSuccess, c
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4">
                                     <Button
                                         type="button"
                                         variant="ghost"

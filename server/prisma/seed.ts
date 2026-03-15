@@ -126,6 +126,30 @@ async function main() {
       price: 500,
       status: 'PENDING_REVIEW' as const,
     },
+    {
+      title: 'Structural Analysis Vol 1',
+      description: 'Used textbook for Civil Engineering. Almost new.',
+      category: 'Books',
+      module: 'resale',
+      price: 450,
+      status: 'APPROVED' as const,
+    },
+    {
+      title: 'Casio Scientific Calculator',
+      description: 'Model fx-991ES Plus. 3 years old but works perfectly.',
+      category: 'Calculators',
+      module: 'resale',
+      price: 600,
+      status: 'APPROVED' as const,
+    },
+    {
+      title: 'Lab Apron',
+      description: 'Large size, white lab apron for chemistry lab.',
+      category: 'lab',
+      module: 'resale',
+      price: 150,
+      status: 'APPROVED' as const,
+    },
   ];
 
   for (const listing of listings) {

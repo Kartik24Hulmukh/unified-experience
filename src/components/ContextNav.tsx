@@ -65,8 +65,8 @@ const ContextNav = memo(function ContextNav() {
   const isLandingPage = location.pathname === '/';
   const isHomepage = location.pathname === '/home';
 
-  // Pages with dark backgrounds need light nav text immediately
     const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics', '/admin', '/profile'];
+    const isDarkBgPage = darkBgPages.includes(location.pathname);
 
   // Track scroll position and update nav style
   useEffect(() => {

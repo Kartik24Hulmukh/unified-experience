@@ -43,7 +43,7 @@ const AuthPortal = ({ children }: AuthPortalProps) => {
     return (
         <div
             ref={containerRef}
-            className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-white"
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black"
         >
             {/* The Black Portal */}
             <div

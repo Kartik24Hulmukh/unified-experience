@@ -270,7 +270,7 @@ export function useListings(
   if (filters.status) params.set('status', filters.status);
   if (filters.search) params.set('search', filters.search);
   if (filters.page) params.set('page', String(filters.page));
-  if (filters.perPage) params.set('perPage', String(filters.perPage));
+  if (filters.perPage) params.set('limit', String(filters.perPage));
 
   const queryString = params.toString();
   const endpoint = `/listings${queryString ? `?${queryString}` : ''}`;

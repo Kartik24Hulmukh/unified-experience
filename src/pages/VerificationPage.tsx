@@ -141,7 +141,7 @@ const VerificationPage = () => {
                     </div>
 
                     <div className="space-y-2">
-                        <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight font-display uppercase italic italic-syne">
+                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-tight font-display uppercase italic italic-syne">
                             <SplitText className="inline-block" trigger="load">
                                 VERIFY EMAIL
                             </SplitText>
@@ -180,14 +180,14 @@ const VerificationPage = () => {
                                 void handleVerify(val);
                             }
                         }}
-                        className="gap-4"
+                        className="gap-2 sm:gap-4"
                     >
-                        <InputOTPGroup className="gap-4">
+                        <InputOTPGroup className="gap-2 sm:gap-4">
                             {[0, 1, 2, 3, 4, 5].map((idx) => (
                                 <InputOTPSlot
                                     key={idx}
                                     index={idx}
-                                    className="w-12 h-16 md:w-16 md:h-20 bg-black/50 border-white/10 text-white text-2xl font-display focus:border-primary transition-all duration-300"
+                                    className="w-11 h-14 sm:w-12 sm:h-16 md:w-16 md:h-20 bg-black/50 border-white/10 text-white text-xl sm:text-2xl font-display focus:border-primary transition-all duration-300"
                                 />
                             ))}
                         </InputOTPGroup>

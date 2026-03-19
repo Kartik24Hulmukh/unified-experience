@@ -69,7 +69,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
                       <h3 className={`text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform truncate ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
                     <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.4em] uppercase mt-2 transition-[color,opacity] duration-500 ${activeModule === module.id ? 'text-white/50' : 'text-white/5'}`}>{module.subtitle}</p>
                   </div>
-                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>→</span>
+                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>ΓåÆ</span>
                 </div>
                 <div className={`h-px w-full transition-[background-color] duration-500 ${activeModule === module.id ? 'bg-[#a3ff12]/30' : 'bg-white/5'}`} />
               </div>
@@ -156,17 +156,23 @@ const MasterExperience = () => {
       tl.to(modulesRef.current, { opacity: 1, pointerEvents: 'auto', duration: 0.4 }, 0.6);
       const items = modulesRef.current?.querySelectorAll('.module-item');
       if (items) tl.fromTo(items, { y: 40, opacity: 0, rotateX: 10 }, { y: 0, opacity: 1, rotateX: 0, duration: 0.8, stagger: 0.08, ease: 'power4.out' }, 0.7);
+
+      // Add idle scrolling time so the 4 modules stay visible for the user to read/click
+      tl.to({}, { duration: 1.5 });
+      
+      // Graceful exit animation before the sticky container unpins
+      tl.to(modulesRef.current, { y: -50, opacity: 0, duration: 0.6, ease: 'power2.inOut' });
     });
     return () => ctx.revert();
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[250vh] bg-portal">
+    <div ref={containerRef} className="h-[350vh] bg-portal">
       <div ref={stickyRef} className="sticky top-0 h-[100dvh] w-full overflow-hidden bg-portal">
 
         <div ref={baseLayerRef} className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
           <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-portal">
-            {/* WebGL fluid splash — desktop only; mobile skips the heavy GPU sim */}
+            {/* WebGL fluid splash ΓÇö desktop only; mobile skips the heavy GPU sim */}
             {isHeavyMounted && (
               <Suspense fallback={null}>
                 <SplashCursor
@@ -206,7 +212,7 @@ const MasterExperience = () => {
 
         <div ref={portalRef} className="absolute inset-0 z-30 bg-portal flex items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
           <div ref={symbolRef} className="will-change-transform -mt-[10vh]" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
-            {/* Portal3D is heavy — skip on mobile to avoid GPU/WASM overhead */}
+            {/* Portal3D is heavy ΓÇö skip on mobile to avoid GPU/WASM overhead */}
             {isHeavyMounted && <Suspense fallback={null}><Portal3D scrollProgressRef={scrollProgressRef} /></Suspense>}
           </div>
         </div>

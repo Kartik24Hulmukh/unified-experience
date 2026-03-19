@@ -200,6 +200,98 @@ export function ForbiddenPage() {
 }
 
 /* ═══════════════════════════════════════════════════
+   Skeleton Loaders — prevent CLS during data fetch
+   ═══════════════════════════════════════════════════ */
+
+/**
+ * Single skeleton card — mirrors the aspect ratio of a listing card so the
+ * grid height stays stable while data loads (eliminates CLS).
+ */
+export function SkeletonCard() {
+  return (
+    <div
+      className="animate-pulse bg-white/5 border border-white/10 aspect-[4/5] w-full overflow-hidden"
+      aria-hidden="true"
+    >
+      {/* Simulate image placeholder */}
+      <div className="h-3/4 w-full bg-white/10" />
+      {/* Simulate title + price row */}
+      <div className="p-4 space-y-2">
+        <div className="h-3 w-2/3 rounded bg-white/10" />
+        <div className="h-3 w-1/3 rounded bg-white/10" />
+      </div>
+    </div>
+  );
+}
+
+interface SkeletonListingGridProps {
+  /** Number of skeleton cards to render (default: 6 — matches two grid rows on md). */
+  count?: number;
+}
+
+/**
+ * Full-width skeleton grid that matches the real `ListingGrid` layout so
+ * there is no layout shift when the real cards arrive.
+ */
+export function SkeletonListingGrid({ count = 6 }: SkeletonListingGridProps) {
+  return (
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 md:px-0"
+      aria-label="Loading listings…"
+      aria-busy="true"
+    >
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonCard key={i} />
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   Network Error Empty State
+   Shown when an API call fails AND there is no cached data.
+   ═══════════════════════════════════════════════════ */
+
+interface NetworkEmptyStateProps {
+  onRetry?: () => void;
+  title?: string;
+  description?: string;
+}
+
+export function NetworkEmptyState({
+  onRetry,
+  title = 'Could not load data',
+  description = 'Check your connection and try again.',
+}: NetworkEmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
+        <svg
+          className="h-7 w-7 text-destructive"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+        </svg>
+      </div>
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+      <p className="max-w-xs text-sm text-muted-foreground">{description}</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="tap-target mt-2 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════
    Helpers
    ═══════════════════════════════════════════════════ */
 

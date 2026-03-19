@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useListings } from '@/hooks/api/useApi';
 import { countBrowseListingsByCategory, getBrowseVisibleListings } from '@/lib/browse-listings';
-import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
+import { LoadingSpinner, ErrorFallback, SkeletonListingGrid } from '@/components/FallbackUI';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -39,7 +39,11 @@ const ResalePage = () => {
 
   // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'resale' });
-  const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
+  const visibleItems = useMemo(() => {
+    const items = getBrowseVisibleListings(listingsResponse?.data ?? []);
+    // Limit initial DOM depth to prevent mobile browser crashes on large datasets
+    return typeof window !== 'undefined' && window.innerWidth < 768 ? items.slice(0, 50) : items.slice(0, 150);
+  }, [listingsResponse?.data]);
   const categoryCounts = useMemo(() => countBrowseListingsByCategory(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
@@ -75,6 +79,17 @@ const ResalePage = () => {
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
+      // Skip all motion when the user has requested reduced motion (vestibular disorders).
+      // The CSS @media rule in index.css disables CSS transitions; this guards GSAP which
+      // runs via JS and is not affected by the CSS rule.
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (prefersReduced) {
+        // Immediately reveal all elements that GSAP would otherwise start at opacity: 0
+        gsap.set([imageRef.current, '.category-card'], { opacity: 1, y: 0, rotateY: 0, clearProps: 'all' });
+        return;
+      }
+
       // Parallax hero image
       gsap.to(imageRef.current, {
         yPercent: 30,
@@ -141,12 +156,12 @@ const ResalePage = () => {
             <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-4">
               Module 01
             </p>
-            <h1 className="text-portal-foreground font-display text-4xl sm:text-6xl md:text-9xl font-bold leading-none mb-6">
+            <h1 className="text-portal-foreground font-display text-4xl sm:text-5xl md:text-8xl lg:text-9xl font-bold leading-none mb-6">
               <SplitText animation="fadeUp" trigger="load" delay={0.3}>
                 RESALE
               </SplitText>
             </h1>
-            <p className="text-portal-foreground/60 text-xl md:text-2xl font-body max-w-xl">
+            <p className="text-portal-foreground/60 text-lg md:text-2xl font-body max-w-xl">
               Secure peer-to-peer exchange of academic resources. Verified sellers, trusted buyers.
             </p>
           </div>
@@ -235,7 +250,7 @@ const ResalePage = () => {
               key={item.step}
               className="flex-shrink-0 w-64 sm:w-80 p-6 sm:p-8 border border-portal-foreground/10 bg-portal hover:border-portal-foreground/30 transition-colors duration-300"
             >
-              <span className="text-portal-foreground/20 font-display text-6xl font-bold">
+              <span className="text-portal-foreground/20 font-display text-5xl sm:text-6xl font-bold">
                 {item.step}
               </span>
               <h3 className="text-portal-foreground font-display text-xl font-bold mt-8 mb-4">
@@ -265,8 +280,10 @@ const ResalePage = () => {
             priceRange={[0, 5000]}
           />
 
+          {/* Use a properly-sized skeleton grid while data loads so the page height
+               is stable (no CLS) and the user knows content is incoming. */}
           {isLoading && filteredItems.length === 0 ? (
-            <LoadingSpinner className="py-16" />
+            <SkeletonListingGrid count={typeof window !== 'undefined' && window.innerWidth < 640 ? 4 : 6} />
           ) : isError ? (
             <div className="py-16 max-w-xl mx-auto">
               <ErrorFallback error={error} onRetry={refetch} />
@@ -291,10 +308,10 @@ const ResalePage = () => {
       {/* CTA Section */}
       <section className="py-20 sm:py-32 px-4 sm:px-8 md:px-16">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-portal-foreground font-display text-4xl md:text-6xl font-bold mb-8">
+          <h2 className="text-portal-foreground font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-8">
             Ready to Exchange?
           </h2>
-          <p className="text-portal-foreground/50 text-lg mb-12 max-w-xl mx-auto">
+          <p className="text-portal-foreground/50 text-base sm:text-lg mb-12 max-w-xl mx-auto">
             Join verified MCTRGIT students in creating a sustainable resource exchange ecosystem.
           </p>
           <button

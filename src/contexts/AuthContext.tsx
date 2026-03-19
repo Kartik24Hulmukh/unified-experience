@@ -138,6 +138,8 @@ const INITIAL_STATE: AuthState = {
   restriction: null,
 };
 
+const LOGOUT_REDIRECT_KEY = 'berozgar_post_logout_redirect';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(INITIAL_STATE);
   const hydrationRef = useRef(false);
@@ -163,10 +165,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (hydrationRef.current) return;
     hydrationRef.current = true;
 
-    const hasStoredUser = !!sessionManager.getUser();
+    console.log('[AuthContext] Starting hydration...');
+    const storedUser = sessionManager.getUser();
+    console.log('[AuthContext] Stored user exists:', !!storedUser);
 
-    if (!hasStoredUser) {
-      // No existing session — set hydrated
+    if (!storedUser) {
+      console.log('[AuthContext] No stored user, marked hydrated.');
       setState({ ...INITIAL_STATE, isHydrated: true });
       return;
     }
@@ -177,27 +181,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // /auth/refresh first using the httpOnly refresh cookie (sent automatically)
     // to obtain a fresh access token, then call /auth/me to hydrate the session.
     // Without this step, /auth/me would receive no Bearer token → 401 → spurious logout.
-    const controller = new AbortController();
     (async () => {
       try {
         // LOW-01 FIX: explicit aggressive timeout for hydration to prevent blank UI hangs on cold starts/dropped connections
         // Increased from 5s to 15s to allow for local dev cold starts
-        const HYDRATION_TIMEOUT = 15000;
+        const HYDRATION_TIMEOUT = 30000;
 
         // Step 1: If no in-memory access token, try to refresh first
         if (!sessionManager.getAccessToken()) {
+          console.log('[AuthContext] No access token, calling /auth/refresh...');
           try {
-            const refreshRes = await api.post<{ accessToken: string; csrfToken?: string }>(
-              '/auth/refresh',
-              undefined,
-              { skipAuth: true, signal: controller.signal, timeout: HYDRATION_TIMEOUT }
-            );
-            sessionManager.setTokens(refreshRes.accessToken);
-            // Refresh might not return csrfToken directly, but we accept it if it does
-            if (refreshRes.csrfToken) setCsrfToken(refreshRes.csrfToken);
-          } catch {
-            // Refresh cookie is invalid/expired — session is truly dead
-            if (controller.signal.aborted) return;
+            const accessToken = await handleTokenRefresh();
+            console.log('[AuthContext] /auth/refresh succeeded.');
+            sessionManager.setTokens(accessToken);
+          } catch (err) {
+            console.log('[AuthContext] /auth/refresh FAILED:', err);
             sessionManager.clearSession();
             clearCsrfToken();
             clearMonitoringUser();
@@ -205,14 +203,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
         }
-
-        if (controller.signal.aborted) return;
-
-        // Step 2: Validate session and fetch user truth from server
+        console.log('[AuthContext] Calling /auth/me...');
         const response = await api.get<AuthMeResponse>('/auth/me', { 
-          signal: controller.signal,
           timeout: HYDRATION_TIMEOUT 
         });
+        console.log('[AuthContext] /auth/me succeeded.');
         const user = normalizeUser(response.user);
         const { trust, restriction } = response;
 
@@ -229,7 +224,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           restriction,
         });
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
         // Session invalid — clear everything
         sessionManager.clearSession();
         clearCsrfToken();
@@ -237,13 +231,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ ...INITIAL_STATE, isHydrated: true });
       }
     })();
-    return () => controller.abort();
   }, []);
 
   // Listen for session events (multi-tab sync, token refresh, etc.)
   useEffect(() => {
     const unsubscribe = sessionManager.subscribe((event, user) => {
       if (event === 'login') {
+        try {
+          localStorage.removeItem(LOGOUT_REDIRECT_KEY);
+        } catch {
+          // Best effort
+        }
         setState((prev) => ({
           ...prev,
           user: user,
@@ -256,6 +254,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // tab logs out or when the token expiry fires — not just on user-initiated logout.
         clearCsrfToken();
         clearMonitoringUser();
+        try {
+          localStorage.setItem(LOGOUT_REDIRECT_KEY, String(Date.now()));
+        } catch {
+          // Best effort
+        }
         setState({
           ...INITIAL_STATE,
           isHydrated: true,
@@ -316,6 +319,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionManager.login(user, response.accessToken);
       if (response.csrfToken) setCsrfToken(response.csrfToken);
       identifyUser({ id: user.id, email: user.email, role: user.role });
+      try {
+        localStorage.removeItem(LOGOUT_REDIRECT_KEY);
+      } catch {
+        // Best effort
+      }
       clearPending();
 
       // Fetch trust/restriction from /auth/me now that we have a valid session
@@ -397,6 +405,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionManager.login(user, response.accessToken);
       if (response.csrfToken) setCsrfToken(response.csrfToken);
       identifyUser({ id: user.id, email: user.email, role: user.role });
+      try {
+        localStorage.removeItem(LOGOUT_REDIRECT_KEY);
+      } catch {
+        // Best effort
+      }
 
       // Fresh account — trust/restriction will be default
       setState({
@@ -422,6 +435,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The /logout route no longer requires authenticate, so this works even
     // when the access token has already expired.
     api.post('/auth/logout', undefined).catch(() => { });
+    try {
+      localStorage.setItem(LOGOUT_REDIRECT_KEY, String(Date.now()));
+    } catch {
+      // Best effort
+    }
     sessionManager.clearSession();
     clearCsrfToken();
     clearMonitoringUser();
@@ -450,6 +468,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionManager.login(user, response.accessToken);
       if (response.csrfToken) setCsrfToken(response.csrfToken);
       identifyUser({ id: user.id, email: user.email, role: user.role });
+      try {
+        localStorage.removeItem(LOGOUT_REDIRECT_KEY);
+      } catch {
+        // Best effort
+      }
       clearPending();
 
       // Fetch trust/restriction from /auth/me

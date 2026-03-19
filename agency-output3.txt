@@ -1,0 +1,13 @@
+[dotenv@17.3.1] injecting env (21) from ..\Unified-Experience\unified-experience\server\.env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+🤖 --- BErozgar Specialist Squad Live Launch ---
+Checking API Key: DETECTED
+
+Task: "Review the Unified Experience platform for high-priority accessibility and performance bottlenecks."
+Agents Deployed: Frontend Developer, Backend Architect
+Mode: LIVE
+
+⏳ Connecting to Gemini API...
+
+❌ Live orchestration failed TypeError: Cannot read properties of undefined (reading 'replace')
+    at testLiveAgency (file:///C:/Users/kadam/OneDrive/Desktop/Unified-Experience/unified-experience/test-agency.mjs:50:32)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)

@@ -53,7 +53,8 @@ const ContextNav = memo(function ContextNav() {
       { label: 'Resale', path: '/resale', number: '04' },
     ];
     if (user?.role === 'admin') {
-      base.push({ label: 'Admin', path: '/admin', number: '05' });
+      base.push({ label: 'Agency', path: '/agency', number: '05' });
+      base.push({ label: 'Admin', path: '/admin', number: '06' });
     }
     return base;
   }, [user?.role]);
@@ -117,25 +118,38 @@ const ContextNav = memo(function ContextNav() {
     if (!menuRef.current) return;
 
     const ctx = gsap.context(() => {
-      if (isMenuOpen) {
-        gsap.fromTo(
-          menuRef.current!,
-          { clipPath: 'circle(0% at calc(100% - 40px) 40px)' },
-          { clipPath: 'circle(150% at calc(100% - 40px) 40px)', duration: 0.8, ease: 'power3.inOut' }
-        );
+      // Skip clip-path animation when the user prefers reduced motion —
+      // use an instant visibility toggle instead so the menu is still usable.
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        const menuNavItems = menuRef.current!.querySelectorAll('.nav-item');
-        gsap.fromTo(
-          menuNavItems,
-          { opacity: 0, x: 100 },
-          { opacity: 1, x: 0, stagger: 0.1, delay: 0.3, duration: 0.6, ease: 'power3.out' }
-        );
+      if (isMenuOpen) {
+        if (prefersReduced) {
+          gsap.set(menuRef.current!, { clipPath: 'circle(150% at calc(100% - 40px) 40px)' });
+          gsap.set(menuRef.current!.querySelectorAll('.nav-item'), { opacity: 1, x: 0, clearProps: 'all' });
+        } else {
+          gsap.fromTo(
+            menuRef.current!,
+            { clipPath: 'circle(0% at calc(100% - 40px) 40px)' },
+            { clipPath: 'circle(150% at calc(100% - 40px) 40px)', duration: 0.8, ease: 'power3.inOut' }
+          );
+
+          const menuNavItems = menuRef.current!.querySelectorAll('.nav-item');
+          gsap.fromTo(
+            menuNavItems,
+            { opacity: 0, x: 100 },
+            { opacity: 1, x: 0, stagger: 0.1, delay: 0.3, duration: 0.6, ease: 'power3.out' }
+          );
+        }
       } else {
-        gsap.to(menuRef.current!, {
-          clipPath: 'circle(0% at calc(100% - 40px) 40px)',
-          duration: 0.6,
-          ease: 'power3.inOut',
-        });
+        if (prefersReduced) {
+          gsap.set(menuRef.current!, { clipPath: 'circle(0% at calc(100% - 40px) 40px)' });
+        } else {
+          gsap.to(menuRef.current!, {
+            clipPath: 'circle(0% at calc(100% - 40px) 40px)',
+            duration: 0.6,
+            ease: 'power3.inOut',
+          });
+        }
       }
     });
 
@@ -194,12 +208,12 @@ const ContextNav = memo(function ContextNav() {
           transition: 'opacity 0.4s ease, color 0.4s ease',
         }}
       >
-        <div className="flex items-center justify-between px-6 md:px-12 py-6">
+        <div className="safe-area-top flex min-w-0 items-center justify-between gap-2 px-4 py-4 sm:px-6 md:px-12 md:py-6">
           {/* Logo */}
           <Link
             to="/home"
             onClick={(e) => handleNavClick(e, '/home')}
-            className="relative z-50 font-display font-bold text-xl tracking-tight hover:opacity-70 transition-opacity"
+            className="relative z-50 tap-target font-display font-bold text-xl tracking-tight hover:opacity-70 transition-opacity shrink-0"
           >
             <span className="sr-only">BErozgar</span>
             <div className="flex items-center gap-2">
@@ -211,28 +225,26 @@ const ContextNav = memo(function ContextNav() {
           </Link>
 
           {/* Center - Current section indicator */}
-          <div className="hidden md:flex items-center gap-4">
-            <div className={`h-px w-12 ${isNavDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
-            <span ref={sectionLabelRef} className="text-xs uppercase tracking-widest opacity-60 font-body">
+          <div className="hidden md:flex items-center">
+            <span ref={sectionLabelRef} className={`text-[10px] md:text-xs uppercase tracking-[0.3em] font-body transition-colors ${isNavDark ? 'text-portal-foreground/60' : 'text-foreground/60'}`}>
               Welcome
             </span>
-            <div className={`h-px w-12 ${isNavDark ? 'bg-portal-foreground/30' : 'bg-foreground/30'}`} />
           </div>
 
           {/* Nav Actions */}
-          <div className="flex items-center gap-2 md:gap-6">
+          <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-6">
             {/* Auth Action */}
             {isAuthenticated ? (
               <Link
                 to="/profile"
                 onClick={(e) => handleNavClick(e, '/profile')}
-                className="group relative flex items-center gap-3 cursor-pointer"
+                className="group relative tap-target flex items-center gap-3 cursor-pointer"
               >
                 <div className="hidden lg:flex flex-col items-end">
-                  <span className="text-[8px] uppercase tracking-[0.2em] opacity-40 font-mono">
-                    Identity
+                  <span className={`text-[8px] uppercase tracking-[0.2em] font-mono transition-colors ${isNavDark ? 'text-portal-foreground/40' : 'text-foreground/40'}`}>
+                    Active
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${isNavDark ? 'text-portal-foreground' : 'text-foreground'}`}>
                     {user?.fullName?.split(' ')[0] || 'Profile'}
                   </span>
                 </div>
@@ -246,15 +258,17 @@ const ContextNav = memo(function ContextNav() {
               <Link
                 to="/login"
                 onClick={(e) => handleNavClick(e, '/login')}
-                className={`text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity font-body p-2 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
+                className={`tap-target text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity font-body px-3 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
               >
                 Login
               </Link>
             )}
 
+            {/* tap-target ensures minimum 48×48 px touch area (WCAG 2.5.5) */}
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className={`hidden sm:block p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
+              className={`tap-target flex transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
+              style={{ minWidth: 48, minHeight: 48 }}
               aria-label="Toggle structural mode"
             >
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -263,7 +277,7 @@ const ContextNav = memo(function ContextNav() {
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
-                className={`hidden sm:block p-2 transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
+                className={`tap-target flex transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
                 aria-label="Logout"
               >
                 <LogOut className="w-5 h-5" />
@@ -274,11 +288,12 @@ const ContextNav = memo(function ContextNav() {
               <NotificationCenter isDark={isNavDark} />
             </div>
 
-            {/* Menu Button */}
+            {/* Menu Button — tap-target gives ≥48px touch area (WCAG 2.5.5) */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="relative z-50 flex items-center gap-3 group"
+              className="relative z-50 tap-target flex items-center gap-3 group"
               aria-label="Toggle menu"
+              aria-expanded={isMenuOpen}
             >
               <span className={`hidden sm:block text-xs uppercase tracking-widest transition-opacity ${isMenuOpen ? 'opacity-0' : 'opacity-60'} font-body`}>
                 Menu
@@ -310,13 +325,13 @@ const ContextNav = memo(function ContextNav() {
       {/* Fullscreen Menu Overlay */}
       <div
         ref={menuRef}
-        className="fixed inset-0 z-40 bg-portal flex items-center justify-center"
-        style={{ clipPath: 'circle(0% at calc(100% - 40px) 40px)', willChange: isMenuOpen ? 'clip-path' : 'auto' }}
+        className="fixed inset-0 z-40 flex overflow-y-auto bg-portal"
+        style={{ clipPath: 'circle(0% at calc(100% - 40px) 40px)', willChange: isMenuOpen ? 'clip-path' : 'auto', pointerEvents: isMenuOpen ? 'auto' : 'none' }}
         role="dialog"
         aria-modal={isMenuOpen}
         aria-label="Navigation menu"
       >
-        <div className="max-w-4xl w-full px-8 md:px-16">
+        <div className="mx-auto min-h-full w-full max-w-4xl px-4 pt-[calc(env(safe-area-inset-top)+5rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] sm:px-8 md:px-16 md:pt-28">
           <nav className="space-y-4 md:space-y-6">
             {displayNavItems.map((item) => (
               <Link
@@ -345,7 +360,7 @@ const ContextNav = memo(function ContextNav() {
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className="flex items-center gap-2 p-3 border border-portal-foreground/20 text-portal-foreground hover:bg-portal-foreground/10 transition-colors sm:hidden"
+                  className="tap-target px-3 flex items-center gap-2 border border-portal-foreground/20 text-portal-foreground hover:bg-portal-foreground/10 transition-colors sm:hidden"
                 >
                   {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   <span className="text-[10px] uppercase font-mono tracking-widest">Mode</span>
@@ -353,7 +368,7 @@ const ContextNav = memo(function ContextNav() {
                 {isAuthenticated && (
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 p-3 border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors sm:hidden"
+                    className="tap-target px-3 flex items-center gap-2 border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors sm:hidden"
                   >
                     <LogOut className="w-5 h-5" />
                     <span className="text-[10px] uppercase font-mono tracking-widest">Logout</span>
@@ -392,7 +407,7 @@ const ContextNav = memo(function ContextNav() {
                 <Link
                   to="/login"
                   onClick={(e) => handleNavClick(e, '/login')}
-                  className="text-portal-foreground font-display text-lg hover:text-[#a3ff12] transition-colors"
+                  className="tap-target text-portal-foreground font-display text-lg hover:text-[#a3ff12] transition-colors"
                 >
                   Sign In →
                 </Link>

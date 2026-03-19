@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BErozgar - Environment Configuration
  *
  * Zod-validated environment variables.
@@ -14,7 +14,7 @@ const envSchema = z.object({
   HOST: z.string().default('0.0.0.0'),
 
   // Database
-  DATABASE_URL: z.string().url('DATABASE_URL must be a valid connection string'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 
   // JWT
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),

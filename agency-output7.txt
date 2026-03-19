@@ -1,0 +1,74 @@
+[dotenv@17.3.1] injecting env (21) from ..\Unified-Experience\unified-experience\server\.env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+🤖 --- BErozgar Specialist Squad Live Launch ---
+Checking API Key: DETECTED
+
+Task: "Review the Unified Experience platform for high-priority accessibility and performance bottlenecks."
+Agents Deployed: Frontend Developer, Backend Architect
+Mode: LIVE
+
+Fetching allowed models...
+[
+  'models/gemini-2.5-flash',
+  'models/gemini-2.5-pro',
+  'models/gemini-2.0-flash',
+  'models/gemini-2.0-flash-001',
+  'models/gemini-2.0-flash-lite-001',
+  'models/gemini-2.0-flash-lite',
+  'models/gemini-2.5-flash-preview-tts',
+  'models/gemini-2.5-pro-preview-tts',
+  'models/gemini-flash-latest',
+  'models/gemini-flash-lite-latest',
+  'models/gemini-pro-latest',
+  'models/gemini-2.5-flash-lite',
+  'models/gemini-2.5-flash-image',
+  'models/gemini-2.5-flash-lite-preview-09-2025',
+  'models/gemini-3-pro-preview',
+  'models/gemini-3-flash-preview',
+  'models/gemini-3.1-pro-preview',
+  'models/gemini-3.1-pro-preview-customtools',
+  'models/gemini-3.1-flash-lite-preview',
+  'models/gemini-3-pro-image-preview',
+  'models/gemini-3.1-flash-image-preview',
+  'models/gemini-robotics-er-1.5-preview',
+  'models/gemini-2.5-computer-use-preview-10-2025',
+  'models/gemini-embedding-001',
+  'models/gemini-embedding-2-preview',
+  'models/gemini-2.5-flash-native-audio-latest',
+  'models/gemini-2.5-flash-native-audio-preview-09-2025',
+  'models/gemini-2.5-flash-native-audio-preview-12-2025'
+]
+[DEBUG] Gemini Response: {
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "```json\n[\n  {\n    \"agentId\": \"orchestrator\",\n    \"message\": \"Define critical user journeys and prioritize target areas for high-priority accessibility (WCAG AA) and performance (Web Vitals, API latency) review. Prepare automated auditing tools (Lighthouse, Axe-core, APM) and define data collection methodology.\"\n  },\n  {\n    \"agentId\": \"frontend\",\n    \"message\": \"Execute comprehensive accessibility audits (manual + automated) on prioritized UI components and user flows. Analyze client-side performance bottlenecks: identify large assets, rendering issues, and JavaScript execution inefficiencies.\"\n  },\n  {\n    \"agentId\": \"backend\",\n    \"message\": \"Profile critical API endpoints, database queries, and microservice interactions. Analyze infrastructure load, caching effectiveness, and identify potential scaling and resource allocation bottlenecks.\"\n  }\n]\n```"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 116,
+    "candidatesTokenCount": 189,
+    "totalTokenCount": 2395,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 116
+      }
+    ],
+    "thoughtsTokenCount": 2090
+  },
+  "modelVersion": "gemini-2.5-flash",
+  "responseId": "md67afvsOcmojuMPtK7wuA0"
+}
+✅ SQUAD ORCHESTRATION SUCCESSFUL. Steps generated:
+
+[Step 1] Agent <orchestrator>: Define critical user journeys and prioritize target areas for high-priority accessibility (WCAG AA) and performance (Web Vitals, API latency) review. Prepare automated auditing tools (Lighthouse, Axe-core, APM) and define data collection methodology.
+[Step 2] Agent <frontend>: Execute comprehensive accessibility audits (manual + automated) on prioritized UI components and user flows. Analyze client-side performance bottlenecks: identify large assets, rendering issues, and JavaScript execution inefficiencies.
+[Step 3] Agent <backend>: Profile critical API endpoints, database queries, and microservice interactions. Analyze infrastructure load, caching effectiveness, and identify potential scaling and resource allocation bottlenecks.

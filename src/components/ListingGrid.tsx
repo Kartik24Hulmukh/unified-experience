@@ -24,6 +24,17 @@ const ListingGrid = memo(function ListingGrid({ items }: ListingGridProps) {
         if (!gridRef.current || items.length === 0) return;
 
         const ctx = gsap.context(() => {
+            // Respect the OS/browser "reduce motion" preference.
+            // When enabled we instantly reveal cards — no opacity-0 start that
+            // would leave content invisible if the animation were skipped.
+            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReduced) {
+                gsap.set(gridRef.current!.querySelectorAll('.listing-card-entry'), {
+                    opacity: 1, y: 0, rotateX: 0, clearProps: 'all',
+                });
+                return;
+            }
+
             // Staggered entry for grid items — scoped via querySelectorAll
             const cards = gridRef.current?.querySelectorAll('.listing-card-entry');
             if (!cards?.length) return;
@@ -67,7 +78,7 @@ const ListingGrid = memo(function ListingGrid({ items }: ListingGridProps) {
                     {/* Image Layer */}
                     <div className="absolute inset-0 grayscale group-hover:grayscale-0 transition-all duration-700 overflow-hidden">
                         {item.image ? (
-                            <img src={item.image} alt={item.title} className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700 transform-gpu" loading="lazy" />
+                            <img src={item.image} alt={item.title} width={400} height={500} className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700 transform-gpu" loading="lazy" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-black/40">
                                 <div className="w-16 h-16 border border-white/10 rotate-45 flex items-center justify-center">

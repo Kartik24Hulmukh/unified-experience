@@ -9,15 +9,29 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
 
     test('Phase 1 — Signup (Email): User created only after OTP verification with correct defaults', async ({ page }) => {
         await page.goto('http://127.0.0.1:8080/signup');
-        // Expand email form
-        await page.getByText('or sign up with email').click();
+        // Expand email form when CTA is present (some builds render it expanded by default).
+        const signupCta = page.getByText(/or sign up with email|use legacy mail/i).first();
+        if (await signupCta.isVisible().catch(() => false)) {
+            await signupCta.click({ force: true });
+        }
 
         await page.getByPlaceholder('John Doe').fill('Behavioral User');
         await page.getByPlaceholder('you@mctrgit.ac.in').fill(TEST_EMAIL);
-        await page.getByPlaceholder('••••••••').fill(TEST_PASS);
+        const passwordInput = page.getByPlaceholder('••••••••');
+        await passwordInput.fill(TEST_PASS);
 
-        // Submit
-        await page.getByRole('button', { name: /REQUEST ACCESS/i }).click({ force: true });
+        const signupResponsePromise = page.waitForResponse((response) => (
+            response.url().includes('/api/auth/signup')
+            && response.request().method() === 'POST'
+            && [200, 429].includes(response.status())
+        ));
+
+        // Use the same password-enter submit path as the smoke suite. This has
+        // proven more reliable than button-click submission in headless runs.
+        await passwordInput.press('Enter');
+
+        const signupResponse = await signupResponsePromise;
+        expect(signupResponse.status()).toBe(200);
 
         // Wait for redirect to /verify
         await expect(page).toHaveURL(/\/verify/, { timeout: 15000 });
@@ -48,8 +62,12 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
         const page1 = await context.newPage();
         await page1.goto('http://127.0.0.1:8080/login');
 
-        // Wait for animation or options
-        await page1.getByText('USE LEGACY MAIL').click();
+        // Expand email form only if not already shown — when GIS is unavailable
+        // (headless), the form is expanded by default and the button reads "HIDE AUTH".
+        const legacyMailBtn = page1.getByText('USE LEGACY MAIL');
+        if (await legacyMailBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await legacyMailBtn.click();
+        }
         await page1.getByPlaceholder('YOU@MCTRGIT.AC.IN').fill(TEST_EMAIL);
         await page1.getByPlaceholder('••••••••').fill(TEST_PASS);
         await page1.getByRole('button', { name: /ENTER PORTAL/i }).click();

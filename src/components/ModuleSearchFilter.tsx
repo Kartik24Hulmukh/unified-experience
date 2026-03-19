@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { Search, SlidersHorizontal, X, ArrowRight } from 'lucide-react';
 import gsap from 'gsap';
 import { Button } from "@/components/ui/button";
@@ -98,11 +98,11 @@ const ModuleSearchFilter = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4 md:px-0">
 
                 {/* Search Bar */}
-                <div className="relative flex items-center h-12">
+                <div className="relative flex h-12 min-w-0 items-center md:flex-1 md:max-w-md">
                     <div className="search-container relative flex items-center bg-white/5 border border-white/10 overflow-hidden rounded-none h-full w-[48px]">
                         <button
                             onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-                            className="absolute left-0 w-12 h-12 flex items-center justify-center text-white/50 hover:text-white transition-colors z-10"
+                            className="tap-target absolute left-0 z-10 h-12 w-12 text-white/50 transition-colors hover:text-white"
                             aria-label={isSearchExpanded ? 'Close search' : 'Open search'}
                         >
                             {isSearchExpanded ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
@@ -119,12 +119,12 @@ const ModuleSearchFilter = ({
                 </div>
 
                 {/* Global Result Counter */}
-                <div className="flex items-center space-x-6">
-                    <div className="flex items-baseline space-x-2">
-                        <span ref={resultsCountRef} className="text-3xl md:text-5xl font-display font-bold text-white leading-none">
+                <div className="flex min-w-0 flex-wrap items-center gap-4 sm:gap-6">
+                    <div className="flex min-w-0 items-end gap-2">
+                        <span ref={resultsCountRef} className="text-2xl sm:text-3xl md:text-5xl font-display font-bold text-white leading-none">
                             {resultCount}
                         </span>
-                        <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-white/40">Entities Found</span>
+                        <span className="break-anywhere text-[10px] uppercase font-bold tracking-[0.3em] text-white/40">Entities Found</span>
                     </div>
 
                     <div className="h-8 w-px bg-white/10 hidden md:block" />
@@ -153,7 +153,7 @@ const ModuleSearchFilter = ({
 
                         <SheetContent
                             side="right"
-                            className="bg-black border-l border-white/10 w-full sm:max-w-md p-8 overflow-y-auto scrollbar-hide"
+                            className="touch-scroll-y safe-area-bottom safe-area-top w-full max-w-none border-l border-white/10 bg-black p-5 pb-28 sm:max-w-md sm:p-8 sm:pb-8 overflow-y-auto scrollbar-hide"
                         >
                             <SheetHeader className="space-y-4 mb-12">
                                 <div className="w-8 h-8 border border-primary rotate-45 flex items-center justify-center mb-2">
@@ -171,8 +171,8 @@ const ModuleSearchFilter = ({
                                     <h4 className="text-white/30 text-[9px] uppercase font-bold tracking-[0.3em] border-b border-white/5 pb-2">Category Matrix</h4>
                                     <div className="grid grid-cols-1 gap-4">
                                         {categories.map((cat) => (
-                                            <div key={cat.id} className="flex items-center justify-between group cursor-pointer p-2 hover:bg-white/5 transition-colors">
-                                                <div className="flex items-center space-x-4">
+                                            <div key={cat.id} className="group flex items-center justify-between gap-3 cursor-pointer p-2 transition-colors hover:bg-white/5">
+                                                <div className="flex min-w-0 items-center gap-4">
                                                     <Checkbox
                                                         id={cat.id}
                                                         checked={selectedCategories.includes(cat.id)}
@@ -187,7 +187,7 @@ const ModuleSearchFilter = ({
                                                     />
                                                     <label
                                                         htmlFor={cat.id}
-                                                        className="text-xs text-white/80 font-bold uppercase tracking-widest cursor-pointer group-hover:text-white transition-colors"
+                                                        className="break-anywhere min-w-0 cursor-pointer text-xs font-bold uppercase tracking-widest text-white/80 transition-colors group-hover:text-white"
                                                     >
                                                         {cat.label}
                                                     </label>
@@ -213,21 +213,23 @@ const ModuleSearchFilter = ({
                                             className="mt-6"
                                         />
                                         <div className="flex justify-between mt-6 text-[10px] font-bold uppercase text-white/60 font-display">
-                                            <span>₹{localPrice[0]}</span>
-                                            <span>₹{localPrice[1]}</span>
+                                            <span>Rs {localPrice[0]}</span>
+                                            <span>Rs {localPrice[1]}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <Button
-                                    className="w-full h-14 bg-primary hover:bg-teal-400 text-black font-bold text-xs uppercase tracking-widest rounded-none group transition-all duration-500 overflow-hidden relative"
-                                    onClick={() => onFilterChange({ price: localPrice, categories: selectedCategories })}
-                                >
-                                    <span className="relative z-10 flex items-center">
-                                        APPLY FILTERS <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1" />
-                                    </span>
-                                    <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 opacity-20" />
-                                </Button>
+                                <div className="sticky bottom-0 -mx-5 mt-8 border-t border-white/10 bg-black/95 px-5 py-4 backdrop-blur sm:-mx-8 sm:px-8">
+                                    <Button
+                                        className="relative h-14 w-full overflow-hidden rounded-none bg-primary text-xs font-bold uppercase tracking-widest text-black transition-all duration-500 group hover:bg-teal-400"
+                                        onClick={() => onFilterChange({ price: localPrice, categories: selectedCategories })}
+                                    >
+                                        <span className="relative z-10 flex items-center">
+                                            APPLY FILTERS <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1" />
+                                        </span>
+                                        <div className="absolute inset-0 translate-x-[-100%] bg-white opacity-20 transition-transform duration-500 group-hover:translate-x-0" />
+                                    </Button>
+                                </div>
                             </div>
                         </SheetContent>
                     </Sheet>

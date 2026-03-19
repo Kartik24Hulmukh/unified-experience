@@ -133,24 +133,57 @@ const HospitalPage = () => {
   const browseRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'hospital' });
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const defaultHospitals = hospitals.map(h => h.category.toLowerCase());
+    defaultHospitals.forEach(cat => counts[cat] = (counts[cat] || 0) + 1);
+    visibleItems.forEach(item => {
+      const cat = item.category.toLowerCase();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [visibleItems]);
+
   const filteredItems = useMemo(() => {
-    const listItems = [...hospitals.map(h => ({id: h.id, title: h.title, price: h.price, category: h.category, institution: h.institution, image: '/Hospital.png'})), ...visibleItems.map((h) => ({
-      id: h.id,
-      title: h.title,
-      price: h.price,
-      category: h.category,
-      institution: h.institution,
-    }))];
+    const listItems = [
+      ...hospitals.map(h => ({
+        id: h.id, 
+        title: h.title, 
+        price: h.price, 
+        category: h.category, 
+        institution: h.institution, 
+        image: '/Hospital.png'
+      })), 
+      ...visibleItems.map((h) => ({
+        id: h.id,
+        title: h.title,
+        price: h.price,
+        category: h.category,
+        institution: (h as any).institution || 'EXTERNAL',
+      }))
+    ];
     return listItems.filter(
-      item =>
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      item => {
+        const matchesSearch =
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.category.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = !activeCategory ||
+          item.category.toLowerCase() === activeCategory.toLowerCase();
+        return matchesSearch && matchesCategory;
+      }
     );
-  }, [searchQuery, visibleItems]);
+  }, [searchQuery, activeCategory, visibleItems]);
+
+  const handleFilterChange = (filters: { categories?: string[] }) => {
+    if (filters.categories !== undefined) {
+      setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
+    }
+  };
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -254,12 +287,12 @@ const HospitalPage = () => {
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
-                <span className="hosp-title-word block text-white font-display text-6xl sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0 }}>
+                <span className="hosp-title-word block text-white font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0 }}>
                   HEALTH
                 </span>
               </div>
               <div className="overflow-hidden">
-                <span className="hosp-title-word block font-display text-6xl sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0 }}>
+                <span className="hosp-title-word block font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0 }}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">CARE</span>
                 </span>
               </div>
@@ -322,7 +355,7 @@ const HospitalPage = () => {
             {/* Left — big statement */}
             <div>
               <p className="text-[10px] font-mono uppercase tracking-[0.4em] text-emerald-400/40 mb-6">Here's the reality</p>
-              <h2 className="text-white font-display text-3xl md:text-5xl font-bold leading-[1.1] mb-6">
+              <h2 className="text-white font-display text-2xl sm:text-3xl md:text-5xl font-bold leading-[1.1] mb-6">
                 Medical emergencies
                 <br />
                 <span className="text-white/30">don't wait for</span>
@@ -382,7 +415,7 @@ const HospitalPage = () => {
             <Activity className="w-4 h-4 text-emerald-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Service Matrix</span>
           </div>
-          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-emerald-400/30">
+          <GlitchText className="text-white font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-emerald-400/30">
             MEDICAL SERVICES
           </GlitchText>
           <p className="text-white/30 text-sm font-body max-w-lg mb-16">
@@ -390,11 +423,11 @@ const HospitalPage = () => {
             Verified locations, transparent costs, student-friendly options.
           </p>
 
-          <div className="svc-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="svc-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {serviceCategories.map(svc => {
               const Icon = svc.icon;
               return (
-                <div key={svc.code} className="svc-card group relative bg-white/[0.02] border border-white/5 p-8 hover:border-emerald-400/20 hover:bg-emerald-400/[0.03] transition-all duration-500 overflow-hidden">
+                <div key={svc.code} className="svc-card group relative bg-white/[0.02] border border-white/5 p-6 md:p-8 hover:border-emerald-400/20 hover:bg-emerald-400/[0.03] transition-all duration-500 overflow-hidden">
                   <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-white/5 group-hover:border-emerald-400/30 transition-colors duration-500" />
                   <div className="absolute bottom-0 left-0 w-6 h-6 border-b border-l border-white/5 group-hover:border-emerald-400/30 transition-colors duration-500" />
 
@@ -468,13 +501,13 @@ const HospitalPage = () => {
 
           <ModuleSearchFilter
             onSearch={setSearchQuery}
-            onFilterChange={() => {}}
+            onFilterChange={handleFilterChange}
             resultCount={filteredItems.length}
             categories={[
-              { id: 'hospital', label: 'Hospital', count: 2 },
-              { id: 'clinic', label: 'Clinic', count: 1 },
-              { id: 'pharmacy', label: 'Pharmacy', count: 1 },
-              { id: 'diagnostics', label: 'Diagnostics', count: 1 },
+              { id: 'hospital', label: 'Hospital', count: categoryCounts.hospital ?? 0 },
+              { id: 'clinic', label: 'Clinic', count: categoryCounts.clinic ?? 0 },
+              { id: 'pharmacy', label: 'Pharmacy', count: categoryCounts.pharmacy ?? 0 },
+              { id: 'diagnostics', label: 'Diagnostics', count: categoryCounts.diagnostics ?? 0 },
             ]}
             priceRange={[0, 1000]}
           />
@@ -554,10 +587,10 @@ const HospitalPage = () => {
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-emerald-400/40 mb-8 block">// YOUR HEALTH MATTERS</span>
 
-          <h2 className="text-white font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-[0.9]">
+          <h2 className="text-white font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-[0.9]">
             STAY
           </h2>
-          <h2 className="text-white font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.9]">
+          <h2 className="text-white font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.9]">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">HEALTHY</span>
           </h2>
 

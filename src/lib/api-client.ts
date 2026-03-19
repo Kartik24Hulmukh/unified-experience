@@ -167,6 +167,7 @@ export async function handleTokenRefresh(): Promise<string> {
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
       credentials: 'include',  // sends httpOnly refresh cookie
     });
 
@@ -245,6 +246,7 @@ async function request<T>(
   }
 
   try {
+    console.log(`[API Request] ${fetchConfig.method || 'GET'} ${url}`);
     const response = await fetch(url, {
       ...fetchConfig,
       headers,

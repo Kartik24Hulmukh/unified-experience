@@ -38,7 +38,7 @@ const envSchema = z.object({
 
   /* ── API ─────────────────────────────────────── */
   VITE_API_BASE_URL: z.string().default('/api'),
-  VITE_API_TIMEOUT_MS: numStr(15_000),
+  VITE_API_TIMEOUT_MS: numStr(30_000),
 
   /* ── Domain Restriction ──────────────────────── */
   /** Comma-separated list of allowed email domains. Empty = allow all. */
@@ -61,6 +61,10 @@ const envSchema = z.object({
 
   /* ── Domain ──────────────────────────────────── */
   VITE_DEFAULT_EMAIL_DOMAIN: z.string().default('mctrgit.ac.in'),
+
+  /* ── Agency Agents ────────────────────────────── */
+  VITE_GEMINI_API_KEY: z.string().optional(),
+  VITE_GITHUB_TOKEN: z.string().optional(),
 });
 
 /* ═══════════════════════════════════════════════════

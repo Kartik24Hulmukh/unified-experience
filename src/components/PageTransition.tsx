@@ -153,6 +153,7 @@ const PageTransition = ({ children }: PageTransitionProps) => {
         // ── Phase 2: Swap content at full coverage ──
         .call(swapContent)
         .set(container, { opacity: 0, y: 20 })
+        .to({}, { duration: 0.1 }) // Defer Phase 3 slightly to allow React DOM hydration to finish smoothly
 
         // ── Phase 3: Curtain lifts UP, new content fades in ──
         .set(curtain, { transformOrigin: 'bottom' })

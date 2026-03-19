@@ -1112,14 +1112,8 @@ function SplashCursor({
           if (s) gl.deleteShader(s);
         });
 
-        // LOW-RAF FIX: forcibly release the WebGL context to prevent context
-        // exhaustion and ensure any trailing rAF cannot call GL on a dead context.
-        try {
-          const ext = gl.getExtension('WEBGL_lose_context');
-          if (ext) ext.loseContext();
-        } catch {
-          // Safe to ignore — driver may not support the extension
-        }
+        // We removed the aggressive manual loseContext() here because it triggers
+        // a false-positive "WebGL context lost" error in the browser console.
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- simulation config constants are module-level and intentionally stable

@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useId } from 'react';
 import gsap from 'gsap';
 import { X } from 'lucide-react';
 
@@ -10,6 +10,7 @@ interface ListingFormModalProps {
 }
 
 const ListingFormModal = ({ isOpen, onClose, title, children }: ListingFormModalProps) => {
+    const titleId = useId();
     const overlayRef = useRef<HTMLDivElement>(null);
     const portalRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -49,39 +50,29 @@ const ListingFormModal = ({ isOpen, onClose, title, children }: ListingFormModal
                         '-=0.4'
                     );
             });
-        } else {
-            document.body.style.overflow = 'unset';
-            if (overlayRef.current) {
-                gsapCtxRef.current?.add(() => {
-                    gsap.to(portalRef.current, {
-                        clipPath: 'circle(0% at 50% 50%)',
-                        duration: 0.8,
-                        ease: 'power3.inOut',
-                        onComplete: () => {
-                            gsap.set(overlayRef.current, { visibility: 'hidden' });
-                        }
-                    });
-                });
-            }
         }
     }, [isOpen]);
 
     // Handle escape key
     useEffect(() => {
+        if (!isOpen) return;
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
-    }, [onClose]);
+    }, [isOpen, onClose]);
+
+    if (!isOpen) return null;
 
     return (
         <div
             ref={overlayRef}
-            className="fixed inset-0 z-[100] invisible flex items-center justify-center p-4 md:p-8"
+            className="fixed inset-0 z-[100] invisible flex items-end justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] md:items-center md:p-8"
             role="dialog"
             aria-modal="true"
             aria-label={title}
+            aria-labelledby={titleId}
         >
             <div
                 ref={portalRef}
@@ -91,18 +82,25 @@ const ListingFormModal = ({ isOpen, onClose, title, children }: ListingFormModal
 
             <div
                 ref={contentRef}
-                className="relative w-full max-w-6xl h-full max-h-[90vh] bg-[#0a0a0a] border border-white/10 rounded-none shadow-2xl overflow-hidden flex flex-col md:flex-row"
+                className="relative flex w-full max-w-6xl max-h-[min(90dvh,calc(100dvh-1rem))] flex-col overflow-hidden border border-white/10 bg-[#0a0a0a] shadow-2xl md:max-h-[85dvh] md:flex-row"
             >
+                <h2 id={titleId} className="sr-only">{title}</h2>
                 {/* Header - Mobile Only */}
-                <div className="flex md:hidden items-center justify-between p-6 border-b border-white/5">
-                    <h2 className="text-white font-display text-xl uppercase font-bold tracking-tight">{title}</h2>
-                    <button onClick={onClose} className="text-white/50 hover:text-white transition-colors" aria-label="Close dialog">
+                <div className="flex md:hidden items-center justify-between p-4 border-b border-white/5">
+                    <h2 aria-hidden="true" className="text-white font-display text-lg uppercase font-bold tracking-tight">{title}</h2>
+                    {/* tap-target ensures the close button is at least 48×48 px on touch devices */}
+                    <button
+                        onClick={onClose}
+                        className="tap-target text-white/50 hover:text-white transition-colors"
+                        aria-label="Close dialog"
+                    >
                         <X className="w-6 h-6" />
                     </button>
                 </div>
 
-                {/* Form Content */}
-                <div className="flex-1 overflow-y-auto scrollbar-hide p-8 md:p-12">
+                {/* Form Content — reduced padding on mobile so the form
+                     doesn't get pushed offscreen when the virtual keyboard opens */}
+                <div className="touch-scroll-y min-h-0 flex-1 overflow-y-auto scrollbar-hide p-4 sm:p-8 md:p-12">
                     {children}
                 </div>
 
@@ -110,7 +108,7 @@ const ListingFormModal = ({ isOpen, onClose, title, children }: ListingFormModal
                 <button
                     onClick={onClose}
                     aria-label="Close dialog"
-                    className="hidden md:flex absolute top-8 right-8 text-white/30 hover:text-white transition-all duration-300 hover:rotate-90 z-10"
+                    className="tap-target absolute right-6 top-6 z-10 hidden text-white/30 transition-all duration-300 hover:rotate-90 hover:text-white md:flex"
                 >
                     <X className="w-8 h-8" />
                 </button>

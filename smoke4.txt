@@ -1,0 +1,82 @@
+﻿
+Running 40 tests using 1 worker
+
+[31mprisma:error[39m 
+Invalid `prisma.$executeRaw()` invocation:
+
+
+Raw query failed. Code: `1`. Message: `near "'10 minutes'": syntax error`
+  Γ£ÿ   1 [chromium] ΓÇ║ e2e\smoke.spec.ts:297:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 1. API health endpoint returns ready (0ms)
+  -   2 [chromium] ΓÇ║ e2e\smoke.spec.ts:304:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 2. Full health report has database + stores
+  -   3 [chromium] ΓÇ║ e2e\smoke.spec.ts:313:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 3. Seller signup ΓÇö renders signup page
+  -   4 [chromium] ΓÇ║ e2e\smoke.spec.ts:318:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 4. Seller signup ΓÇö email form interaction
+  -   5 [chromium] ΓÇ║ e2e\smoke.spec.ts:336:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 5. Seller OTP verification via browser
+  -   6 [chromium] ΓÇ║ e2e\smoke.spec.ts:413:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 6. Register buyer via API (signup + OTP)
+  -   7 [chromium] ΓÇ║ e2e\smoke.spec.ts:424:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 7. Get seller token via API login
+  -   8 [chromium] ΓÇ║ e2e\smoke.spec.ts:440:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 8. Admin login via API
+  -   9 [chromium] ΓÇ║ e2e\smoke.spec.ts:451:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 9. Seller creates a listing via API
+  -  10 [chromium] ΓÇ║ e2e\smoke.spec.ts:470:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 10. Seller submits listing for review
+  -  11 [chromium] ΓÇ║ e2e\smoke.spec.ts:482:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 11. Admin sees pending listing
+  -  12 [chromium] ΓÇ║ e2e\smoke.spec.ts:490:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 12. Admin approves listing
+  -  13 [chromium] ΓÇ║ e2e\smoke.spec.ts:502:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 13. Approved listing appears in public list
+  -  14 [chromium] ΓÇ║ e2e\smoke.spec.ts:511:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 14. Listing detail page via API
+  -  15 [chromium] ΓÇ║ e2e\smoke.spec.ts:521:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 15. Buyer creates exchange request via API
+  -  16 [chromium] ΓÇ║ e2e\smoke.spec.ts:535:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 16. Seller accepts the request
+  -  17 [chromium] ΓÇ║ e2e\smoke.spec.ts:546:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 17. Schedule meeting
+  -  18 [chromium] ΓÇ║ e2e\smoke.spec.ts:557:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 18. Confirm exchange (completes it)
+  -  19 [chromium] ΓÇ║ e2e\smoke.spec.ts:569:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 19. Seller completedExchanges incremented
+  -  20 [chromium] ΓÇ║ e2e\smoke.spec.ts:576:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 20. Buyer raises dispute after completion
+  -  21 [chromium] ΓÇ║ e2e\smoke.spec.ts:588:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 21. Create dispute record
+  -  22 [chromium] ΓÇ║ e2e\smoke.spec.ts:605:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 22. Admin views disputes
+  -  23 [chromium] ΓÇ║ e2e\smoke.spec.ts:612:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 23. Admin resolves dispute (OPEN ΓåÆ UNDER_REVIEW ΓåÆ RESOLVED)
+  -  24 [chromium] ΓÇ║ e2e\smoke.spec.ts:641:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 24. /auth/me returns current user with trust
+  -  25 [chromium] ΓÇ║ e2e\smoke.spec.ts:651:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 25. Profile endpoint returns user data
+  -  26 [chromium] ΓÇ║ e2e\smoke.spec.ts:658:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 26. Admin stats endpoint works
+  -  27 [chromium] ΓÇ║ e2e\smoke.spec.ts:666:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 27. Refresh token rotation works
+  -  28 [chromium] ΓÇ║ e2e\smoke.spec.ts:710:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 28. Logout via browser flow
+  -  29 [chromium] ΓÇ║ e2e\smoke.spec.ts:734:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 29. Protected routes redirect to login when unauthenticated
+  -  30 [chromium] ΓÇ║ e2e\smoke.spec.ts:748:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 30. Idempotency key prevents duplicate creation
+  -  31 [chromium] ΓÇ║ e2e\smoke.spec.ts:815:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 31. Rate limiting is enforced
+  -  32 [chromium] ΓÇ║ e2e\smoke.spec.ts:838:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 32. Security headers are present
+  -  33 [chromium] ΓÇ║ e2e\smoke.spec.ts:847:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 33. 404 for non-existent listing
+  -  34 [chromium] ΓÇ║ e2e\smoke.spec.ts:852:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 34. Unauthenticated protected mutation is rejected before CSRF
+  -  35 [chromium] ΓÇ║ e2e\smoke.spec.ts:862:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 35. 403 for non-admin on admin route
+  -  36 [chromium] ΓÇ║ e2e\smoke.spec.ts:868:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 36. Landing page loads without errors
+  -  37 [chromium] ΓÇ║ e2e\smoke.spec.ts:880:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 37. Home page has no console errors
+  -  38 [chromium] ΓÇ║ e2e\smoke.spec.ts:911:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 38. Admin can access admin page via browser
+  -  39 [chromium] ΓÇ║ e2e\smoke.spec.ts:941:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 39. Analytics endpoint accepts events
+  -  40 [chromium] ΓÇ║ e2e\smoke.spec.ts:978:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 40. Optimistic lock prevents stale writes
+
+
+  1) [chromium] ΓÇ║ e2e\smoke.spec.ts:297:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 1. API health endpoint returns ready 
+
+    PrismaClientKnownRequestError: 
+    Invalid `prisma.$executeRaw()` invocation:
+
+
+    Raw query failed. Code: `1`. Message: `near "'10 minutes'": syntax error`
+
+       at helpers.ts:103
+
+      101 |   // Seed an OTP directly to avoid depending on the rate-limited signup route.
+      102 |   const otp = `${Math.floor(100000 + Math.random() * 900000)}`;
+    > 103 |   await prisma.$executeRaw`
+          |   ^
+      104 |     INSERT INTO otps (id, email, code, expires_at, attempts, created_at)
+      105 |     VALUES (${randomUUID()}, ${email}, ${otp}, NOW() + interval '10 minutes', ${0}, NOW())
+      106 |   `;
+        at ei.handleRequestError (C:\Users\kadam\OneDrive\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+        at ei.handleAndLogRequestError (C:\Users\kadam\OneDrive\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+        at ei.request (C:\Users\kadam\OneDrive\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+        at a (C:\Users\kadam\OneDrive\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+        at ensureAdminUser (C:\Users\kadam\OneDrive\Desktop\Unified-Experience\unified-experience\e2e\helpers.ts:103:3)
+        at C:\Users\kadam\OneDrive\Desktop\Unified-Experience\unified-experience\e2e\smoke.spec.ts:288:15
+
+  1 failed
+    [chromium] ΓÇ║ e2e\smoke.spec.ts:297:3 ΓÇ║ BErozgar Full E2E Smoke Test ΓÇ║ 1. API health endpoint returns ready 
+  39 did not run
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

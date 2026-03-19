@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, QueryCache, useQueryClient } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProfileProvider } from "@/contexts/ProfileContext";
@@ -39,6 +39,7 @@ const HospitalPage = lazy(() => import('./pages/HospitalPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
 const SplashTestPage = lazy(() => import('./pages/SplashTestPage'));
+import AgentsHub from './components/AgentsHub';
 
 const queryClient = new QueryClient({
   // M2-FIX: global QueryCache error handler catches unrecoverable 401s from
@@ -128,6 +129,41 @@ function AuthCacheSyncer() {
   return null;
 }
 
+function AuthLogoutRedirectSyncer() {
+  const { isAuthenticated, isHydrated } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // If the user lands on the login page, their forced redirection is complete.
+    // Clear the sentinel so they can navigate to /signup or / freely.
+    if (location.pathname === '/login') {
+      try {
+        localStorage.removeItem('berozgar_post_logout_redirect');
+      } catch {}
+      return;
+    }
+
+    if (!isHydrated || isAuthenticated) return;
+
+    let shouldRedirect = false;
+    try {
+      shouldRedirect = !!localStorage.getItem('berozgar_post_logout_redirect');
+    } catch {
+      shouldRedirect = false;
+    }
+
+    if (!shouldRedirect) return;
+
+    navigate('/login', {
+      replace: true,
+      state: { from: location.pathname },
+    });
+  }, [isAuthenticated, isHydrated, location.pathname, navigate]);
+
+  return null;
+}
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -144,8 +180,9 @@ const App = () => (
               <AuthCacheSyncer />
               <Toaster />
               <Sonner />
-              <BrowserRouter>
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <PageViewTracker />
+                <AuthLogoutRedirectSyncer />
                 <SkipToContent />
                 <Suspense fallback={null}>
                   <GooeyCursor size={28} />
@@ -181,6 +218,7 @@ const App = () => (
                         <Route path="/jobs" element={<RouteErrorBoundary name="Jobs"><JobsPage /></RouteErrorBoundary>} />
                         <Route path="/mess" element={<RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary>} />
                         <Route path="/hospital" element={<RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary>} />
+                        <Route path="/agency" element={<RouteErrorBoundary name="Agency"><AgentsHub /></RouteErrorBoundary>} />
 
                         {/* Profile — any authenticated user */}
                         <Route path="/profile" element={<ProtectedRoute><RouteErrorBoundary name="Profile"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />

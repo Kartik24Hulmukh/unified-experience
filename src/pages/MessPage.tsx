@@ -107,16 +107,27 @@ const scrollingWords = [
 
 /* ── Reusable Components (imported from @/components) ── */
 
-/* ── Main Page ───────────────────────────────────────── */
-
 const MessPage = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const browseRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+  // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'mess' });
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const defaultMesses = messServices.map(s => s.category.toLowerCase());
+    defaultMesses.forEach(cat => counts[cat] = (counts[cat] || 0) + 1);
+    visibleItems.forEach(item => {
+      const cat = item.category.toLowerCase();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [visibleItems]);
 
   const filteredItems = useMemo(() => {
     const defaultMesses = messServices.map((s, index) => ({
@@ -124,7 +135,7 @@ const MessPage = () => {
       title: s.title,
       price: s.price,
       category: s.category,
-      institution: s.institution,
+      institution: (s as any).institution,
       image: index % 2 === 0 ? '/DabbaGo.jpeg' : '/happyGrub.jpeg',
     }));
     const listItems = [...defaultMesses, ...visibleItems.map((s) => ({
@@ -132,14 +143,25 @@ const MessPage = () => {
       title: s.title,
       price: s.price,
       category: s.category,
-      institution: s.institution,
+      institution: 'MCTRGIT',
     }))];
     return listItems.filter(
-      item =>
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      item => {
+        const matchesSearch =
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.category.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = !activeCategory ||
+          item.category.toLowerCase() === activeCategory.toLowerCase();
+        return matchesSearch && matchesCategory;
+      }
     );
-  }, [searchQuery, visibleItems]);
+  }, [searchQuery, activeCategory, visibleItems]);
+
+  const handleFilterChange = (filters: { categories?: string[] }) => {
+    if (filters.categories !== undefined) {
+      setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
+    }
+  };
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -244,12 +266,12 @@ const MessPage = () => {
             {/* nvg8-style big words stacking */}
             <div className="space-y-2 mb-8">
               <div className="overflow-hidden">
-                <span className="mess-title-word block text-white font-display text-5xl sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0 }}>
+                <span className="mess-title-word block text-white font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0 }}>
                   MESS &
                 </span>
               </div>
               <div className="overflow-hidden">
-                <span className="mess-title-word block font-display text-5xl sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0 }}>
+                <span className="mess-title-word block font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0 }}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-300">TIFFIN</span>
                 </span>
               </div>
@@ -364,7 +386,7 @@ const MessPage = () => {
             <Flame className="w-4 h-4 text-amber-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Trust Architecture</span>
           </div>
-          <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-amber-400/30">
+          <GlitchText className="text-white font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-amber-400/30">
             WHY TRUST US
           </GlitchText>
           <p className="text-white/30 text-sm font-body max-w-lg mb-16">
@@ -372,11 +394,11 @@ const MessPage = () => {
             Not algorithms — real people, real reviews.
           </p>
 
-          <div className="highlight-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="highlight-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {highlights.map(h => {
               const Icon = h.icon;
               return (
-                <div key={h.code} className="highlight-card group relative bg-white/[0.02] border border-white/5 p-8 hover:border-amber-400/20 hover:bg-amber-400/[0.03] transition-all duration-500 overflow-hidden">
+                <div key={h.code} className="highlight-card group relative bg-white/[0.02] border border-white/5 p-6 md:p-8 hover:border-amber-400/20 hover:bg-amber-400/[0.03] transition-all duration-500 overflow-hidden">
                   <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-white/5 group-hover:border-amber-400/30 transition-colors duration-500" />
                   <div className="absolute bottom-0 left-0 w-6 h-6 border-b border-l border-white/5 group-hover:border-amber-400/30 transition-colors duration-500" />
                   <span className="text-[9px] font-mono text-white/15 uppercase tracking-[0.3em] group-hover:text-amber-400/40 transition-colors">{h.code}</span>
@@ -412,7 +434,7 @@ const MessPage = () => {
             </p>
           </div>
 
-          <div className="pricing-grid grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <div className="pricing-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {mealPlans.map(plan => (
               <div
                 key={plan.name}
@@ -430,7 +452,7 @@ const MessPage = () => {
 
                 <h3 className="text-white font-display text-xl font-bold uppercase mb-1">{plan.name}</h3>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-white font-display text-4xl md:text-5xl font-bold">{plan.price}</span>
+                  <span className="text-white font-display text-3xl sm:text-4xl md:text-5xl font-bold">{plan.price}</span>
                   <span className="text-white/30 text-sm font-mono">{plan.period}</span>
                 </div>
 
@@ -479,12 +501,13 @@ const MessPage = () => {
 
           <ModuleSearchFilter
             onSearch={setSearchQuery}
-            onFilterChange={() => {}}
+            onFilterChange={handleFilterChange}
             resultCount={filteredItems.length}
             categories={[
-              { id: 'veg', label: 'Vegetarian', count: 3 },
-              { id: 'tiffin', label: 'Tiffin', count: 2 },
-              { id: 'canteen', label: 'Canteen', count: 1 },
+              { id: 'veg', label: 'Vegetarian', count: categoryCounts.veg ?? 0 },
+              { id: 'non-veg', label: 'Non-Vegetarian', count: categoryCounts['non-veg'] ?? 0 },
+              { id: 'tiffin', label: 'Tiffin', count: categoryCounts.tiffin ?? 0 },
+              { id: 'canteen', label: 'Canteen', count: categoryCounts.canteen ?? 0 },
             ]}
             priceRange={[0, 5000]}
           />
@@ -565,10 +588,10 @@ const MessPage = () => {
           <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-amber-400/40 mb-8 block">
             // READY TO ORDER
           </span>
-          <h2 className="text-white font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-[0.9]">
+          <h2 className="text-white font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-[0.9]">
             NEVER GO
           </h2>
-          <h2 className="text-white font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.9]">
+          <h2 className="text-white font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.9]">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-300">HUNGRY</span>
           </h2>
           <p className="text-white/30 text-sm md:text-base font-body max-w-xl mx-auto mb-12">

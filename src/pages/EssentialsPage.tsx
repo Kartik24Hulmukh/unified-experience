@@ -184,12 +184,12 @@ const EssentialsPage = () => {
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
-                <span className="ess-title-word block text-white font-display text-4xl sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
+                <span className="ess-title-word block text-white font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   CAMPUS
                 </span>
               </div>
               <div className="overflow-hidden">
-                <span className="ess-title-word block font-display text-4xl sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
+                <span className="ess-title-word block font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-300">ESSENTIALS</span>
                 </span>
               </div>
@@ -305,7 +305,7 @@ const EssentialsPage = () => {
                       </div>
                     </div>
 
-                    <h3 className="text-white font-display text-3xl md:text-4xl font-bold mb-3 leading-tight">
+                    <h3 className="text-white font-display text-2xl sm:text-3xl md:text-4xl font-bold mb-3 leading-tight">
                       {mod.title.split(' ').map((word, i) => (
                         <span key={i}>
                           {i === mod.title.split(' ').length - 1 ? (
@@ -429,10 +429,10 @@ const EssentialsPage = () => {
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <span className="text-[10px] font-mono uppercase tracking-[0.5em] text-violet-400/40 mb-8 block">// YOUR CAMPUS, SIMPLIFIED</span>
 
-          <h2 className="text-white font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-[0.9]">
+          <h2 className="text-white font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-[0.9]">
             LIVE
           </h2>
-          <h2 className="text-white font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.9]">
+          <h2 className="text-white font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.9]">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-300">BETTER</span>
           </h2>
 

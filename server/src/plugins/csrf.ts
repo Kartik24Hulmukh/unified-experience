@@ -61,7 +61,7 @@ async function csrfPlugin(app: FastifyInstance): Promise<void> {
       reply.setCookie(CSRF_COOKIE, token, {
         path: '/',
         httpOnly: false, // Client JS must read this to send as header
-        sameSite: 'strict',
+        sameSite: 'lax',
         secure: env.COOKIE_SECURE,
         maxAge: 604800, // MED-5 FIX: 7 days (was 24h). A 24h expiry caused a
         // 'hard logout' pattern: after 24h the cookie was gone, the next mutation

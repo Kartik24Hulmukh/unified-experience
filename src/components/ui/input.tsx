@@ -1,9 +1,9 @@
-import * as React from "react";
+﻿import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onFocus, ...props }, ref) => {
     return (
       <input
         type={type}
@@ -12,10 +12,17 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className,
         )}
         ref={ref}
+        onFocus={(e) => {
+          // Scroll into view on mobile to prevent keyboard occlusion
+          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+          }
+          onFocus?.(e);
+        }}
         {...props}
       />
     );
-  },
+  }
 );
 Input.displayName = "Input";
 

@@ -83,7 +83,7 @@ function setRefreshCookie(reply: FastifyReply, rawToken: string): void {
   reply.setCookie(REFRESH_COOKIE.NAME, rawToken, {
     httpOnly: true,
     secure: env.COOKIE_SECURE || env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: REFRESH_COOKIE.PATH,
     maxAge: REFRESH_COOKIE.MAX_AGE_SECONDS,
     ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
@@ -94,7 +94,7 @@ function clearRefreshCookie(reply: FastifyReply): void {
   reply.clearCookie(REFRESH_COOKIE.NAME, {
     httpOnly: true,
     secure: env.COOKIE_SECURE || env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: REFRESH_COOKIE.PATH,
     ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
   });
@@ -189,26 +189,35 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   /** POST /refresh — rotate refresh token (cookie only) */
   app.post('/refresh', async (request, reply) => {
+    console.log('[Server] /refresh called');
     const token =
       (request.cookies as Record<string, string | undefined>)?.[REFRESH_COOKIE.NAME];
 
     if (!token) {
+      console.log('[Server] /refresh: No token in cookies');
       return reply.status(401).send({
         error: 'Refresh token missing. Send via httpOnly cookie.',
         code: 'UNAUTHORIZED',
       });
     }
 
-    const tokens = await authService.refreshAccessToken(token, {
-      userAgent: request.headers['user-agent'],
-      ipAddress: request.ip,
-    });
+    try {
+      console.log('[Server] /refresh: Calling authService.refreshAccessToken');
+      const tokens = await authService.refreshAccessToken(token, {
+        userAgent: request.headers['user-agent'],
+        ipAddress: request.ip,
+      });
 
-    setRefreshCookie(reply, tokens.refreshToken);
+      console.log('[Server] /refresh: Success');
+      setRefreshCookie(reply, tokens.refreshToken);
 
-    return reply.status(200).send({
-      accessToken: tokens.accessToken,
-    });
+      return reply.status(200).send({
+        accessToken: tokens.accessToken,
+      });
+    } catch (err) {
+      console.error('[Server] /refresh: ERROR:', err);
+      throw err;
+    }
   });
 
   /** POST /logout — revoke refresh token & clear cookie

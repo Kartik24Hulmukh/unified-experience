@@ -42,6 +42,7 @@ const resources = [
 
 const AcademicsPage = () => {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+  const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -52,9 +53,27 @@ const AcademicsPage = () => {
   const { canPerform } = useRestriction();
   const canCreateListing = canPerform('CREATE_LISTING');
 
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
   // Fetch listings from API
-  const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'academics' });
+  const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ 
+    module: 'academics',
+    branch: selectedBranch || undefined,
+    semester: selectedSemester?.toString() || undefined
+  });
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      syllabus: 1, // Default items
+      notes: 1,    // Default items
+    };
+    visibleItems.forEach(item => {
+      const cat = item.category.toLowerCase();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [visibleItems]);
 
   const filteredItems = useMemo(() => {
     const defaultAcademics = [
@@ -64,7 +83,8 @@ const AcademicsPage = () => {
         price: '350',
         category: 'notes',
         institution: 'MCTRGIT',
-        image: '/Academics.jpg'
+        image: '/Academics.jpg',
+        semester: '1'
       },
       {
         id: 'acad2',
@@ -72,7 +92,8 @@ const AcademicsPage = () => {
         price: '500',
         category: 'books',
         institution: 'MCTRGIT',
-        image: '/Academics.jpg'
+        image: '/Academics.jpg',
+        semester: '2'
       }
     ];
     const combinedVisible = [...defaultAcademics, ...visibleItems];
@@ -81,13 +102,30 @@ const AcademicsPage = () => {
       const matchesSearch =
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase());
-      // Branch filter: check if category or title contains the selected branch code
+      
+      const matchesCategory = !activeCategory ||
+        item.category.toLowerCase() === activeCategory.toLowerCase();
+      
+      // Branch filter: check if item has branch property or if category/title includes branch code
+      const itemBranch = (item as any).branch || '';
       const matchesBranch = !selectedBranch ||
+        itemBranch.toLowerCase() === selectedBranch.toLowerCase() ||
         item.category.toLowerCase().includes(selectedBranch.toLowerCase()) ||
         item.title.toLowerCase().includes(selectedBranch.toLowerCase());
-      return matchesSearch && matchesBranch;
+
+      // Semester filter
+      const itemSemester = (item as any).semester?.toString() || '';
+      const matchesSemester = !selectedSemester || itemSemester === selectedSemester.toString();
+
+      return matchesSearch && matchesCategory && matchesBranch && matchesSemester;
     });
-  }, [searchQuery, selectedBranch, visibleItems]);
+  }, [searchQuery, activeCategory, selectedBranch, selectedSemester, visibleItems]);
+
+  const handleFilterChange = (filters: { categories?: string[] }) => {
+    if (filters.categories !== undefined) {
+      setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
+    }
+  };
 
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {
@@ -199,13 +237,13 @@ const AcademicsPage = () => {
               Module 04
             </p>
 
-            <h1 className="text-portal-foreground font-display text-5xl sm:text-6xl md:text-9xl font-bold leading-none mb-8">
+            <h1 className="text-portal-foreground font-display text-4xl sm:text-5xl md:text-8xl lg:text-9xl font-bold leading-none mb-8">
               <SplitText animation="reveal" trigger="load" type="chars" stagger={0.02}>
                 ACADEMICS
               </SplitText>
             </h1>
 
-            <p className="text-portal-foreground/60 text-xl font-body max-w-xl">
+            <p className="text-portal-foreground/60 text-base sm:text-xl font-body max-w-xl">
               Centralized academic resources. Syllabus, question banks, notes, and exam patterns — all admin-approved.
             </p>
 
@@ -218,7 +256,10 @@ const AcademicsPage = () => {
                 {branches.map((branch) => (
                   <button
                     key={branch.code}
-                    onClick={() => setSelectedBranch(branch.code)}
+                    onClick={() => {
+                      setSelectedBranch(branch.code);
+                      setSelectedSemester(null); // Reset semester on branch change
+                    }}
                     className={`px-6 py-4 border transition-all duration-300 ${selectedBranch === branch.code
                       ? 'border-portal-foreground bg-portal-foreground text-portal'
                       : 'border-portal-foreground/20 text-portal-foreground hover:border-portal-foreground/50'
@@ -251,13 +292,14 @@ const AcademicsPage = () => {
           <div ref={browseRef} className="space-y-16">
             <ModuleSearchFilter
               onSearch={setSearchQuery}
-              onFilterChange={() => { }}
+              onFilterChange={handleFilterChange}
               resultCount={filteredItems.length}
               categories={[
-                { id: 'syllabus', label: 'Syllabus', count: 1 },
-                { id: 'qbank', label: 'Question Banks', count: 1 },
-                { id: 'notes', label: 'Notes', count: 3 },
-                { id: 'pattern', label: 'Exam Patterns', count: 1 }
+                { id: 'syllabus', label: 'Syllabus', count: categoryCounts.syllabus ?? 0 },
+                { id: 'questionbank', label: 'Question Banks', count: categoryCounts.questionbank ?? 0 },
+                { id: 'notes', label: 'Notes', count: categoryCounts.notes ?? 0 },
+                { id: 'textbook', label: 'Textbooks', count: categoryCounts.textbook ?? 0 },
+                { id: 'other', label: 'Other', count: categoryCounts.other ?? 0 },
               ]}
               priceRange={[0, 1000]}
             />
@@ -294,19 +336,28 @@ const AcademicsPage = () => {
               <p className="text-portal-foreground/40 text-xs uppercase tracking-widest mb-4">
                 {selectedBranch} — {branches.find((b) => b.code === selectedBranch)?.name}
               </p>
-              <h2 className="text-portal-foreground font-display text-4xl md:text-5xl font-bold">
+              <h2 className="text-portal-foreground font-display text-3xl sm:text-4xl md:text-5xl font-bold">
                 Select Semester
               </h2>
             </div>
 
-            <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
               {Array.from({ length: 8 }, (_, i) => (
                 <button
                   key={i}
-                  className="group aspect-square border border-portal-foreground/10 flex items-center justify-center hover:border-portal-foreground/50 hover:bg-portal-foreground/10 transition-all duration-300"
+                  onClick={() => setSelectedSemester(selectedSemester === i + 1 ? null : i + 1)}
+                  className={`group aspect-square border transition-all duration-300 flex flex-col items-center justify-center ${selectedSemester === i + 1
+                    ? 'border-portal-foreground bg-portal-foreground text-portal'
+                    : 'border-portal-foreground/10 hover:border-portal-foreground/50 hover:bg-portal-foreground/10'
+                    }`}
                 >
-                  <span className="text-portal-foreground font-display text-3xl font-bold group-hover:scale-110 transition-transform">
+                  <span className={`font-display text-2xl sm:text-3xl font-bold transition-transform ${selectedSemester === i + 1 ? 'scale-110' : 'group-hover:scale-110'
+                    }`}>
                     {i + 1}
+                  </span>
+                  <span className={`text-[8px] uppercase tracking-widest font-bold mt-1 opacity-50 ${selectedSemester === i + 1 ? 'text-portal/80' : 'text-portal-foreground/40'
+                    }`}>
+                    SEM
                   </span>
                 </button>
               ))}

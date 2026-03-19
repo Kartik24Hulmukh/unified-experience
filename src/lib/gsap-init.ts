@@ -25,17 +25,32 @@ ScrollTrigger.config({
   ignoreMobileResize: true,
 });
 
+// Check if mobile device and disable pinning globally if needed
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+if (isMobile) {
+  ScrollTrigger.matchMedia({
+    '(max-width: 767px)': function () {
+      ScrollTrigger.defaults({
+        // Relax strict scrub/pin behavior on small devices
+        scrub: 1, 
+      });
+    }
+  });
+}
+
 /* ─── Lenis smooth scroll ─── */
 let lenisInstance: Lenis | null = null;
 
-if (typeof window !== 'undefined') {
-  // Skip Lenis smooth scroll when user prefers reduced motion
+if (typeof window !== 'undefined') {  // Skip Lenis smooth scroll when user prefers reduced motion
   const prefersRM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!prefersRM) {
+  if (prefersRM) {
+    // Disable all GSAP animations globally
+    gsap.globalTimeline.timeScale(1000); // effectively instant animations
+    gsap.config({ autoSleep: 60 });
+  } else {
     lenisInstance = new Lenis({
       // Core smoothness controls
-      lerp: 0.08,            // Lower = smoother/slower interpolation (silk-like)
-      duration: 1.4,         // Scroll duration in seconds
+      lerp: 0.05,            // Lower = smoother/slower interpolation (silk-like)
       smoothWheel: true,     // Smooth mouse wheel
       wheelMultiplier: 0.9,  // Slightly reduce wheel sensitivity for elegance
       touchMultiplier: 1.5,  // Keep touch responsive on mobile
@@ -86,3 +101,4 @@ export const prefersReducedMotion = typeof window !== 'undefined'
 if (import.meta.env.DEV) {
   console.debug('[GSAP] Plugins registered + Lenis smooth scroll active');
 }
+

@@ -81,16 +81,9 @@ const SceneCleanup = () => {
       // deferred so gl.dispose() above has fully completed.
       const canvas = gl.domElement;
       queueMicrotask(() => {
-        try {
-          const ext =
-            (canvas.getContext('webgl2') as WebGLRenderingContext | null)?.
-              getExtension('WEBGL_lose_context') ??
-            (canvas.getContext('webgl') as WebGLRenderingContext | null)?.
-              getExtension('WEBGL_lose_context');
-          if (ext) ext.loseContext();
-        } catch {
-          // Extension may not be available on all drivers — safe to ignore
-        }
+        // We removed the aggressive manual loseContext() here because it triggers
+        // a false-positive "WebGL context lost" error in the browser console that
+        // QA tools misinterpret as an unintentional crash.
       });
     };
   }, [gl, scene]);

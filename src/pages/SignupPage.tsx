@@ -64,7 +64,10 @@ const SignupPage = () => {
                 title: "Verification Required",
                 description: "A verification code has been sent to your email. Please check your inbox.",
             });
-            safeNavigate(navigate, location.pathname, "/verify", { replace: false });
+            // Use direct navigate here: safeNavigate's nav-spam lock can still be
+            // active from the /signup page-load transition, silently dropping this
+            // programmatic redirect. isLoading already guards against double-submission.
+            navigate("/verify", { replace: false });
         } catch (err) {
             const msg = err instanceof Error ? err.message : "Could not create your account. Please try again.";
             toast({
@@ -136,7 +139,7 @@ const SignupPage = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowEmailForm((p) => !p)}
-                                className="text-white/30 text-[10px] uppercase tracking-widest font-bold hover:text-white/50 transition-colors flex items-center gap-1"
+                                className="tap-target px-3 text-white/30 text-[10px] uppercase tracking-widest font-bold hover:text-white/50 transition-colors flex items-center gap-1"
                             >
                                 or sign up with email
                                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showEmailForm ? 'rotate-180' : ''}`} />
@@ -235,14 +238,14 @@ const SignupPage = () => {
                         </div>
 
                         {/* ── Nav Links (always visible) ── */}
-                        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-white/40 pt-4 mt-4 border-t border-white/5">
+                        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-white/40 pt-4 mt-4 border-t border-white/5 gap-3">
                             <div>
                                 <span className="mr-2">Already have access?</span>
-                                <Link to="/login" className="text-primary hover:text-teal-300 transition-colors underline-reveal">
+                                <Link to="/login" className="tap-target px-2 text-primary hover:text-teal-300 transition-colors underline-reveal">
                                     Sign In
                                 </Link>
                             </div>
-                            <Link to="/" className="hover:text-white transition-colors opacity-50">
+                            <Link to="/" className="tap-target px-2 hover:text-white transition-colors opacity-50">
                                 Back to Home
                             </Link>
                         </div>
@@ -252,13 +255,13 @@ const SignupPage = () => {
                 {/* Information Column */}
                 <div className="order-2 flex flex-col space-y-6 lg:space-y-8 lg:pl-12 text-center lg:text-left">
                     <div className="space-y-4">
-                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white leading-tight font-display uppercase italic italic-syne">
+                        <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight font-display uppercase italic italic-syne">
                             <SplitText className="inline-block" trigger="load">
                                 REQUEST ACCESS
                             </SplitText>
                         </h1>
 
-                        <p className="text-white/60 text-lg max-w-md mx-auto lg:mx-0 font-body leading-relaxed">
+                        <p className="text-white/60 text-base sm:text-lg max-w-md mx-auto lg:mx-0 font-body leading-relaxed">
                             Use your <span className="text-primary font-semibold">@mctrgit.ac.in</span> Google account for instant verified access.
                             Email signup is also available with OTP verification.
                         </p>
@@ -273,7 +276,7 @@ const SignupPage = () => {
                         ].map((feature, i) => (
                             <div key={i} className="flex items-start space-x-3 text-white/70 bg-white/5 p-4 rounded-xl lg:bg-transparent lg:p-0">
                                 <Check className="w-5 h-5 text-primary shrink-0" />
-                                <span className="text-sm font-body tracking-wide">{feature}</span>
+                                <span className="text-xs sm:text-sm font-body tracking-wide">{feature}</span>
                             </div>
                         ))}
                     </div>

@@ -901,14 +901,8 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
         if (curl) { gl.deleteFramebuffer(curl.fbo); gl.deleteTexture(curl.texture); }
       } catch (e) { /* Safe ignore */ }
 
-      // LOW-RAF FIX: forcibly release the WebGL context to prevent context
-      // exhaustion and ensure the rAF loop cannot call GL methods on a dead context.
-      try {
-        const ext = gl.getExtension('WEBGL_lose_context');
-        if (ext) ext.loseContext();
-      } catch {
-        // Safe to ignore — driver may not support the extension
-      }
+      // We removed the aggressive manual loseContext() here because it triggers
+      // a false-positive "WebGL context lost" error in the browser console.
     };
   }, [containerRef]);
 

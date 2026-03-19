@@ -65,6 +65,7 @@ import {
 import { logAdminAction } from '@/services/auditService';
 import {
   useCreateDispute,
+  useListings,
   useRequests,
   useUpdateRequestEvent,
   type ExchangeRequest,
@@ -350,6 +351,59 @@ function RequestsInbox({ userId }: { userId: string }) {
    Student Profile Sections
    ═══════════════════════════════════════════════════ */
 
+
+function MyListings({ userId }: { userId: string }) {
+  const { data: res, isLoading } = useListings({ ownerId: userId });
+  const listings = res?.data ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
+          My Listings
+        </h3>
+        <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
+          {listings.length} TOTAL
+        </Badge>
+      </div>
+
+      {isLoading ? (
+        <div className="p-8 border border-white/10 bg-black/20 text-center text-white/30 text-[10px] uppercase tracking-widest">
+          Loading listings…
+        </div>
+      ) : listings.length === 0 ? (
+        <div className="p-8 border border-white/10 bg-black/20 text-center space-y-2">
+          <Package className="w-6 h-6 text-white/10 mx-auto" />
+          <p className="text-white/30 text-[10px] uppercase tracking-widest">No listings created yet</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {listings.map((item) => (
+            <div key={item.id} className="p-4 border border-white/10 bg-black/20 space-y-3 group hover:border-primary/30 transition-all">
+              <div className="flex justify-between items-start">
+                <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${
+                  item.status === 'APPROVED' ? 'border-emerald-500/30 text-emerald-400' : 
+                  item.status === 'PENDING_REVIEW' ? 'border-amber-500/30 text-amber-400' : 
+                  item.status === 'INTEREST_RECEIVED' || item.status === 'IN_TRANSACTION' ? 'border-blue-500/30 text-blue-400' :
+                  'border-red-500/30 text-red-400'
+                }`}>
+                  {item.status.replace(/_/g, ' ')}
+                </Badge>
+                <span className="text-[10px] font-mono text-white/20 uppercase">{item.module}</span>
+              </div>
+              <p className="text-xs font-bold text-white group-hover:text-primary transition-colors truncate">{item.title}</p>
+              <div className="flex justify-between items-center text-[10px] font-mono">
+                <span className="text-white/40">₹{item.price}</span>
+                <span className="text-white/20">{new Date(item.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StudentSections({ profile, userId }: { profile: Profile; userId: string }) {
   if (!isStudentProfile(profile)) return null;
 
@@ -368,7 +422,7 @@ function StudentSections({ profile, userId }: { profile: Profile; userId: string
         <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
           Activity Summary
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {stats.map((stat, i) => (
             <div key={i} className="p-6 border border-white/10 bg-black/20 space-y-2 group hover:border-primary/30 transition-all duration-500">
               <div className="flex items-center space-x-2">
@@ -381,33 +435,25 @@ function StudentSections({ profile, userId }: { profile: Profile; userId: string
         </div>
       </div>
 
-      {/* Reputation & Active Listings */}
+      {/* Reputation & Contributions */}
       <div className="space-y-6">
         <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
-          Contributions
+          Reputation
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 border border-white/10 bg-black/20 space-y-4">
-            <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Reputation Score</p>
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <span className="text-3xl font-display font-bold">{data.reputation}</span>
-                <span className="text-[10px] font-bold text-primary">/100</span>
-              </div>
-              <Progress value={data.reputation} className="h-1 bg-white/5" />
-            </div>
-          </div>
-          <div className="p-6 border border-white/10 bg-black/20 space-y-4">
-            <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Active Listings</p>
+        <div className="p-6 border border-white/10 bg-black/20 space-y-4">
+          <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Campus Reputation</p>
+          <div className="space-y-2">
             <div className="flex justify-between items-end">
-              <span className="text-3xl font-display font-bold">{data.activeListings}</span>
-              <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
-                LIVE
-              </Badge>
+              <span className="text-3xl font-display font-bold">{data.reputation}</span>
+              <span className="text-[10px] font-bold text-primary">/100</span>
             </div>
+            <Progress value={data.reputation} className="h-1 bg-white/5" />
           </div>
         </div>
       </div>
+
+      {/* My Listings */}
+      <MyListings userId={userId} />
 
       {/* Requests Inbox */}
       <RequestsInbox userId={userId} />
@@ -441,7 +487,7 @@ function AdminSections({ profile }: { profile: Profile }) {
               READ-ONLY
             </Badge>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {[
               { label: 'Total Students', value: data.totalStudents.toLocaleString() },
               { label: 'Active Exchanges', value: data.activeExchanges.toString() },
@@ -466,7 +512,7 @@ function AdminSections({ profile }: { profile: Profile }) {
               High-level view of academic resource circulation within the MCTRGIT campus ecosystem.
               Detailed records are maintained by the administrative governance layer.
             </p>
-            <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-white/5">
               <div>
                 <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest mb-1">Textbooks Listed</p>
                 <p className="text-xl font-display font-bold">{data.academicListings}</p>
@@ -497,7 +543,7 @@ function AdminSections({ profile }: { profile: Profile }) {
         <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
           Governance Metrics
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {stats.map((stat, i) => (
             <div key={i} className="p-6 border border-white/10 bg-black/20 space-y-2 group hover:border-primary/30 transition-all duration-500">
               <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">{stat.label}</p>
@@ -574,19 +620,19 @@ function AdminDrilldownView({ view }: { view: AdminStudentView }) {
 
       {/* Identity Header */}
       <div className="space-y-4">
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-start sm:items-center gap-3">
           <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
             <User className="w-6 h-6 text-primary" />
           </div>
-          <div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold uppercase italic leading-none">
+          <div className="min-w-0">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold uppercase italic leading-none break-words">
               {view.identity.fullName.toUpperCase()}
             </h1>
-            <div className="flex items-center space-x-3 mt-2">
+            <div className="flex flex-wrap items-center gap-3 mt-2 min-w-0">
               <Badge variant="outline" className="border-primary/30 text-primary text-[9px] font-bold tracking-widest px-3 py-1">
                 STUDENT
               </Badge>
-              <span className="text-white/20 text-[10px] font-bold tracking-widest uppercase">
+              <span className="text-white/20 text-[10px] font-bold tracking-widest uppercase break-all">
                 {view.identity.email}
               </span>
             </div>
@@ -642,7 +688,7 @@ function AdminDrilldownView({ view }: { view: AdminStudentView }) {
         <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">
           Activity Summary
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {stats.map((stat, i) => (
             <div key={i} className="p-6 border border-white/10 bg-black/20 space-y-2">
               <div className="flex items-center space-x-2">
@@ -720,7 +766,7 @@ const ProfilePage = () => {
         );
         const view = response.data;
         if (controller.signal.aborted) return;
-        logAdminAction(user.id, targetUserId, 'VIEW_PROFILE');
+        logAdminAction(user.id, targetUserId, 'ADMIN_VIEW_STUDENT');
         setDrilldownView(view);
       } catch (err) {
         if (controller.signal.aborted) return;
@@ -822,19 +868,19 @@ const ProfilePage = () => {
         <div className="profile-content space-y-12">
           {/* Identity Header */}
           <div className="space-y-4">
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-start sm:items-center gap-3">
               <div className="w-12 h-12 border border-white/10 bg-black/40 flex items-center justify-center">
                 <User className="w-6 h-6 text-primary" />
               </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold uppercase italic leading-none">
+              <div className="min-w-0">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold uppercase italic leading-none break-words">
                   <SplitText trigger="load">{profile.identity.fullName.toUpperCase()}</SplitText>
                 </h1>
-                <div className="flex items-center space-x-3 mt-2">
+                <div className="flex flex-wrap items-center gap-3 mt-2 min-w-0">
                   <Badge variant="outline" className="border-primary/30 text-primary text-[9px] font-bold tracking-widest px-3 py-1">
                     {roleConfig.label.toUpperCase()}
                   </Badge>
-                  <span className="text-white/20 text-[10px] font-bold tracking-widest uppercase">
+                  <span className="text-white/20 text-[10px] font-bold tracking-widest uppercase break-all">
                     {profile.identity.email}
                   </span>
                 </div>

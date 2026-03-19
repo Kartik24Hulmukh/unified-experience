@@ -168,6 +168,7 @@ export const AUDIT_ACTIONS = [
   'ADMIN_RESTRICT_USER',
   'ADMIN_APPROVE_LISTING',
   'ADMIN_REJECT_LISTING',
+  'ADMIN_VIEW_STUDENT',
 ] as const;
 
 export type AuditAction = typeof AUDIT_ACTIONS[number];

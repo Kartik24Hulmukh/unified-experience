@@ -87,6 +87,9 @@ export interface ListingFilters {
   search?: string;
   page?: number;
   perPage?: number;
+  branch?: string;
+  semester?: string;
+  ownerId?: string;
 }
 
 export interface ProfileIdentity {
@@ -199,7 +202,7 @@ export function useCurrentUser(
 ) {
   return useQuery({
     queryKey: queryKeys.me,
-    queryFn: () => api.get<AuthUserResponse>('/auth/me'),
+    queryFn: ({ signal }) => api.get<AuthUserResponse>('/auth/me', { signal }),
     staleTime: env.VITE_QUERY_STALE_TIME_MS, // from env
     retry: false, // Don't retry auth checks
     ...options,
@@ -251,7 +254,7 @@ export function useProfile(
 ) {
   return useQuery({
     queryKey: queryKeys.profile,
-    queryFn: () => api.get<ApiResponse<ProfileResponse>>('/profile'),
+    queryFn: ({ signal }) => api.get<ApiResponse<ProfileResponse>>('/profile', { signal }),
     staleTime: 60_000, // V3-13: 1 min — trust/restriction status changes must be reflected quickly
     ...options,
   });
@@ -271,6 +274,9 @@ export function useListings(
   if (filters.search) params.set('search', filters.search);
   if (filters.page) params.set('page', String(filters.page));
   if (filters.perPage) params.set('limit', String(filters.perPage));
+  if (filters.branch) params.set('branch', filters.branch);
+  if (filters.semester) params.set('semester', filters.semester);
+  if (filters.ownerId) params.set('ownerId', filters.ownerId);
 
   const queryString = params.toString();
   const endpoint = `/listings${queryString ? `?${queryString}` : ''}`;
@@ -281,7 +287,7 @@ export function useListings(
       : filters.module
         ? queryKeys.listings.module(filters.module)
         : queryKeys.listings.all,
-    queryFn: () => api.get<ApiResponse<Listing[]>>(endpoint),
+    queryFn: ({ signal }) => api.get<ApiResponse<Listing[]>>(endpoint, { signal }),
     staleTime: 2 * 60 * 1000, // Listings change more often
     ...options,
   });
@@ -293,7 +299,7 @@ export function useListing(
 ) {
   return useQuery({
     queryKey: queryKeys.listings.detail(id),
-    queryFn: () => api.get<ApiResponse<Listing>>(`/listings/${id}`),
+    queryFn: ({ signal }) => api.get<ApiResponse<Listing>>(`/listings/${id}`, { signal }),
     enabled: !!id,
     ...options,
   });
@@ -383,7 +389,7 @@ export function useAdminPending(
 ) {
   return useQuery({
     queryKey: queryKeys.admin.pending,
-    queryFn: () => api.get<ApiResponse<PendingItem[]>>('/admin/pending'),
+    queryFn: ({ signal }) => api.get<ApiResponse<PendingItem[]>>('/admin/pending', { signal }),
     staleTime: 60_000, // 1 min — admin data refreshes more often
     ...options,
   });
@@ -394,7 +400,7 @@ export function useAdminStats(
 ) {
   return useQuery({
     queryKey: queryKeys.admin.stats,
-    queryFn: () => api.get<ApiResponse<AdminStats>>('/admin/stats'),
+    queryFn: ({ signal }) => api.get<ApiResponse<AdminStats>>('/admin/stats', { signal }),
     staleTime: 60_000,
     ...options,
   });
@@ -420,7 +426,7 @@ export function useAdminUserProfile(
 ) {
   return useQuery({
     queryKey: queryKeys.admin.user(userId),
-    queryFn: () => api.get<ApiResponse<AdminUserDrilldown>>(`/admin/users/${userId}`),
+    queryFn: ({ signal }) => api.get<ApiResponse<AdminUserDrilldown>>(`/admin/users/${userId}`, { signal }),
     enabled: !!userId,
     ...options,
   });
@@ -435,7 +441,7 @@ export function useDisputes(
 ) {
   return useQuery({
     queryKey: queryKeys.disputes.all,
-    queryFn: () => api.get<ApiResponse<Dispute[]>>('/disputes'),
+    queryFn: ({ signal }) => api.get<ApiResponse<Dispute[]>>('/disputes', { signal }),
     staleTime: 2 * 60 * 1000,
     ...options,
   });
@@ -526,7 +532,7 @@ export function useRequests(
 
   return useQuery({
     queryKey: filters?.role ? queryKeys.requests.role(filters.role) : queryKeys.requests.all,
-    queryFn: () => api.get<ApiResponse<ExchangeRequest[]>>(endpoint),
+    queryFn: ({ signal }) => api.get<ApiResponse<ExchangeRequest[]>>(endpoint, { signal }),
     staleTime: 60_000,
     ...options,
   });
@@ -538,7 +544,7 @@ export function useRequest(
 ) {
   return useQuery({
     queryKey: queryKeys.requests.detail(id),
-    queryFn: () => api.get<ApiResponse<ExchangeRequest>>(`/requests/${id}`),
+    queryFn: ({ signal }) => api.get<ApiResponse<ExchangeRequest>>(`/requests/${id}`, { signal }),
     enabled: !!id,
     ...options,
   });
@@ -702,7 +708,7 @@ export function useAdminAuditLog(
 ) {
   return useQuery({
     queryKey: queryKeys.adminAudit,
-    queryFn: () => api.get<ApiResponse<AuditLogEntry[]>>('/admin/audit'),
+    queryFn: ({ signal }) => api.get<ApiResponse<AuditLogEntry[]>>('/admin/audit', { signal }),
     staleTime: 30_000,
     ...options,
   });
@@ -713,7 +719,7 @@ export function useAdminFraudDashboard(
 ) {
   return useQuery({
     queryKey: queryKeys.adminFraud,
-    queryFn: () => api.get<ApiResponse<FraudDashboardData>>('/admin/fraud'),
+    queryFn: ({ signal }) => api.get<ApiResponse<FraudDashboardData>>('/admin/fraud', { signal }),
     staleTime: 60_000,
     ...options,
   });

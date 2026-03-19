@@ -40,6 +40,8 @@ html.lenis body {
 
 @layer base {
   :root {
+    --context-nav-height: 4.75rem;
+
     /* Core White Room Foundation */
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
@@ -178,7 +180,7 @@ html.lenis body {
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   html {
@@ -186,7 +188,10 @@ html.lenis body {
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family: var(--font-body);
     overflow-x: clip;
   }
@@ -601,6 +606,12 @@ html, body {
   }
 }
 
+@media (min-width: 768px) {
+  :root {
+    --context-nav-height: 5.5rem;
+  }
+}
+
 /* Safe area insets for notched devices */
 @supports (padding: env(safe-area-inset-top)) {
   .safe-top { padding-top: env(safe-area-inset-top); }
@@ -609,4 +620,88 @@ html, body {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+}
+
+/* Mobile QA fixes / Overrides */
+html, body {
+  /* Removed aggressive overflow-x to allow specific containers to scroll */
+}
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+/* Increase contrast on disabled inputs */
+input:disabled, textarea:disabled, select:disabled {
+  opacity: 0.8 !important;
+  color: hsl(var(--muted-foreground)) !important;
+  background-color: hsl(var(--muted)/0.5) !important;
+}
+/* Focus visibility for accessibility */
+:focus-visible {
+  outline: 2px solid var(--primary, #a3ff12) !important;
+  outline-offset: 2px;
+}
+/* Modal safe areas */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.touch-scroll-y {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ─── WCAG 2.5.5: Minimum 48 × 48 px touch target ─── */
+/* Apply .tap-target to any interactive element that is visually smaller than 48 px */
+.tap-target {
+  min-height: 48px;
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Keyboard-safe form scrolling ─────────────────────────────────
+   When the virtual keyboard opens and shrinks the viewport, keeping a
+   generous scroll-margin-bottom on focused inputs prevents the active
+   field from being hidden behind the keyboard chrome.
+   ─────────────────────────────────────────────────────────────────── */
+input:focus,
+textarea:focus,
+select:focus {
+  scroll-margin-bottom: 80px;
+}
+
+/* ─── Minimum readable font size on mobile ─── */
+@media (max-width: 639px) {
+  /* Prevent text smaller than 14 px on the smallest screens */
+  .text-\[9px\],
+  .text-\[10px\],
+  .text-\[11px\] {
+    font-size: 12px !important;
+  }
+}
+
+/* ─── Table overflow guard ────────────────────────────────────────── */
+/* Any table that is not already wrapped in overflow-x-auto gets
+   implicit scroll behaviour so it never causes horizontal page scroll */
+table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* Reset for tables already placed in an overflow wrapper by the app */
+.overflow-x-auto table,
+.table-reset table {
+  display: table;
+  overflow: visible;
 }

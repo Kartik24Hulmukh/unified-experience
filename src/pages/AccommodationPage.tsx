@@ -121,27 +121,7 @@ const AccommodationPage = () => {
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const filteredItems = useMemo(() => {
-    const defaultAcc = [
-      {
-        id: 'acc1',
-        title: 'Premium PG near Campus',
-        price: '8000',
-        category: 'pg',
-        institution: 'MCTRGIT',
-        image: '/logo.png' 
-      },
-      {
-        id: 'acc2',
-        title: '2BHK Flat for Students',
-        price: '15000',
-        category: 'flat',
-        institution: 'MCTRGIT',
-        image: '/logo.png'
-      }
-    ];
-    const combinedVisible = [...defaultAcc, ...visibleItems];
-
-    return combinedVisible.filter(
+    return visibleItems.filter(
       item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -161,8 +141,9 @@ const AccommodationPage = () => {
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
+      const heroStartScale = 1;
       // Hero image reveal
-      gsap.fromTo('.accom-hero-img', { scale: 1.05, opacity: 0 }, { scale: 1, opacity: 0.4, duration: 1, ease: 'power2.out' });
+      gsap.fromTo('.accom-hero-img', { scale: heroStartScale, opacity: 0 }, { scale: 1, opacity: 0.4, duration: 1, ease: 'power2.out' });
       gsap.to('.accom-hero-img', {
         yPercent: 15,
         ease: 'none',
@@ -287,7 +268,7 @@ const AccommodationPage = () => {
           <img
             src={housingHandover}
             alt=""
-            className="accom-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
+            className="accom-hero-img absolute inset-0 w-full h-full max-w-full object-cover"
             style={{ opacity: 0 }}
             loading="eager"
             fetchPriority="high"
@@ -336,7 +317,7 @@ const AccommodationPage = () => {
                 {'ACCOMMO'.split('').map((char, i) => (
                   <span
                     key={`a-${i}`}
-                    className="accom-title-char inline-block text-white font-display text-5xl sm:text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold leading-[0.9] tracking-tight"
+                    className="accom-title-char inline-block text-white font-display text-[clamp(3.25rem,14vw,5rem)] sm:text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold leading-[0.9] tracking-tight"
                     style={{ opacity: 0 }}
                   >
                     {char}
@@ -349,7 +330,7 @@ const AccommodationPage = () => {
                 {'DATION'.split('').map((char, i) => (
                   <span
                     key={`b-${i}`}
-                    className="accom-title-char inline-block text-white font-display text-5xl sm:text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold leading-[0.9] tracking-tight"
+                    className="accom-title-char inline-block text-white font-display text-[clamp(3.25rem,14vw,5rem)] sm:text-7xl md:text-[8rem] lg:text-[10rem] font-extrabold leading-[0.9] tracking-tight"
                     style={{ opacity: 0 }}
                   >
                     {char}
@@ -377,14 +358,14 @@ const AccommodationPage = () => {
             {/* Stats row */}
             <div className="flex flex-wrap gap-8 sm:gap-12 mt-12">
               <div className="stat-block" style={{ opacity: 0 }}>
-                <p className="text-white font-display text-5xl md:text-6xl font-bold">
+                <p className="text-white font-display text-4xl sm:text-5xl md:text-6xl font-bold">
                   <AnimatedCounter target={105} />
                   <span className="text-cyan-400">+</span>
                 </p>
                 <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Active Listings</p>
               </div>
               <div className="stat-block" style={{ opacity: 0 }}>
-                <p className="text-white font-display text-5xl md:text-6xl font-bold">
+                <p className="text-white font-display text-4xl sm:text-5xl md:text-6xl font-bold">
                   <AnimatedCounter target={3} duration={1000} />
                 </p>
                 <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Coverage Zones</p>
@@ -611,13 +592,13 @@ const AccommodationPage = () => {
             </div>
           </div>
 
-          <div className="protocol-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="protocol-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {protocols.map((protocol) => {
               const Icon = protocol.icon;
               return (
                 <div
                   key={protocol.code}
-                  className="protocol-card group relative bg-white/[0.02] border border-white/5 p-8 hover:border-cyan-400/20 hover:bg-cyan-400/[0.03] transition-all duration-500 overflow-hidden"
+                  className="protocol-card group relative bg-white/[0.02] border border-white/5 p-6 md:p-8 hover:border-cyan-400/20 hover:bg-cyan-400/[0.03] transition-all duration-500 overflow-hidden"
                 >
                   {/* Corner accents */}
                   <div className="absolute top-0 right-0 w-6 h-6 border-t border-r border-white/5 group-hover:border-cyan-400/30 transition-colors duration-500" />
@@ -713,7 +694,7 @@ const AccommodationPage = () => {
               </span>
               <div className="h-px w-8 bg-white/10" />
             </div>
-            <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4 inline-block">
+            <GlitchText className="text-white font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-4 inline-block">
               WHAT YOU'LL SEE
             </GlitchText>
             <p className="text-white/25 text-sm font-body max-w-md mx-auto mt-4">
@@ -722,7 +703,7 @@ const AccommodationPage = () => {
             </p>
           </div>
 
-          <div className="info-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="info-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {[
               { label: 'Area', value: 'Location Name', icon: MapPin },
               { label: 'Rent Range', value: '₹X,XXX - ₹X,XXX', icon: Database },
@@ -779,10 +760,10 @@ const AccommodationPage = () => {
             // READY TO INITIALIZE
           </span>
 
-          <h2 className="text-white font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-[0.9]">
+          <h2 className="text-white font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-4 leading-[0.9]">
             FIND YOUR
           </h2>
-          <h2 className="text-white font-display text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.9]">
+          <h2 className="text-white font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-[0.9]">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-300">
               PLACE
             </span>

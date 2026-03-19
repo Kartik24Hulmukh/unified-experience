@@ -171,7 +171,8 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
     return (
         <Popover onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
-                <button className="relative group" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}>
+                {/* tap-target ensures the bell is at least 48×48 px on coarse-pointer devices */}
+                <button className="relative group tap-target" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}>
                     <div className={`p-2 transition-all duration-300 ${isOpen ? 'rotate-12' : 'group-hover:-rotate-12'}`}>
                         <Bell className={`w-6 h-6 ${isDark ? 'text-portal-foreground' : 'text-foreground'} ${unreadCount > 0 ? 'opacity-100' : 'opacity-60'}`} />
                     </div>
@@ -187,10 +188,10 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
             <PopoverContent
                 side="bottom"
                 align="end"
-                className="w-80 md:w-96 bg-[#0a0a0a] border border-white/10 rounded-none p-0 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300"
+                className="w-[min(24rem,calc(100vw-1rem))] max-h-[min(80vh,32rem)] bg-[#0a0a0a] border border-white/10 rounded-none p-0 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300"
             >
                 {/* Header */}
-                <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-start justify-between gap-3 border-b border-white/5 p-4 sm:p-6">
                     <div className="space-y-1">
                         <h4 className="text-white font-display font-bold uppercase tracking-tight">Notification Terminal</h4>
                         <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Global Protocol Alerts</p>
@@ -205,7 +206,7 @@ const NotificationCenter = memo(function NotificationCenter({ isDark }: { isDark
                 </div>
 
                 {/* List */}
-                <ScrollArea className="h-[400px]">
+                <ScrollArea className="h-[min(65vh,24rem)]">
                     <div className="flex flex-col">
                         {notifications.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-48 gap-3 text-white/20">

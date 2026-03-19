@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+﻿import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import gsap from 'gsap';
 import logger from '@/lib/logger';
 import {
@@ -115,7 +115,7 @@ const AdminPage = () => {
 
     /**
      * Each pending listing is assumed to be in `pending_review`
-     * (user already submitted → admin queue). We hold one FSM per row
+    * (user already submitted -> admin queue). We hold one FSM per row
      * so transitions are validated before any UI mutation.
      */
     const [machines, setMachines] = useState<Record<string, ListingMachine>>({});
@@ -139,6 +139,14 @@ const AdminPage = () => {
 
         // Use gsap.context for proper scoping and cleanup
         gsapCtxRef.current = gsap.context(() => {
+            // Respect reduced-motion preference — skip the slide-in animation and
+            // just make both panels immediately visible.
+            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReduced) {
+                gsap.set(['.admin-sidebar', '.admin-main'], { x: 0, y: 0, opacity: 1, clearProps: 'all' });
+                return;
+            }
+
             const tl = gsap.timeline();
             tl.fromTo('.admin-sidebar', { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power4.out' })
                 .fromTo('.admin-main', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.6');
@@ -161,7 +169,7 @@ const AdminPage = () => {
         }
 
         const prev = machine;                                   // NEW-BUG-06 FIX: snapshot before mutation
-        const next = machine.send('APPROVE'); // pending_review → approved
+        const next = machine.send('APPROVE'); // pending_review -> approved
         setMachines(prev => ({ ...prev, [id]: next }));
 
         // Call API to update status, then animate
@@ -194,7 +202,7 @@ const AdminPage = () => {
         }
 
         const prev = machine;                                   // NEW-BUG-06 FIX: snapshot before mutation
-        const next = machine.send('REJECT'); // pending_review → rejected
+        const next = machine.send('REJECT'); // pending_review -> rejected
         setMachines(prev => ({ ...prev, [id]: next }));
 
         // Call API to update status, then animate
@@ -236,11 +244,30 @@ const AdminPage = () => {
         setConfirmation(nextState);
     }, []);
 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
     return (
-        <div ref={containerRef} className="min-h-[100dvh] bg-portal flex text-white overflow-hidden">
+        <div ref={containerRef} className="min-h-[100dvh] bg-portal flex text-white overflow-hidden relative">
+            {/* Sidebar Architecture - Mobile Overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar Architecture */}
-            <aside className="admin-sidebar w-64 border-r border-white/5 bg-black/40 flex flex-col">
-                <div className="p-8 border-b border-white/5 space-y-4">
+            <aside className={`fixed inset-y-0 left-0 z-50 lg:relative lg:flex lg:translate-x-0 w-64 border-r border-white/5 bg-black/90 lg:bg-black/40 flex flex-col transition-transform duration-300 ${
+                isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}>
+                <div className="p-8 border-b border-white/5 space-y-4 relative">
+                    <button 
+                        onClick={() => setIsSidebarOpen(false)}
+                        aria-label="Close sidebar"
+                        className="lg:hidden absolute top-8 right-4 text-white/40 hover:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                     <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 border border-primary rotate-45 flex items-center justify-center">
                             <Lock className="w-4 h-4 text-primary -rotate-45" />
@@ -250,7 +277,7 @@ const AdminPage = () => {
                     <p className="text-[9px] text-white/30 uppercase font-bold tracking-[0.3em]">Governance v10.4</p>
                 </div>
 
-                <nav className="flex-1 py-8 px-4 space-y-2">
+                <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto">
                     {[
                         { id: 'pending', label: 'Pending Approvals', icon: ShieldCheck },
                         { id: 'users', label: 'Verified Entities', icon: Users },
@@ -261,8 +288,12 @@ const AdminPage = () => {
                     ].map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveTab(item.id)}
-                            className={`w-full flex items-center space-x-3 px-4 py-3 transition-all duration-300 group ${activeTab === item.id ? 'bg-primary/10 text-primary border-r-2 border-primary' : 'text-white/40 hover:text-white hover:bg-white/5'
+                            onClick={() => {
+                                setActiveTab(item.id as AdminTab);
+                                setIsSidebarOpen(false);
+                            }}
+                            aria-label={item.label}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 transition-all duration-300 group focus:outline-none focus:bg-primary/5 ${activeTab === item.id ? 'bg-primary/10 text-primary border-r-2 border-primary' : 'text-white/40 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             <item.icon className="w-4 h-4" />
@@ -281,56 +312,65 @@ const AdminPage = () => {
 
             {/* Main Command Center */}
             <main className="admin-main flex-1 flex flex-col h-[100dvh] overflow-y-auto scrollbar-hide">
-                <header className="px-12 py-10 flex justify-between items-end border-b border-white/5">
+                <header className="px-4 sm:px-8 md:px-12 py-6 sm:py-10 flex flex-col sm:flex-row sm:items-end justify-between border-b border-white/5 gap-6">
                     <div className="space-y-4">
-                        <h1 className="text-5xl font-display font-bold uppercase italic italic-syne leading-none">
+                        <div className="flex items-center gap-3 lg:hidden">
+                            <button 
+                                onClick={() => setIsSidebarOpen(true)}
+                                aria-label="Open sidebar"
+                                className="p-2 border border-white/10 text-white/40 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            >
+                                <MoreVertical className="w-5 h-5 rotate-90" />
+                            </button>
+                        </div>
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold uppercase italic italic-syne leading-none">
                             <SplitText trigger="load">MODERATION</SplitText>
                         </h1>
                         <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.4em]">Internal Resource Audit Terminal</p>
                     </div>
 
-                    <div className="flex items-center space-x-6">
-                        <div className="relative w-64 group">
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
+                        <div className="relative w-full sm:w-64 group">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
                             <Input
                                 placeholder={searchConfig.placeholder}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 disabled={!searchConfig.enabled}
-                                className="bg-black/40 border-white/10 text-[10px] font-bold tracking-widest pl-10 h-10 rounded-none focus-visible:ring-1 focus-visible:ring-primary uppercase disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="bg-black/40 border-white/10 text-[10px] font-bold tracking-widest pl-10 h-10 rounded-none focus-visible:ring-1 focus-visible:ring-primary uppercase disabled:opacity-30 disabled:cursor-not-allowed w-full"
                             />
                         </div>
-                          <div className="flex items-center gap-3">
-                              <div className="hidden lg:flex flex-col items-end">
-                                  <span className="text-[8px] uppercase tracking-[0.2em] opacity-40 font-mono">Identity</span>
-                                  <span className="text-[10px] font-bold uppercase tracking-widest">{user?.fullName?.split(' ')[0] || 'Admin'}</span>
-                              </div>
-                              <div className="relative w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-white text-black text-xs font-bold uppercase transition-all duration-300 hover:scale-110 cursor-default">
-                                  {user?.fullName?.[0] || 'K'}
-                              </div>
-                          </div>
-                        {/* UX-04: 'Matrix Filter' button was non-functional (no onClick). Now visually
-                            disabled until filter logic is implemented to prevent dead button confusion. */}
-                        <Button
-                            variant="outline"
-                            disabled
-                            title="Filters coming soon"
-                            className="h-10 border-white/10 rounded-none text-[10px] font-bold tracking-widest uppercase px-6 opacity-30 cursor-not-allowed"
-                        >
-                            <Filter className="w-3 h-3 mr-2" />
-                            Matrix Filter
-                        </Button>
+                        <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[8px] uppercase tracking-[0.2em] opacity-40 font-mono">Identity</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">{user?.fullName?.split(' ')[0] || 'Admin'}</span>
+                                </div>
+                                <div className="relative w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-white text-black text-xs font-bold uppercase transition-all duration-300 hover:scale-110 cursor-default">
+                                    {user?.fullName?.[0] || 'K'}
+                                </div>
+                            </div>
+                            <Button
+                                variant="outline"
+                                disabled
+                                title="Filters coming soon"
+                                className="h-10 border-white/10 rounded-none text-[10px] font-bold tracking-widest uppercase px-4 sm:px-6 opacity-30 cursor-not-allowed"
+                            >
+                                <Filter className="w-3 h-3 mr-2" />
+                                <span className="hidden xs:inline">Matrix Filter</span>
+                            </Button>
+                        </div>
                     </div>
                 </header>
 
-                <section className="p-12 space-y-12">
-                    {/* Stats Grid — always visible */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <section className="p-4 sm:p-8 md:p-12 space-y-8 md:space-y-12">
+                    {/* Stats Grid - always visible */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                         {[
-                            { label: 'Total Listings', value: stats ? String(stats.totalListings) : '—', delta: stats ? `${stats.completedExchanges} completed` : '' },
-                            { label: 'Active Users', value: stats ? stats.totalUsers.toLocaleString() : '—', delta: stats ? 'Verified' : '' },
-                            { label: 'Disputes Open', value: stats ? String(stats.activeDisputes).padStart(2, '0') : '—', delta: stats && stats.activeDisputes > 5 ? 'Attention' : 'Under Control', danger: stats ? stats.activeDisputes > 5 : false },
-                            { label: 'Pending Reviews', value: stats ? String(stats.pendingListings) : '—', delta: 'In Queue' },
+                            { label: 'Total Listings', value: stats ? String(stats.totalListings) : '--', delta: stats ? `${stats.completedExchanges} completed` : '' },
+                            { label: 'Active Users', value: stats ? stats.totalUsers.toLocaleString() : '--', delta: stats ? 'Verified' : '' },
+                            { label: 'Disputes Open', value: stats ? String(stats.activeDisputes).padStart(2, '0') : '--', delta: stats && stats.activeDisputes > 5 ? 'Attention' : 'Under Control', danger: stats ? stats.activeDisputes > 5 : false },
+                            { label: 'Pending Reviews', value: stats ? String(stats.pendingListings) : '--', delta: 'In Queue' },
                         ].map((stat, i) => (
                             <div key={i} className="p-6 border border-white/10 bg-black/20 space-y-2 group hover:border-primary/30 transition-all duration-500">
                                 <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">{stat.label}</p>
@@ -342,7 +382,7 @@ const AdminPage = () => {
                         ))}
                     </div>
 
-                    {/* ═══ PENDING TAB ═══ */}
+                    {/* â•â•â• PENDING TAB â•â•â• */}
                     {activeTab === 'pending' && (
                         <>
                             <div className="flex justify-between items-center">
@@ -352,18 +392,18 @@ const AdminPage = () => {
                                 </Badge>
                             </div>
 
-                            <div className="border border-white/10 bg-black/20">
+                            <div className="border border-white/10 bg-black/20 overflow-x-auto scrollbar-hide">
                                 {pendingLoading ? (
                                     <div className="p-12 flex flex-col items-center gap-4">
                                         <LoadingSpinner />
-                                        <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading pending queue…</p>
+                                        <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading pending queue...</p>
                                     </div>
                                 ) : pendingError ? (
                                     <div className="p-12">
                                         <ErrorFallback error={pendingErr} onRetry={refetchPending} compact />
                                     </div>
                                 ) : (
-                                    <Table>
+                                    <div className="w-full overflow-x-auto relative pb-4"><Table className="min-w-[800px]">
                                         <TableHeader className="bg-white/5">
                                             <TableRow className="border-white/5 hover:bg-transparent">
                                                 <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Protocol ID</TableHead>
@@ -381,7 +421,7 @@ const AdminPage = () => {
                                                     className={`row-${listing.id} border-white/5 hover:bg-primary/5 transition-all duration-300 group`}
                                                 >
                                                     <TableCell className="font-mono text-[10px] text-primary font-bold">{listing.id.slice(0, 8)}</TableCell>
-                                                    <TableCell className="text-xs font-bold uppercase tracking-tight">{listing.owner?.fullName ?? '—'}</TableCell>
+                                                    <TableCell className="text-xs font-bold uppercase tracking-tight">{listing.owner?.fullName ?? '--'}</TableCell>
                                                     <TableCell className="text-xs text-white/60">{listing.title}</TableCell>
                                                     <TableCell className="text-[10px] font-bold text-white/20 font-display">{new Date(listing.createdAt).toLocaleDateString()}</TableCell>
                                                     <TableCell>
@@ -420,12 +460,12 @@ const AdminPage = () => {
                                                                             </div>
                                                                             <div>
                                                                                 <p className="text-[9px] text-white/30 uppercase font-bold font-display">Submitted By</p>
-                                                                                <p className="text-sm font-bold uppercase text-primary">{listing.owner?.fullName ?? '—'}</p>
+                                                                                <p className="text-sm font-bold uppercase text-primary">{listing.owner?.fullName ?? '--'}</p>
                                                                                 <p className="text-[10px] text-white/40">{listing.owner?.email}</p>
                                                                             </div>
                                                                             <div>
                                                                                 <p className="text-[9px] text-white/30 uppercase font-bold font-display">Price</p>
-                                                                                <p className="text-sm font-bold">₹{listing.price}</p>
+                                                                                <p className="text-sm font-bold">Rs {listing.price}</p>
                                                                             </div>
                                                                         </div>
                                                                         <div className="space-y-4 bg-white/5 p-4">
@@ -484,13 +524,13 @@ const AdminPage = () => {
                                                 </TableRow>
                                             ))}
                                         </TableBody>
-                                    </Table>
+                                    </Table></div>
                                 )}
                             </div>
                         </>
                     )}
 
-                    {/* ═══ DISPUTES TAB ═══ */}
+                    {/* â•â•â• DISPUTES TAB â•â•â• */}
                     {activeTab === 'disputes' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
@@ -499,13 +539,13 @@ const AdminPage = () => {
                                     {filteredDisputes.length} RECORD{filteredDisputes.length !== 1 ? 'S' : ''}
                                 </Badge>
                             </div>
-                            <div className="border border-white/10 bg-black/20">
+                            <div className="border border-white/10 bg-black/20 overflow-x-auto scrollbar-hide">
                                     {disputesLoading ? (
-                                    <div className="p-12 flex flex-col items-center gap-4"><LoadingSpinner /><p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading disputes…</p></div>
+                                    <div className="p-12 flex flex-col items-center gap-4"><LoadingSpinner /><p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading disputes...</p></div>
                                 ) : filteredDisputes.length === 0 ? (
                                     <div className="p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">No disputes found</div>
                                 ) : (
-                                    <Table>
+                                    <div className="w-full overflow-x-auto relative pb-4"><Table className="min-w-[800px]">
                                         <TableHeader className="bg-white/5">
                                             <TableRow className="border-white/5 hover:bg-transparent">
                                                 <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">ID</TableHead>
@@ -560,34 +600,34 @@ const AdminPage = () => {
                                                 </TableRow>
                                             ))}
                                         </TableBody>
-                                    </Table>
+                                    </Table></div>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* ═══ USERS TAB ═══ */}
+                    {/* â•â•â• USERS TAB â•â•â• */}
                     {activeTab === 'users' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Verified Entities</h3>
                                 <Badge variant="outline" className="border-white/10 text-[9px] font-bold tracking-widest px-4 py-1">
-                                    {stats ? stats.totalUsers : '—'} TOTAL
+                                    {stats ? stats.totalUsers : '--'} TOTAL
                                 </Badge>
                             </div>
                             <div className="border border-white/10 bg-black/20 p-12">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                                     <div className="p-6 border border-white/10 bg-white/5 space-y-2">
                                         <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Total Users</p>
-                                        <span className="text-3xl font-display font-bold">{stats?.totalUsers ?? '—'}</span>
+                                        <span className="text-3xl font-display font-bold">{stats?.totalUsers ?? '--'}</span>
                                     </div>
                                     <div className="p-6 border border-white/10 bg-white/5 space-y-2">
                                         <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Active Disputes</p>
-                                        <span className="text-3xl font-display font-bold text-amber-400">{stats?.activeDisputes ?? '—'}</span>
+                                        <span className="text-3xl font-display font-bold text-amber-400">{stats?.activeDisputes ?? '--'}</span>
                                     </div>
                                     <div className="p-6 border border-white/10 bg-white/5 space-y-2">
                                         <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Completed Exchanges</p>
-                                        <span className="text-3xl font-display font-bold text-emerald-400">{stats?.completedExchanges ?? '—'}</span>
+                                        <span className="text-3xl font-display font-bold text-emerald-400">{stats?.completedExchanges ?? '--'}</span>
                                     </div>
                                 </div>
                                 <p className="text-white/20 text-[10px] uppercase tracking-widest mt-8 text-center">Search is available on moderation tabs with list data</p>
@@ -595,7 +635,7 @@ const AdminPage = () => {
                         </div>
                     )}
 
-                    {/* ═══ FRAUD TAB ═══ */}
+                    {/* â•â•â• FRAUD TAB â•â•â• */}
                     {activeTab === 'fraud' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
@@ -635,7 +675,7 @@ const AdminPage = () => {
                             {fraudLoading ? (
                                 <div className="p-12 flex flex-col items-center gap-4">
                                     <LoadingSpinner />
-                                    <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading fraud data…</p>
+                                    <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading fraud data...</p>
                                 </div>
                             ) : !fraudData ? (
                                 <div className="border border-white/10 bg-black/20 p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">
@@ -643,7 +683,7 @@ const AdminPage = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                                         <div className="p-6 border border-red-500/20 bg-red-500/5 space-y-2">
                                             <p className="text-[9px] text-red-400/60 uppercase font-bold tracking-widest">High Risk Users</p>
                                             <span className="text-3xl font-display font-bold text-red-400">{fraudData.highRisk}</span>
@@ -671,26 +711,25 @@ const AdminPage = () => {
                                                 <TableBody>
                                                     {filteredFraudUsers.map((flag) => (
                                                         <TableRow key={flag.userId} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
-                                                            <TableCell className="font-mono text-[10px] text-primary font-bold">{flag.userId?.slice(0, 8) ?? '—'}</TableCell>
+                                                            <TableCell className="font-mono text-[10px] text-primary font-bold">{flag.userId?.slice(0, 8) ?? '--'}</TableCell>
                                                             <TableCell>
                                                                 <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${flag.riskLevel === 'HIGH' ? 'border-red-500/30 text-red-400' : flag.riskLevel === 'MEDIUM' ? 'border-amber-500/30 text-amber-400' : 'border-white/20 text-white/60'}`}>
                                                                     {flag.riskLevel ?? 'UNKNOWN'}
                                                                 </Badge>
                                                             </TableCell>
-                                                            <TableCell className="text-xs text-white/60 max-w-xs truncate" title={flag.flags.join(', ')}>{flag.flags.join(', ') || '—'}</TableCell>
+                                                            <TableCell className="text-xs text-white/60 max-w-xs truncate" title={flag.flags.join(', ')}>{flag.flags.join(', ') || '--'}</TableCell>
                                                             <TableCell className="text-[10px] font-bold text-white/20">{flag.activeDisputes}</TableCell>
                                                         </TableRow>
                                                     ))}
                                                 </TableBody>
-                                            </Table>
-                                        </div>
+                                            </Table></div>
                                     )}
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* ═══ LOGS TAB ═══ */}
+                    {/* â•â•â• LOGS TAB â•â•â• */}
                     {activeTab === 'logs' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
@@ -699,60 +738,60 @@ const AdminPage = () => {
                                     {filteredAuditLogs.length} ENTRIES
                                 </Badge>
                             </div>
-                            <div className="border border-white/10 bg-black/20">
-                                {auditLoading ? (
-                                    <div className="p-12 flex flex-col items-center gap-4"><LoadingSpinner /><p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading audit log…</p></div>
-                                ) : filteredAuditLogs.length === 0 ? (
-                                    <div className="p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">No log entries found</div>
-                                ) : (
-                                    <Table>
-                                        <TableHeader className="bg-white/5">
-                                            <TableRow className="border-white/5 hover:bg-transparent">
-                                                <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Timestamp</TableHead>
-                                                <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Actor</TableHead>
-                                                <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Action</TableHead>
-                                                <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Target</TableHead>
-                                                <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Details</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredAuditLogs.map((log) => (
-                                                <TableRow key={log.id} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
-                                                    <TableCell className="text-[10px] font-mono text-white/40">{new Date(log.timestamp).toLocaleString()}</TableCell>
-                                                    <TableCell className="text-xs font-bold uppercase tracking-tight">{log.actorId.slice(0, 8)} <span className="text-white/30">({log.actorRole})</span></TableCell>
-                                                    <TableCell><Badge variant="outline" className="border-primary/30 text-primary text-[8px] uppercase tracking-widest">{log.action.replace(/_/g, ' ')}</Badge></TableCell>
-                                                    <TableCell className="text-[10px] font-mono text-white/40">{log.targetType}/{log.targetId.slice(0, 8)}</TableCell>
-                                                    <TableCell className="text-xs text-white/40 max-w-xs truncate">{log.details ?? '—'}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                )}
-                            </div>
+                            <div className="border border-white/10 bg-black/20 overflow-x-auto scrollbar-hide">
+                                 {auditLoading ? (
+                                     <div className="p-12 flex flex-col items-center gap-4"><LoadingSpinner /><p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading audit log...</p></div>
+                                 ) : filteredAuditLogs.length === 0 ? (
+                                     <div className="p-12 text-center text-white/30 text-[10px] uppercase tracking-widest">No log entries found</div>
+                                 ) : (
+                                     <div className="w-full overflow-x-auto relative pb-4"><Table className="min-w-[800px]">
+                                         <TableHeader className="bg-white/5">
+                                             <TableRow className="border-white/5 hover:bg-transparent">
+                                                 <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Timestamp</TableHead>
+                                                 <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Actor</TableHead>
+                                                 <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Action</TableHead>
+                                                 <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Target</TableHead>
+                                                 <TableHead className="text-white/40 uppercase text-[9px] font-bold tracking-widest h-12">Details</TableHead>
+                                             </TableRow>
+                                         </TableHeader>
+                                         <TableBody>
+                                             {filteredAuditLogs.map((log) => (
+                                                 <TableRow key={log.id} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
+                                                     <TableCell className="text-[10px] font-mono text-white/40">{new Date(log.timestamp).toLocaleString()}</TableCell>
+                                                     <TableCell className="text-xs font-bold uppercase tracking-tight">{log.actorId.slice(0, 8)} <span className="text-white/30">({log.actorRole})</span></TableCell>
+                                                     <TableCell><Badge variant="outline" className="border-primary/30 text-primary text-[8px] uppercase tracking-widest">{log.action.replace(/_/g, ' ')}</Badge></TableCell>
+                                                     <TableCell className="text-[10px] font-mono text-white/40">{log.targetType}/{log.targetId.slice(0, 8)}</TableCell>
+                                                     <TableCell className="text-xs text-white/40 max-w-xs truncate">{log.details ?? '--'}</TableCell>
+                                                 </TableRow>
+                                             ))}
+                                         </TableBody>
+                                     </Table></div>
+                                 )}
+                             </div>
                         </div>
                     )}
 
-                    {/* ═══ ACTIVITY TAB ═══ */}
+                    {/* â•â•â• ACTIVITY TAB â•â•â• */}
                     {activeTab === 'activity' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Live Metrics</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div className="border border-white/10 bg-black/20 p-8 space-y-4">
                                     <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Exchange Pipeline</p>
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Total Requests</span><span className="text-lg font-display font-bold">{stats?.totalRequests ?? '—'}</span></div>
-                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Completed</span><span className="text-lg font-display font-bold text-emerald-400">{stats?.completedExchanges ?? '—'}</span></div>
-                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Pending Listings</span><span className="text-lg font-display font-bold text-amber-400">{stats?.pendingListings ?? '—'}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Total Requests</span><span className="text-lg font-display font-bold">{stats?.totalRequests ?? '--'}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Completed</span><span className="text-lg font-display font-bold text-emerald-400">{stats?.completedExchanges ?? '--'}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Pending Listings</span><span className="text-lg font-display font-bold text-amber-400">{stats?.pendingListings ?? '--'}</span></div>
                                     </div>
                                 </div>
                                 <div className="border border-white/10 bg-black/20 p-8 space-y-4">
                                     <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Trust & Safety</p>
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Active Disputes</span><span className="text-lg font-display font-bold text-red-400">{stats?.activeDisputes ?? '—'}</span></div>
-                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Total Listings</span><span className="text-lg font-display font-bold">{stats?.totalListings ?? '—'}</span></div>
-                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Verified Users</span><span className="text-lg font-display font-bold text-primary">{stats?.totalUsers ?? '—'}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Active Disputes</span><span className="text-lg font-display font-bold text-red-400">{stats?.activeDisputes ?? '--'}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Total Listings</span><span className="text-lg font-display font-bold">{stats?.totalListings ?? '--'}</span></div>
+                                        <div className="flex justify-between items-center"><span className="text-[10px] uppercase font-bold text-white/60">Verified Users</span><span className="text-lg font-display font-bold text-primary">{stats?.totalUsers ?? '--'}</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -761,7 +800,7 @@ const AdminPage = () => {
                 </section>
             </main>
 
-            {/* Institutional Scanlines — z below cursor (--z-scanline: 80, --z-cursor: 90) */}
+            {/* Institutional Scanlines - z below cursor (--z-scanline: 80, --z-cursor: 90) */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[var(--z-scanline)] bg-[length:100%_2px,3px_100%]" />
 
             <AlertDialog open={!!confirmation} onOpenChange={(open) => !open && setConfirmation(null)}>
@@ -790,6 +829,8 @@ const AdminPage = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            {/* Scanlines - z below cursor: --z-scanline: 80, --z-cursor: 90 (ISSUE-12) */}
+            <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[var(--z-scanline)] bg-[length:100%_2px,3px_100%]" />
         </div >
     );
 };

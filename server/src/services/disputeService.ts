@@ -64,6 +64,53 @@ function applyDisputeTransition(
   return FSM_TO_DB[next.state];
 }
 
+async function loadDisputeForUpdate(
+  tx: typeof prisma,
+  disputeId: string,
+): Promise<Array<{
+  id: string;
+  status: string;
+  request_id: string | null;
+  listing_id: string | null;
+  against_id: string;
+}>> {
+  try {
+    return await tx.$queryRaw<Array<{
+      id: string;
+      status: string;
+      request_id: string | null;
+      listing_id: string | null;
+      against_id: string;
+    }>>`
+      SELECT id, status, request_id, listing_id, against_id
+      FROM disputes
+      WHERE id = ${disputeId}
+      FOR UPDATE
+    `;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const isSqliteLockingGap = /for update|syntax error/i.test(message);
+    if (!isSqliteLockingGap) {
+      throw error;
+    }
+
+    // SQLite does not support SELECT ... FOR UPDATE. Its write transactions are
+    // already serialized at the database level, so a plain SELECT inside the
+    // transaction is the compatible fallback for local/dev test runs.
+    return tx.$queryRaw<Array<{
+      id: string;
+      status: string;
+      request_id: string | null;
+      listing_id: string | null;
+      against_id: string;
+    }>>`
+      SELECT id, status, request_id, listing_id, against_id
+      FROM disputes
+      WHERE id = ${disputeId}
+    `;
+  }
+}
+
 /* ═══════════════════════════════════════════════════
    List Disputes
    ═══════════════════════════════════════════════════ */
@@ -278,18 +325,7 @@ export async function updateDisputeStatus(
     // PROD-05: acquire row-level lock to prevent two concurrent admin
     // PATCH requests from both reading the same status and both
     // succeeding (the second write would silently overwrite the first).
-    const rows = await tx.$queryRaw<Array<{
-      id: string;
-      status: string;
-      request_id: string | null;
-      listing_id: string | null;
-      against_id: string;
-    }>>`
-      SELECT id, status, request_id, listing_id, against_id
-      FROM disputes
-      WHERE id = ${disputeId}
-      FOR UPDATE
-    `;
+    const rows = await loadDisputeForUpdate(tx, disputeId);
 
     if (!rows || rows.length === 0) {
       throw new NotFoundError('Dispute', disputeId);

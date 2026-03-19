@@ -25,10 +25,10 @@ import { toast } from "@/components/ui/use-toast";
 // UX-1 FIX: renamed from ErrorBoundary to LoginPageErrorBoundary.
 // The original name shadowed the global @/components/ErrorBoundary in this
 // file's scope, masking any future import and losing monitoring integration.
-class LoginPageErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean }> {
-    constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) { super(props); this.state = { hasError: false }; }
-    static getDerivedStateFromError() { return { hasError: true }; }
-    render() { return this.state.hasError ? this.props.fallback : this.props.children; }
+class LoginPageErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean, errorMsg: string }> {
+    constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) { super(props); this.state = { hasError: false, errorMsg: '' }; }
+    static getDerivedStateFromError(error: any) { return { hasError: true, errorMsg: error?.message || String(error) }; }
+    render() { return this.state.hasError ? <div style={{position: 'absolute', top: 0, left: 0, zIndex: 9999, color: 'red', background: 'black', padding: '20px'}}>LANYARD CRASHED: {this.state.errorMsg}</div> : this.props.children; }
 }
 
 const Lanyard = lazy(() => import("@/components/Lanyard"));
@@ -106,8 +106,8 @@ const LoginPage = () => {
 
             {/* ── 3D Lanyard Campus ID ── desktop only; Rapier physics is too heavy on mobile ── */}
             {!isMobile && (
-              <div className="absolute inset-0 z-0">
-                  <LoginPageErrorBoundary fallback={<div className="w-full h-full bg-black" />}>
+              <div className="absolute inset-0 z-0 opacity-50">
+                  <LoginPageErrorBoundary fallback={<div className="hidden" />}>
                       <Suspense fallback={null}>
                           <Lanyard position={[0, 0, 25]} gravity={[0, -40, 0]} fov={22} transparent />
                       </Suspense>
@@ -130,7 +130,7 @@ const LoginPage = () => {
                             <div className="w-12 h-px bg-primary/30" />
                             <span className="text-[10px] font-bold tracking-[0.4em] uppercase">MCTRGIT Gateway</span>
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-bold text-white uppercase italic font-display leading-tight">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white uppercase italic font-display leading-tight">
                             Identity<br />Verified
                         </h2>
                     </div>
@@ -160,14 +160,15 @@ const LoginPage = () => {
                             {hasRealGIS && (
                             <div className="flex items-center gap-6 mb-6">
                                 <div className="flex-1 h-px bg-white/5" />
-                                <button onClick={() => setShowEmailForm(!showEmailForm)} className="text-[10px] font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors">
+                                <button onClick={() => setShowEmailForm(!showEmailForm)} className="tap-target px-3 text-[10px] font-bold uppercase tracking-widest text-white/30 hover:text-white transition-colors">
                                     {showEmailForm ? "HIDE AUTH" : "USE LEGACY MAIL"}
                                 </button>
                                 <div className="flex-1 h-px bg-white/5" />
                             </div>
                             )}
 
-                            <div className={`grid transition-all duration-300 ${showEmailForm ? 'grid-rows-[1fr] opacity-100 mb-6' : 'grid-rows-[0fr] opacity-0'}`}>
+                            {showEmailForm && (
+                            <div className="grid transition-all duration-300 grid-rows-[1fr] opacity-100 mb-6">
                                 <div className="overflow-hidden">
                                     <Form {...form}>
                                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -183,17 +184,18 @@ const LoginPage = () => {
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
-                                            <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-teal-400 text-black font-black h-16 rounded-xl">
+                                            <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-teal-400 text-black font-black h-16 rounded-xl" style={{ minHeight: 48, minWidth: 48 }}>
                                                 {isLoading ? "AUTHORIZING..." : "ENTER PORTAL"}
                                             </Button>
                                         </form>
                                     </Form>
                                 </div>
                             </div>
+                            )}
 
                             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">
-                                <Link to="/signup" className="hover:text-primary transition-colors">Request Account</Link>
-                                <Link to="/" className="hover:text-white transition-colors">Cancel Access</Link>
+                                <Link to="/signup" className="tap-target px-2 hover:text-primary transition-colors">Request Account</Link>
+                                <Link to="/" className="tap-target px-2 hover:text-white transition-colors">Cancel Access</Link>
                             </div>
                         </div>
                     </div>

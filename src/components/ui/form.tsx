@@ -92,7 +92,7 @@ const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.Compon
         ref={ref}
         id={formItemId}
         aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
-        aria-invalid={!!error}
+        aria-invalid={!!error ? "true" : "false"}
         {...props}
       />
     );

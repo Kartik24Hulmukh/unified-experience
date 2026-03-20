@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, SlidersHorizontal, X, ArrowRight } from 'lucide-react';
 import gsap from 'gsap';
 import { Button } from "@/components/ui/button";
@@ -129,25 +129,15 @@ const ModuleSearchFilter = ({
 
                     <div className="h-8 w-px bg-white/10 hidden md:block" />
 
-                    {/* Desktop Filter Trigger */}
+                    {/* Responsive Filter Trigger */}
                     <Sheet>
                         <SheetTrigger asChild>
                             <Button
                                 variant="outline"
-                                className="hidden md:flex border-white/10 bg-transparent rounded-none h-12 px-6 space-x-3 text-white/60 hover:text-white hover:bg-white/5 uppercase text-[10px] font-bold tracking-widest transition-all duration-300"
+                                className="flex border-white/10 bg-transparent rounded-none h-12 w-12 md:w-auto p-0 md:px-6 items-center justify-center space-x-0 md:space-x-3 text-white/60 hover:text-white hover:bg-white/5 uppercase text-[10px] font-bold tracking-widest transition-all duration-300"
                             >
-                                <SlidersHorizontal className="w-4 h-4" />
-                                <span>Filter Architecture</span>
-                            </Button>
-                        </SheetTrigger>
-
-                        {/* Mobile/Tablet Filter Trigger */}
-                        <SheetTrigger asChild>
-                            <Button
-                                variant="outline"
-                                className="md:hidden flex h-12 w-12 p-0 border-white/10 bg-transparent items-center justify-center"
-                            >
-                                <SlidersHorizontal className="w-5 h-5 text-white/60" />
+                                <SlidersHorizontal className="w-5 h-5 md:w-4 md:h-4" />
+                                <span className="hidden md:inline">Filter Architecture</span>
                             </Button>
                         </SheetTrigger>
 

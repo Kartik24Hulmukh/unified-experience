@@ -27,63 +27,48 @@ const FooterSection = () => {
 
     const ctx = gsap.context(() => {
 
-      // ── Eyebrow label ──────────────────────────────────────────────────────
-      gsap.fromTo(
-        '.ftr-eyebrow',
-        { opacity: 0, y: 20 },
-        {
-          opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
-          scrollTrigger: { trigger: section, start: 'top 85%' },
-        },
-      );
-
       // ── Main heading ───────────────────────────────────────────────────────
-      gsap.fromTo(
+      gsap.from(
         '.ftr-heading',
-        { opacity: 0, y: 60 },
         {
-          opacity: 1, y: 0, duration: 1, ease: 'power3.out',
-          scrollTrigger: { trigger: section, start: 'top 78%' },
+          opacity: 0, y: 60, duration: 1, ease: 'power3.out',
+          scrollTrigger: { trigger: section, start: 'top 95%' },
         },
       );
 
       // ── Description paragraph ──────────────────────────────────────────────
-      gsap.fromTo(
+      gsap.from(
         '.ftr-desc',
-        { opacity: 0, y: 30 },
         {
-          opacity: 1, y: 0, duration: 0.9, ease: 'power2.out',
-          scrollTrigger: { trigger: section, start: 'top 70%' },
+          opacity: 0, y: 30, duration: 0.9, ease: 'power2.out',
+          scrollTrigger: { trigger: section, start: 'top 95%' },
         },
       );
 
       // ── Stats row — staggered ──────────────────────────────────────────────
-      gsap.fromTo(
+      gsap.from(
         '.ftr-stat',
-        { opacity: 0, y: 25 },
         {
-          opacity: 1, y: 0, stagger: 0.12, duration: 0.7, ease: 'power2.out',
-          scrollTrigger: { trigger: '.ftr-stats', start: 'top 82%' },
+          opacity: 0, y: 25, stagger: 0.12, duration: 0.7, ease: 'power2.out',
+          scrollTrigger: { trigger: '.ftr-stats', start: 'top 95%' },
         },
       );
 
       // ── Module links — staggered ───────────────────────────────────────────
-      gsap.fromTo(
+      gsap.from(
         '.ftr-module',
-        { opacity: 0, y: 16 },
         {
-          opacity: 1, y: 0, stagger: 0.07, duration: 0.55, ease: 'power2.out',
-          scrollTrigger: { trigger: '.ftr-modules', start: 'top 85%' },
+          opacity: 0, y: 16, stagger: 0.07, duration: 0.55, ease: 'power2.out',
+          scrollTrigger: { trigger: '.ftr-modules', start: 'top 95%' },
         },
       );
 
       // ── Principles grid — staggered ────────────────────────────────────────
-      gsap.fromTo(
+      gsap.from(
         '.ftr-principle',
-        { opacity: 0, x: -18 },
         {
-          opacity: 1, x: 0, stagger: 0.1, duration: 0.65, ease: 'power2.out',
-          scrollTrigger: { trigger: '.ftr-principles', start: 'top 85%' },
+          opacity: 0, x: -18, stagger: 0.1, duration: 0.65, ease: 'power2.out',
+          scrollTrigger: { trigger: '.ftr-principles', start: 'top 98%' },
         },
       );
 
@@ -93,17 +78,16 @@ const FooterSection = () => {
         { scaleX: 0, transformOrigin: 'left' },
         {
           scaleX: 1, duration: 1.1, ease: 'power3.inOut',
-          scrollTrigger: { trigger: '.ftr-bottom', start: 'top 92%' },
+          scrollTrigger: { trigger: '.ftr-bottom', start: 'top bottom' },
         },
       );
 
       // ── Bottom bar text ────────────────────────────────────────────────────
-      gsap.fromTo(
+      gsap.from(
         '.ftr-bottom-text',
-        { opacity: 0, y: 12 },
         {
-          opacity: 1, y: 0, stagger: 0.15, duration: 0.6, ease: 'power2.out',
-          scrollTrigger: { trigger: '.ftr-bottom', start: 'top 90%' },
+          opacity: 0, y: 12, stagger: 0.15, duration: 0.6, ease: 'power2.out',
+          scrollTrigger: { trigger: '.ftr-bottom', start: 'top bottom' },
         },
       );
 
@@ -115,7 +99,7 @@ const FooterSection = () => {
   return (
     <footer
       ref={sectionRef}
-      className="relative bg-portal overflow-hidden pt-28 pb-12"
+      className="relative bg-portal min-h-[90vh] flex flex-col pt-32 pb-16"
     >
       {/* Grid overlay — same density as CampusEventsSection */}
       <div
@@ -137,17 +121,15 @@ const FooterSection = () => {
         }}
       />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-8">
+      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-6 sm:px-12 md:px-24 flex-1 flex flex-col justify-between">
 
         {/* ── Eyebrow ────────────────────────────────────────────────────────── */}
-        <p className="ftr-eyebrow text-[#a3ff12] font-mono text-[9px] uppercase tracking-[0.45em] mb-7 text-center opacity-0">
-          CAMPUS_SYS // BEROZGAR_OS_V01
-        </p>
+
 
         {/* ── Main heading ───────────────────────────────────────────────────── */}
         <h2
-          className="ftr-heading font-display font-bold uppercase leading-[0.84] tracking-[-0.05em] text-center text-portal-foreground mb-8 opacity-0"
-          style={{ fontSize: 'clamp(3rem, 6vw, 5.5rem)' }}
+          className="ftr-heading font-display font-bold uppercase leading-[0.9] tracking-[-0.05em] text-center text-portal-foreground mb-8"
+          style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}
         >
           A Trust-Centric
           <br />
@@ -155,16 +137,16 @@ const FooterSection = () => {
         </h2>
 
         {/* ── Description ────────────────────────────────────────────────────── */}
-        <p className="ftr-desc text-portal-foreground/40 font-body text-base leading-relaxed text-center max-w-xl mx-auto mb-16 opacity-0">
+        <p className="ftr-desc text-portal-foreground/40 font-body text-base leading-relaxed text-center max-w-xl mx-auto mb-16">
           BErozgar transforms informal student practices into a structured,
           trusted platform for academic exchange, accommodation discovery,
           and daily living support.
         </p>
 
         {/* ── Stats row ──────────────────────────────────────────────────────── */}
-        <div className="ftr-stats grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-12 mb-16 max-w-4xl mx-auto">
+        <div className="ftr-stats flex flex-col sm:flex-row justify-between items-center sm:items-start gap-8 md:gap-12 mb-16 w-full mx-auto">
           {STATS.map((s) => (
-            <div key={s.label} className="ftr-stat text-center sm:text-left opacity-0 flex flex-col items-center sm:items-start">
+            <div key={s.label} className="ftr-stat text-center sm:text-left flex flex-col items-center sm:items-start w-full sm:w-1/3">
               <p className="text-portal-foreground/25 font-mono text-[9px] uppercase tracking-[0.4em] mb-2">
                 {s.label}
               </p>
@@ -179,11 +161,11 @@ const FooterSection = () => {
         <div className="h-px bg-portal-foreground/10 mb-12" />
 
         {/* ── Module quick-links ─────────────────────────────────────────────── */}
-        <div className="ftr-modules flex flex-wrap justify-center gap-x-8 gap-y-3 mb-14">
+        <div className="ftr-modules flex flex-wrap justify-center gap-x-8 gap-y-6 mb-14">
           {MODULES.map((mod) => (
             <span
               key={mod}
-              className="ftr-module font-mono text-[9px] uppercase tracking-[0.4em] text-portal-foreground/25 hover:text-[#a3ff12] transition-colors duration-300 cursor-default opacity-0"
+              className="ftr-module font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] text-portal-foreground/60 hover:text-[#a3ff12] transition-colors duration-300 cursor-default"
             >
               {mod}
             </span>
@@ -191,13 +173,13 @@ const FooterSection = () => {
         </div>
 
         {/* ── Core Principles ────────────────────────────────────────────────── */}
-        <div className="ftr-principles grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-20">
+        <div className="ftr-principles grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-20 w-full">
           {PRINCIPLES.map((p) => (
-            <div key={p.title} className="ftr-principle border-l border-[#a3ff12]/20 pl-4 opacity-0">
-              <h3 className="text-portal-foreground font-display text-xs uppercase tracking-wider mb-1">
+            <div key={p.title} className="ftr-principle border-l border-[#a3ff12]/20 pl-4 w-full">
+              <h3 className="text-portal-foreground font-display text-sm md:text-xs uppercase tracking-wider mb-2">
                 {p.title}
               </h3>
-              <p className="text-portal-foreground/35 text-xs font-body leading-relaxed">
+              <p className="text-portal-foreground/50 text-xs font-body leading-relaxed">
                 {p.desc}
               </p>
             </div>
@@ -205,13 +187,13 @@ const FooterSection = () => {
         </div>
 
         {/* ── Bottom bar ─────────────────────────────────────────────────────── */}
-        <div className="ftr-bottom">
-          <div className="ftr-divider h-px bg-portal-foreground/10 mb-7" style={{ transformOrigin: 'left' }} />
-          <div className="flex flex-col md:flex-row justify-between items-center gap-3">
-            <p className="ftr-bottom-text text-portal-foreground/25 font-mono text-[9px] uppercase tracking-[0.3em] opacity-0">
+        <div className="ftr-bottom w-full">
+          <div className="ftr-divider h-px bg-portal-foreground/20 mb-7" />
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="ftr-bottom-text text-portal-foreground/40 font-mono text-[10px] uppercase tracking-[0.3em] text-center md:text-left">
               © 2026 BErozgar — Rozgar for Resources
             </p>
-            <p className="ftr-bottom-text text-portal-foreground/25 font-mono text-[9px] uppercase tracking-[0.3em] opacity-0">
+            <p className="ftr-bottom-text text-portal-foreground/40 font-mono text-[10px] uppercase tracking-[0.3em] text-center md:text-right">
               Non-Commercial · Privacy-Aware · Admin-Governed
             </p>
           </div>

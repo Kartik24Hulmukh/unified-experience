@@ -627,7 +627,7 @@ html, body {
   /* Removed aggressive overflow-x to allow specific containers to scroll */
 }
 #root {
-  overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100vw;
 }
 /* Increase contrast on disabled inputs */

@@ -1,4 +1,4 @@
-﻿
+
 import { useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -62,10 +62,10 @@ const TYPE_COLORS: Record<string, string> = {
  * (avoids ScrollTrigger pin:true which conflicts with Lenis smooth scroll).
  *
  * Scroll flow:
- *   1. Section scrolls into view ΓåÆ cards + header fade/slide in.
+ *   1. Section scrolls into view → cards + header fade/slide in.
  *   2. Sticky inner element locks at viewport top.
- *   3. User scrolls further ΓåÆ horizontal track translates left (scrubbed).
- *   4. Sticky releases ΓåÆ footer enters from below.
+ *   3. User scrolls further → horizontal track translates left (scrubbed).
+ *   4. Sticky releases → footer enters from below.
  */
 const CampusEventsSection = () => {
   const containerRef = useRef<HTMLDivElement>(null); // outer ΓÇö height set dynamically
@@ -78,10 +78,11 @@ const CampusEventsSection = () => {
 
     // ΓöÇΓöÇ Height calculation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     // Container height = 100vh + travelDistance so that scrolling through the
-    // full container maps 1-to-1 with the full horizontal travel of the track.
+    // full container maps to the horizontal travel. Multiplying by 0.7 
+    // makes the scroll slightly faster and smoother without fatigue.
     const updateHeight = () => {
       const travel = Math.max(0, track.scrollWidth - window.innerWidth);
-      container.style.height = `${window.innerHeight + travel}px`;
+      container.style.height = `${window.innerHeight + (travel * 0.7)}px`;
     };
 
     // Must fire BEFORE each ScrollTrigger.refresh() recalculates positions
@@ -212,7 +213,7 @@ const CampusEventsSection = () => {
 
             <div className="mt-10 flex items-center gap-2 text-portal-foreground/15">
               <span className="font-mono text-[9px] uppercase tracking-[0.3em]">Scroll to explore</span>
-              <span className="text-sm">ΓåÆ</span>
+              <span className="text-sm">→</span>
             </div>
           </div>
 
@@ -307,7 +308,7 @@ const CampusEventsSection = () => {
                       </span>
                     </div>
                     <span className="text-portal-foreground/20 font-mono text-[8px] uppercase tracking-widest group-hover:text-portal-foreground/40 transition-colors duration-300">
-                      EXPLORE ΓåÆ
+                      EXPLORE →
                     </span>
                   </div>
 

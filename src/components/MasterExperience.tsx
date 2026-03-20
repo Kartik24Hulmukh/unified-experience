@@ -57,19 +57,17 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
     <div className="w-full h-full flex flex-row items-stretch">
       <div className="w-full lg:w-[62%] h-full flex flex-col justify-center">
         <div className="max-w-[900px] w-full px-6 sm:px-12 md:px-20 lg:px-24">
-          <div className="module-item mb-6 border-l-2 border-[#a3ff12] pl-6 opacity-60">
-            <p className="text-[#a3ff12] text-[10px] font-mono uppercase tracking-[0.4em] mb-1">CORE_SYST_V_01 // SECURE_LINK</p>
-          </div>
+
           <nav className="flex flex-col gap-1 md:gap-2">
             {modules.map((module) => (
               <div key={module.id} data-module-id={module.id} data-module-path={module.path} className="module-item group relative cursor-pointer" role="button" tabIndex={0} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={handleClick}>
                 <div className="flex items-center gap-6 md:gap-8 py-4 md:py-6 px-4 md:px-6 group-hover:bg-white/[0.04] transition-[background-color] duration-500">
                   <span className={`font-mono text-base md:text-lg transition-[color,opacity] duration-500 shrink-0 w-8 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/15'}`}>{module.number}</span>
                     <div className="flex-1 min-w-0">
-                      <h3 className={`text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform truncate ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
+                      <h3 className={`text-3xl sm:text-4xl md:text-5xl lg:text-4xl xl:text-5xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.85] tracking-[-0.05em] translate-z-0 will-change-transform ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
                     <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.4em] uppercase mt-2 transition-[color,opacity] duration-500 ${activeModule === module.id ? 'text-white/50' : 'text-white/5'}`}>{module.subtitle}</p>
                   </div>
-                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>ΓåÆ</span>
+                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>→</span>
                 </div>
                 <div className={`h-px w-full transition-[background-color] duration-500 ${activeModule === module.id ? 'bg-[#a3ff12]/30' : 'bg-white/5'}`} />
               </div>
@@ -158,21 +156,18 @@ const MasterExperience = () => {
       if (items) tl.fromTo(items, { y: 40, opacity: 0, rotateX: 10 }, { y: 0, opacity: 1, rotateX: 0, duration: 0.8, stagger: 0.08, ease: 'power4.out' }, 0.7);
 
       // Add idle scrolling time so the 4 modules stay visible for the user to read/click
-      tl.to({}, { duration: 1.5 });
-      
-      // Graceful exit animation before the sticky container unpins
-      tl.to(modulesRef.current, { y: -50, opacity: 0, duration: 0.6, ease: 'power2.inOut' });
+      tl.to({}, { duration: 0.8 });
     });
     return () => ctx.revert();
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[350vh] bg-portal">
+    <div ref={containerRef} className="h-[200vh] bg-portal">
       <div ref={stickyRef} className="sticky top-0 h-[100dvh] w-full overflow-hidden bg-portal">
 
         <div ref={baseLayerRef} className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
-          <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-portal">
-            {/* WebGL fluid splash ΓÇö desktop only; mobile skips the heavy GPU sim */}
+          <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-background">
+            {/* WebGL fluid splash — desktop only; mobile skips the heavy GPU sim */}
             {isHeavyMounted && (
               <Suspense fallback={null}>
                 <SplashCursor
@@ -190,22 +185,54 @@ const MasterExperience = () => {
                 />
               </Suspense>
             )}
-            {/* Hero text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none select-none">
-              <div className="relative flex flex-col items-center justify-center leading-[0.75] w-full text-center">
-                {['TRUST', 'CENTRIC', 'EXCHANGE'].map((txt, i) => (
-                  <span
-                    key={txt}
-                    className={`${txt === 'EXCHANGE' ? 'text-[11vw] sm:text-[14vw]' : 'text-[14vw]'} md:text-[14vw] font-display font-black uppercase tracking-[-0.04em] whitespace-nowrap block text-white/90`}
-                    style={{ marginTop: i > 0 ? (isMobile ? '1vw' : '-1vw') : '0', lineHeight: isMobile ? '1.1' : '0.75' }}
-                  >
-                    {txt}
-                  </span>
-                ))}
+            {/* High-End Editorial Hero Text */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none select-none px-4 md:px-8">
+              <div className="w-full max-w-[1800px] flex flex-col relative overflow-visible mt-12 md:mt-0 gap-2 md:gap-4">
+                
+                {/* Row 1: Left */}
+                <div className="animate-fade-in-up flex items-end justify-start w-full relative z-10" style={{ animationDelay: '0.1s', opacity: 0 }}>
+                  <div className="flex-col items-start pb-4 mr-8 hidden lg:flex">
+                     <span className="text-[10px] uppercase font-mono tracking-widest text-foreground/40 mb-4 whitespace-nowrap">
+                       Verified User Base
+                     </span>
+                     <div className="w-[1px] h-12 bg-foreground/30"></div>
+                  </div>
+                  <h1 className="text-[17vw] sm:text-[14vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0">
+                    TRUST
+                  </h1>
+                </div>
+
+                {/* Row 2: Right */}
+                <div className="animate-fade-in-up flex items-start justify-end w-full relative z-20" style={{ animationDelay: '0.2s', opacity: 0 }}>
+                  <h1 className="text-[17vw] sm:text-[14vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0 pr-2 lg:pr-8">
+                    CENTRIC
+                  </h1>
+                  <div className="flex-col items-end pt-4 ml-8 hidden lg:flex">
+                     <div className="w-[1px] h-12 bg-foreground/30 mb-4"></div>
+                     <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-foreground/40 max-w-[140px] text-right leading-relaxed">
+                       Admin Authenticated
+                     </span>
+                  </div>
+                </div>
+
+                {/* Row 3: Left Offset */}
+                <div className="animate-fade-in-up flex justify-start lg:justify-center w-full relative z-30" style={{ animationDelay: '0.3s', opacity: 0 }}>
+                  <h1 className="text-[15vw] sm:text-[13vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.05em] text-foreground leading-[0.75] m-0 p-0 relative ml-8 lg:ml-0">
+                    <span className="animate-fade-in-up absolute -top-4 -left-6 md:-top-6 md:-left-12 text-2xl md:text-5xl text-[#a3ff12]/80 font-serif italic font-light" style={{ animationDelay: '0.6s', opacity: 0 }}>
+                      *
+                    </span>
+                    EXCHANGE
+                  </h1>
+                </div>
+
               </div>
-              <p className="mt-8 text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">
-                Scroll to explore
-              </p>
+              
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-60">
+                <div className="w-[1px] h-16 bg-gradient-to-b from-foreground/50 to-transparent"></div>
+                <p className="text-[9px] font-mono uppercase tracking-[0.4em] text-foreground">
+                  Scroll to explore
+                </p>
+              </div>
             </div>
           </div>
         </div>

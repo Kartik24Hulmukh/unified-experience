@@ -65,7 +65,7 @@ function applyDisputeTransition(
 }
 
 async function loadDisputeForUpdate(
-  tx: typeof prisma,
+  tx: Omit<typeof prisma, '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'>,
   disputeId: string,
 ): Promise<Array<{
   id: string;

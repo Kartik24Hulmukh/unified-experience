@@ -83,7 +83,7 @@ function setRefreshCookie(reply: FastifyReply, rawToken: string): void {
   reply.setCookie(REFRESH_COOKIE.NAME, rawToken, {
     httpOnly: true,
     secure: env.COOKIE_SECURE || env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: REFRESH_COOKIE.PATH,
     maxAge: REFRESH_COOKIE.MAX_AGE_SECONDS,
     ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
@@ -94,7 +94,7 @@ function clearRefreshCookie(reply: FastifyReply): void {
   reply.clearCookie(REFRESH_COOKIE.NAME, {
     httpOnly: true,
     secure: env.COOKIE_SECURE || env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: REFRESH_COOKIE.PATH,
     ...(env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
   });
@@ -209,7 +209,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       });
 
       console.log('[Server] /refresh: Success');
-      setRefreshCookie(reply, tokens.refreshToken);
+      if (tokens.refreshToken) {
+        setRefreshCookie(reply, tokens.refreshToken);
+      }
 
       return reply.status(200).send({
         accessToken: tokens.accessToken,

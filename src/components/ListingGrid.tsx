@@ -1,6 +1,5 @@
-import { useRef, useLayoutEffect, memo } from 'react';
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
-import gsap from 'gsap';
 import { ExternalLink, Shield } from 'lucide-react';
 
 interface ListingItem {
@@ -16,49 +15,9 @@ interface ListingGridProps {
     items: ListingItem[];
 }
 
-const ListingGrid = memo(function ListingGrid({ items }: ListingGridProps) {
-    const gridRef = useRef<HTMLDivElement>(null);
-
-    // useLayoutEffect for GSAP animations to prevent flash of unstyled content
-    useLayoutEffect(() => {
-        if (!gridRef.current || items.length === 0) return;
-
-        const ctx = gsap.context(() => {
-            // Respect the OS/browser "reduce motion" preference.
-            // When enabled we instantly reveal cards — no opacity-0 start that
-            // would leave content invisible if the animation were skipped.
-            const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (prefersReduced) {
-                gsap.set(gridRef.current!.querySelectorAll('.listing-card-entry'), {
-                    opacity: 1, y: 0, rotateX: 0, clearProps: 'all',
-                });
-                return;
-            }
-
-            // Staggered entry for grid items — scoped via querySelectorAll
-            const cards = gridRef.current?.querySelectorAll('.listing-card-entry');
-            if (!cards?.length) return;
-            gsap.fromTo(
-                cards,
-                { opacity: 0, y: 30, rotateX: 10 },
-                {
-                    opacity: 1,
-                    y: 0,
-                    rotateX: 0,
-                    stagger: 0.08,
-                    duration: 0.8,
-                    ease: "power3.out",
-                    clearProps: "all"
-                }
-            );
-        }, gridRef);
-
-        return () => ctx.revert();
-    }, [items]);
-
+const ListingGrid = memo(({ items }: ListingGridProps) => {
     return (
         <div
-            ref={gridRef}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 md:px-0"
         >
             {items.length === 0 && (
@@ -66,23 +25,28 @@ const ListingGrid = memo(function ListingGrid({ items }: ListingGridProps) {
                     <div className="w-16 h-16 border border-white/10 rotate-45 flex items-center justify-center mb-6">
                         <div className="w-4 h-4 bg-white/10" />
                     </div>
-                    <p className="text-white/40 text-sm font-bold uppercase tracking-widest">No listings found</p>
+                    <p className="text-white/40 text-sm font-bold uppercase tracking-widest">No results found</p>
                 </div>
             )}
-            {items.map((item) => (
+            {items.map((item, index) => (
                 <Link
                     key={item.id}
                     to={`/listing/${item.id}`}
-                    className="listing-card-entry group relative aspect-[4/5] bg-white/5 border border-white/10 overflow-hidden cursor-pointer block"
+                    className="listing-card-entry group relative aspect-[4/5] bg-white/5 border border-white/10 overflow-hidden cursor-pointer block animate-in fade-in slide-in-from-bottom-8 duration-700 ease-out fill-mode-both"
+                    style={{ animationDelay: `${index * 80}ms` }}
                 >
                     {/* Image Layer */}
                     <div className="absolute inset-0 grayscale group-hover:grayscale-0 transition-all duration-700 overflow-hidden">
                         {item.image ? (
                             <img src={item.image} alt={item.title} width={400} height={500} className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-700 transform-gpu" loading="lazy" />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-black/40">
-                                <div className="w-16 h-16 border border-white/10 rotate-45 flex items-center justify-center">
-                                    <div className="w-4 h-4 bg-white/10" />
+                            <div className="w-full h-full flex items-center justify-center bg-black/40 relative overflow-hidden">
+                                <div className="absolute inset-0 opacity-20" style={{
+                                    backgroundImage: `linear-gradient(rgba(0,212,170,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,170,0.3) 1px, transparent 1px)`,
+                                    backgroundSize: '20px 20px'
+                                }} />
+                                <div className="w-16 h-16 border border-primary/20 rotate-45 flex items-center justify-center relative z-10 bg-black/50 backdrop-blur-sm">
+                                    <div className="w-4 h-4 bg-primary/40 animate-pulse" />
                                 </div>
                             </div>
                         )}

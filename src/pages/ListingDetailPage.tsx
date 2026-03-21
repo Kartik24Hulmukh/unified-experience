@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import gsap from 'gsap';
-import { ArrowLeft, Shield, Clock, Tag, MapPin, User, MessageSquare } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Shield, Clock, Tag, MapPin, User, MessageSquare, Edit2, Trash2, Phone, Eye, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { useListing, useCreateRequest } from '@/hooks/api/useApi';
+import { useListing, useCreateRequest, useUpdateListing, useDeleteListing } from '@/hooks/api/useApi';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRestriction } from '@/hooks/useRestriction';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const ListingDetailPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -25,6 +27,17 @@ const ListingDetailPage = () => {
 
     const [message, setMessage] = useState('');
     const [requestSent, setRequestSent] = useState(false);
+
+    // Edit/Delete state
+    const { user } = useAuth();
+    const isOwner = user?.id && listingResponse?.data?.owner?.id === user.id;
+    const updateListing = useUpdateListing();
+    const deleteListing = useDeleteListing();
+    
+    // Modal states
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [editFormData, setEditFormData] = useState({ title: '', price: '', category: '', description: '' });
 
     // MED-UNMOUNT FIX: track mount state so mutation callbacks don't fire
     // setState/toast on an unmounted component after user navigates away.
@@ -107,7 +120,7 @@ const ListingDetailPage = () => {
     return (
         <div ref={containerRef} className="min-h-[100dvh] bg-portal text-white">
             {/* Header */}
-            <header className="border-b border-white/5 px-4 pt-24 pb-6 sm:px-8 md:px-16 md:pt-28 md:pb-8">
+            <header className="border-b border-white/5 px-4 pt-24 pb-6 sm:px-8 md:px-16 md:pt-28 md:pb-8 flex justify-between items-center">
                 <Button
                     variant="ghost"
                     onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/resale')}
@@ -116,6 +129,35 @@ const ListingDetailPage = () => {
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back
                 </Button>
+
+                {isOwner && (
+                    <div className="flex gap-4">
+                        <Button 
+                            variant="outline" 
+                            className="bg-black/40 border-primary/30 text-primary hover:bg-primary/10 tracking-widest uppercase text-[10px]"
+                            onClick={() => {
+                                setEditFormData({
+                                    title: listing.title,
+                                    price: listing.price,
+                                    category: listing.category,
+                                    description: listing.description || ''
+                                });
+                                setIsEditModalOpen(true);
+                            }}
+                        >
+                            <Edit2 className="w-3.5 h-3.5 mr-2" />
+                            Edit
+                        </Button>
+                        <Button 
+                            variant="destructive"
+                            className="tracking-widest uppercase text-[10px]"
+                            onClick={() => setIsDeleteModalOpen(true)}
+                        >
+                            <Trash2 className="w-3.5 h-3.5 mr-2" />
+                            Delete
+                        </Button>
+                    </div>
+                )}
             </header>
 
             {/* Detail Content */}
@@ -160,13 +202,15 @@ const ListingDetailPage = () => {
                     </div>
                 </div>
 
-                {/* Visual Section: Carousel & Map (Accommodation Specific) */}
-                {listing.module === 'accommodation' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                {/* Visual Section: Carousel & Map */}
+                {(listing.module === 'accommodation' || listing.module === 'resale') && (
+                    <div className={`grid grid-cols-1 ${listing.module === 'accommodation' ? 'md:grid-cols-2' : ''} gap-10`}>
                         {/* Image Carousel Mockup (Unified Style) */}
                         <div className="space-y-4">
-                            <h3 className="text-white/40 uppercase tracking-widest text-[9px] font-bold">Property Visuals</h3>
-                            <div className="aspect-square border border-white/10 bg-black/40 relative group overflow-hidden">
+                            <h3 className="text-white/40 uppercase tracking-widest text-[9px] font-bold">
+                                {listing.module === 'accommodation' ? 'Property Visuals' : 'Item Visuals'}
+                            </h3>
+                            <div className="aspect-video sm:aspect-square border border-white/10 bg-black/40 relative group overflow-hidden">
                                 <div className="absolute inset-0 z-0">
                                     <img 
                                         src="/logo.png" 
@@ -201,22 +245,24 @@ const ListingDetailPage = () => {
                             </div>
                         </div>
 
-                        {/* Location Map (Responsive Iframe) */}
-                        <div className="space-y-4">
-                            <h3 className="text-white/40 uppercase tracking-widest text-[9px] font-bold">Location Protocol</h3>
-                            <div className="aspect-square border border-white/10 bg-black/40 overflow-hidden relative">
-                                <iframe 
-                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15077.53123456789!2d72.8532!3d19.176!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDEwJzMzLjYiTiA3MsKwNTEnMTEuNSJF!5e0!3m2!1sen!2sin!4v1634567890123!5m2!1sen!2sin"
-                                    width="100%"
-                                    height="100%"
-                                    style={{ border: 0, filter: 'grayscale(1) invert(0.9) brightness(0.8)' }}
-                                    allowFullScreen
-                                    loading="lazy"
-                                />
-                                {/* Scanneline Effect Overlay */}
-                                <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(0,191,255,0.03)_1px,transparent_1px)] bg-[length:100%_4px]" />
+                        {/* Location Map (Responsive Iframe) - Only for Accommodation */}
+                        {listing.module === 'accommodation' && (
+                            <div className="space-y-4">
+                                <h3 className="text-white/40 uppercase tracking-widest text-[9px] font-bold">Location Protocol</h3>
+                                <div className="aspect-square border border-white/10 bg-black/40 overflow-hidden relative">
+                                    <iframe 
+                                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15077.53123456789!2d72.8532!3d19.176!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTnCsDEwJzMzLjYiTiA3MsKwNTEnMTEuNSJF!5e0!3m2!1sen!2sin!4v1634567890123!5m2!1sen!2sin"
+                                        width="100%"
+                                        height="100%"
+                                        style={{ border: 0, filter: 'grayscale(1) invert(0.9) brightness(0.8)' }}
+                                        allowFullScreen
+                                        loading="lazy"
+                                    />
+                                    {/* Scanneline Effect Overlay */}
+                                    <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(0,191,255,0.03)_1px,transparent_1px)] bg-[length:100%_4px]" />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
 
@@ -274,7 +320,7 @@ const ListingDetailPage = () => {
                         <div className="flex items-center gap-3">
                             <User className="w-5 h-5 text-primary" />
                             <h3 className="text-lg font-display font-bold uppercase tracking-widest">
-                                {(listing.module === 'mess' || listing.module === 'hospital') ? 'Contact Service' : 'Request Exchange'}
+                                {(listing.module === 'mess' || listing.module === 'hospital' || listing.module === 'accommodation') ? 'Contact Owner' : listing.module === 'academics' ? 'Resource Access' : 'Request Exchange'}
                             </h3>
                         </div>
 
@@ -298,7 +344,27 @@ const ListingDetailPage = () => {
                             </div>
                         )}
 
-                        {(listing.module === 'resale' || listing.module === 'accommodation') && (
+                        {listing.module === 'accommodation' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <Button 
+                                    className="h-12 bg-white text-black hover:bg-white/90 rounded-none font-bold uppercase text-[10px] tracking-widest"
+                                    onClick={() => window.open(`tel:+919876543210`, '_self')}
+                                >
+                                    <Phone className="w-4 h-4 mr-2" />
+                                    Contact Owner
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    className="h-12 border-white/10 bg-black/40 hover:bg-black/60 rounded-none text-white font-bold uppercase text-[10px] tracking-widest"
+                                    onClick={() => toast({ title: "Viewing Requested", description: "The owner will contact you shortly."})}
+                                >
+                                    <Clock className="w-4 h-4 mr-2" />
+                                    Book Viewing
+                                </Button>
+                            </div>
+                        )}
+
+                        {listing.module === 'resale' && (
                             <>
                                 {!isAuthenticated ? (
                                     <div className="text-center py-6 space-y-4">
@@ -353,30 +419,135 @@ const ListingDetailPage = () => {
                                 )}
                             </>
                         )}
-                    </div>
-                )}
-
-                {/* Non-approved listing status message */}
-                {statusKey !== 'approved' && (
-                    <div className="p-8 border border-white/10 bg-black/20 space-y-3 text-center">
-                        <Shield className="w-8 h-8 text-white/20 mx-auto" />
-                        <p className="text-white/40 text-sm uppercase font-bold tracking-widest">
-                            {statusKey === 'interest_received'
-                                ? 'This listing is under consideration by another buyer. Check back — it becomes available if their request is declined.'
-                                : statusKey === 'in_transaction'
-                                    ? 'This listing is in an active exchange and temporarily unavailable. Check back if the exchange is cancelled.'
-                                    : statusKey === 'pending_review'
-                                        ? 'This listing is pending admin review and is not yet available for exchange.'
-                                        : statusKey === 'rejected'
-                                            ? 'This listing has been rejected and is no longer available.'
-                                            : 'This listing is currently unavailable for exchange.'}
-                        </p>
-                        <Link to="/resale" className="inline-block mt-2 text-primary text-[10px] uppercase font-bold tracking-widest hover:underline">
-                            ← Browse Available Listings
-                        </Link>
+                        
+                        {listing.module === 'academics' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <Button 
+                                    className="h-12 bg-white text-black hover:bg-white/90 rounded-none font-bold uppercase text-[10px] tracking-widest"
+                                    onClick={() => {
+                                        toast({ title: "Downloading...", description: "Resource download started."});
+                                    }}
+                                >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Resource
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    className="h-12 border-white/10 bg-black/40 hover:bg-black/60 rounded-none text-white font-bold uppercase text-[10px] tracking-widest"
+                                    onClick={() => {
+                                        toast({ title: "Preview Available", description: "Resource preview opened in new tab."});
+                                        window.open('#', '_blank');
+                                    }}
+                                >
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Preview Document
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
+
+            {/* Edit Modal */}
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                <DialogContent className="bg-portal border-white/10 text-white sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-display font-bold uppercase italic tracking-widest text-primary">Edit Listing</DialogTitle>
+                        <DialogDescription className="text-white/40">Update the details of your listing below.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-white/50">Title</label>
+                            <Input 
+                                value={editFormData.title} 
+                                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })} 
+                                className="bg-black/40 border-white/10 rounded-none focus-visible:ring-1 focus-visible:ring-primary h-12"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-widest font-bold text-white/50">Price</label>
+                                <Input 
+                                    type="number"
+                                    value={editFormData.price} 
+                                    onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })} 
+                                    className="bg-black/40 border-white/10 rounded-none focus-visible:ring-1 focus-visible:ring-primary h-12"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-widest font-bold text-white/50">Category</label>
+                                <Input 
+                                    value={editFormData.category} 
+                                    onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })} 
+                                    className="bg-black/40 border-white/10 rounded-none focus-visible:ring-1 focus-visible:ring-primary h-12"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-white/50">Description</label>
+                            <textarea 
+                                value={editFormData.description} 
+                                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })} 
+                                className="w-full bg-black/40 border border-white/10 text-sm rounded-none focus-visible:ring-1 focus-visible:ring-primary p-3 min-h-[100px] text-white"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button variant="ghost" className="text-white/50 hover:text-white rounded-none uppercase text-[10px] tracking-widest font-bold" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+                        <Button 
+                            className="bg-primary text-black hover:bg-teal-400 rounded-none uppercase text-[10px] tracking-widest font-bold"
+                            disabled={updateListing.isPending}
+                            onClick={() => {
+                                updateListing.mutate(
+                                    { id: listing.id, data: { ...editFormData, price: parseFloat(editFormData.price || '0') } as any },
+                                    {
+                                        onSuccess: () => {
+                                            toast({ title: 'Listing updated.', description: 'Your listing has been updated successfully.' });
+                                            setIsEditModalOpen(false);
+                                        },
+                                        onError: () => toast({ title: 'Error', description: 'Failed to update listing.', variant: 'destructive' })
+                                    }
+                                );
+                            }}
+                        >
+                            {updateListing.isPending ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Modal */}
+            <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+                <AlertDialogContent className="bg-portal border-red-500/20 text-white">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2 text-red-400 font-display text-2xl uppercase tracking-widest italic">
+                            <AlertTriangle className="w-6 h-6" /> Delete Listing?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-white/60">
+                            This action cannot be undone. This will permanently remove your listing and cancel any active exchange requests.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-6">
+                        <AlertDialogCancel className="bg-transparent text-white hover:bg-white/10 border-white/20 rounded-none uppercase text-[10px] tracking-widest font-bold h-10">Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-none uppercase text-[10px] tracking-widest font-bold h-10"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                deleteListing.mutate({ id: listing.id }, {
+                                    onSuccess: () => {
+                                        toast({ title: 'Listing deleted' });
+                                        setIsDeleteModalOpen(false);
+                                        navigate('/resale');
+                                    },
+                                    onError: () => toast({ title: 'Error', description: 'Could not delete listing.', variant: 'destructive' })
+                                });
+                            }}
+                        >
+                            {deleteListing.isPending ? 'Deleting...' : 'Yes, Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

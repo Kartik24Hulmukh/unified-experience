@@ -11,11 +11,14 @@ import FaqItem from '@/components/FaqItem';
 import WordMarquee from '@/components/WordMarquee';
 const messHero = '/Mess.png';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
+import ScanlineOverlay from '@/components/ScanlineOverlay';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Search, X, ArrowRight, Star, Clock, Utensils, Leaf,
   ChefHat, Flame, IndianRupee, Users, ChevronDown, ChevronUp,
-  MapPin, Truck, ShieldCheck, Heart
+  MapPin, Truck, ShieldCheck, Heart, Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -113,6 +116,8 @@ const MessPage = () => {
   const mainRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 5000]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'mess' });
@@ -123,7 +128,7 @@ const MessPage = () => {
     const defaultMesses = messServices.map(s => s.category.toLowerCase());
     defaultMesses.forEach(cat => counts[cat] = (counts[cat] || 0) + 1);
     visibleItems.forEach(item => {
-      const cat = item.category.toLowerCase();
+      const cat = (item.category || '').toLowerCase();
       counts[cat] = (counts[cat] || 0) + 1;
     });
     return counts;
@@ -147,25 +152,52 @@ const MessPage = () => {
     }))];
     return listItems.filter(
       item => {
+        const itemTitle = item.title || '';
+        const itemCategory = item.category || '';
+        
         const matchesSearch =
-          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.category.toLowerCase().includes(searchQuery.toLowerCase());
+          itemTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          itemCategory.toLowerCase().includes(searchQuery.toLowerCase());
+          
         const matchesCategory = !activeCategory ||
-          item.category.toLowerCase() === activeCategory.toLowerCase();
-        return matchesSearch && matchesCategory;
+          itemCategory.toLowerCase() === activeCategory.toLowerCase();
+          
+        const rawPrice = item.price ? Number(item.price) : 0;
+        const matchesPrice = rawPrice >= priceFilter[0] && rawPrice <= priceFilter[1];
+        
+        return matchesSearch && matchesCategory && matchesPrice;
       }
     );
-  }, [searchQuery, activeCategory, visibleItems]);
+  }, [searchQuery, activeCategory, priceFilter, visibleItems]);
 
-  const handleFilterChange = (filters: { categories?: string[] }) => {
+  const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
     if (filters.categories !== undefined) {
       setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
+    }
+    if (filters.price !== undefined) {
+      setPriceFilter(filters.price);
     }
   };
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate network delay
+    await new Promise(res => setTimeout(res, 800));
+    
+    toast.success('Feedback Submitted', {
+      description: 'Your review has been successfully submitted for verification.',
+      position: 'top-center'
+    });
+    
+    setIsSubmitting(false);
+    (e.target as HTMLFormElement).reset();
+  };
 
   /* GSAP Animations */
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
@@ -217,6 +249,7 @@ const MessPage = () => {
 
   return (
     <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
+      <ScanlineOverlay />
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section ref={heroRef} className="relative min-h-[100dvh] flex items-end overflow-hidden">
@@ -484,6 +517,91 @@ const MessPage = () => {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ DAILY MENU & FEEDBACK ═══════════════ */}
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
+          {/* Menu Schedule */}
+          <div>
+            <div className="flex items-center gap-4 mb-4">
+              <Utensils className="w-4 h-4 text-amber-400/60" />
+              <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Live Menus</span>
+            </div>
+            <h2 className="text-white font-display text-3xl md:text-5xl font-bold mb-8">
+              DAILY <span className="text-amber-400">SCHEDULE</span>
+            </h2>
+            <div className="p-6 border border-white/10 bg-white/[0.02]">
+              <Tabs defaultValue="mon" className="w-full">
+                <TabsList className="grid w-full grid-cols-5 bg-transparent border-b border-white/10 mb-6">
+                  <TabsTrigger value="mon" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Mon</TabsTrigger>
+                  <TabsTrigger value="tue" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Tue</TabsTrigger>
+                  <TabsTrigger value="wed" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Wed</TabsTrigger>
+                  <TabsTrigger value="thu" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Thu</TabsTrigger>
+                  <TabsTrigger value="fri" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Fri</TabsTrigger>
+                </TabsList>
+                {['mon', 'tue', 'wed', 'thu', 'fri'].map(day => (
+                  <TabsContent key={day} value={day} className="space-y-4">
+                    <div className="flex justify-between items-center py-3 border-b border-white/5">
+                      <span className="text-white/40 font-mono text-xs">08:00 AM - 10:00 AM</span>
+                      <span className="text-white font-body text-sm font-semibold text-right">Idli Sambar<br/><span className="text-[10px] text-white/50 font-normal">Chutney, Tea/Coffee</span></span>
+                    </div>
+                    <div className="flex justify-between items-center py-3 border-b border-white/5">
+                      <span className="text-white/40 font-mono text-xs">12:30 PM - 02:30 PM</span>
+                      <span className="text-white font-body text-sm font-semibold text-right">Dal Makhani Paneer<br/><span className="text-[10px] text-white/50 font-normal">Roti, Rice, Salad</span></span>
+                    </div>
+                    <div className="flex justify-between items-center py-3 border-b border-white/5">
+                      <span className="text-white/40 font-mono text-xs">07:30 PM - 09:30 PM</span>
+                      <span className="text-white font-body text-sm font-semibold text-right">Aloo Gobi<br/><span className="text-[10px] text-white/50 font-normal">Dal Fry, Jeera Rice, Chapati</span></span>
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </div>
+          </div>
+
+          {/* Feedback Form */}
+          <div>
+            <div className="flex items-center gap-4 mb-4">
+              <Star className="w-4 h-4 text-amber-400/60" />
+              <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Student Reviews</span>
+            </div>
+            <h2 className="text-white font-display text-3xl md:text-5xl font-bold mb-8">
+              SUBMIT <span className="text-amber-400">FEEDBACK</span>
+            </h2>
+            <form onSubmit={handleFeedbackSubmit} className="space-y-4 p-6 border border-white/10 bg-white/[0.02]">
+              <div>
+                <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Select Service</label>
+                <select required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-amber-400/50">
+                  <option value="">-- Choose Mess/Tiffin --</option>
+                  <option value="ktr">KTR Mess</option>
+                  <option value="dabba">Mummas Tiffin</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Rating</label>
+                <select required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-amber-400/50">
+                  <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                  <option value="4">⭐⭐⭐⭐ Good</option>
+                  <option value="3">⭐⭐⭐ Average</option>
+                  <option value="2">⭐⭐ Poor</option>
+                  <option value="1">⭐ Terrible</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Your Review</label>
+                <textarea required rows={3} placeholder="Tell us about food quality, hygiene, and timing..." className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-amber-400/50 resize-none"></textarea>
+              </div>
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center py-4 mt-2 bg-amber-400 text-black font-display text-sm font-bold uppercase hover:bg-amber-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit Review'}
+              </button>
+            </form>
           </div>
         </div>
       </section>

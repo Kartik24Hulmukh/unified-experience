@@ -197,14 +197,14 @@ const MasterExperience = () => {
                      </span>
                      <div className="w-[1px] h-12 bg-foreground/30"></div>
                   </div>
-                  <h1 className="text-[17vw] sm:text-[14vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0">
+                  <h1 className="text-[14vw] sm:text-[14vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0">
                     TRUST
                   </h1>
                 </div>
 
                 {/* Row 2: Right */}
                 <div className="animate-fade-in-up flex items-start justify-end w-full relative z-20" style={{ animationDelay: '0.2s', opacity: 0 }}>
-                  <h1 className="text-[17vw] sm:text-[14vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0 pr-2 lg:pr-8">
+                  <h1 className="text-[13vw] sm:text-[14vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0 pr-2 lg:pr-8">
                     CENTRIC
                   </h1>
                   <div className="flex-col items-end pt-4 ml-8 hidden lg:flex">
@@ -217,7 +217,7 @@ const MasterExperience = () => {
 
                 {/* Row 3: Left Offset */}
                 <div className="animate-fade-in-up flex justify-start lg:justify-center w-full relative z-30" style={{ animationDelay: '0.3s', opacity: 0 }}>
-                  <h1 className="text-[15vw] sm:text-[13vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.05em] text-foreground leading-[0.75] m-0 p-0 relative ml-8 lg:ml-0">
+                  <h1 className="text-[12vw] sm:text-[13vw] lg:text-[11vw] font-display font-medium uppercase tracking-[-0.05em] text-foreground leading-[0.75] m-0 p-0 relative ml-8 lg:ml-0">
                     <span className="animate-fade-in-up absolute -top-4 -left-6 md:-top-6 md:-left-12 text-2xl md:text-5xl text-[#a3ff12]/80 font-serif italic font-light" style={{ animationDelay: '0.6s', opacity: 0 }}>
                       *
                     </span>

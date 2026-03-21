@@ -61,6 +61,7 @@ export const queryKeys = {
   // Admin extras
   adminAudit: ['admin', 'audit'] as const,
   adminFraud: ['admin', 'fraud'] as const,
+  adminUsers: ['admin', 'users'] as const,
 } as const;
 
 /* ═══════════════════════════════════════════════════
@@ -376,6 +377,36 @@ export function useUpdateListingStatus() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.pending });
       // V3-09: also bust module-filtered and search-filtered listing caches
       queryClient.invalidateQueries({ queryKey: ['listings'], exact: false });
+    },
+  });
+}
+
+export function useUpdateListing() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data, idempotencyKey }: { id: string; data: Partial<CreateListingInput>; idempotencyKey?: string }) => {
+      return api.put<ApiResponse<Listing>>(`/listings/${id}`, data, {
+        headers: idempotencyKey ? { 'x-idempotency-key': idempotencyKey } : {},
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.listings.all });
+      queryClient.invalidateQueries({ queryKey: ['listings'], exact: false });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+    },
+  });
+}
+
+export function useDeleteListing() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id }: { id: string }) => api.delete<{ message: string }>(`/listings/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.listings.all });
+      queryClient.invalidateQueries({ queryKey: ['listings'], exact: false });
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
     },
   });
 }
@@ -703,6 +734,27 @@ export interface AdminUserDrilldown {
   };
 }
 
+export interface AdminUserListItem {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  privilegeLevel?: string;
+  isRestricted: boolean;
+  createdAt: string;
+  adminFlags: number;
+}
+
+export interface AdminUserListResponse {
+  users: AdminUserListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export function useAdminAuditLog(
   options?: Partial<UseQueryOptions<ApiResponse<AuditLogEntry[]>, ApiError>>,
 ) {
@@ -722,5 +774,39 @@ export function useAdminFraudDashboard(
     queryFn: ({ signal }) => api.get<ApiResponse<FraudDashboardData>>('/admin/fraud', { signal }),
     staleTime: 60_000,
     ...options,
+  });
+}
+
+export function useAdminUsers(
+  filters?: { page?: number; limit?: number; search?: string },
+  options?: Partial<UseQueryOptions<ApiResponse<AdminUserListResponse>, ApiError>>,
+) {
+  const params = new URLSearchParams();
+  if (filters?.page) params.set('page', String(filters?.page));
+  if (filters?.limit) params.set('limit', String(filters?.limit));
+  if (filters?.search) params.set('search', filters?.search);
+  const queryString = params.toString();
+
+  return useQuery({
+    queryKey: [...queryKeys.adminUsers, filters],
+    queryFn: ({ signal }) => 
+      api.get<ApiResponse<AdminUserListResponse>>(`/admin/users${queryString ? `?${queryString}` : ''}`, { signal }),
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useUpdateUserStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, action }: { userId: string; action: 'ban' | 'verify' | 'unban' }) =>
+      api.post<{ message: string }>(`/admin/users/${userId}/status`, { action }),
+    onSuccess: (_, { userId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.user(userId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminFraud });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.stats });
+    },
   });
 }

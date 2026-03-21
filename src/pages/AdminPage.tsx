@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import gsap from 'gsap';
 import logger from '@/lib/logger';
 import {
@@ -58,7 +58,8 @@ import {
 import { canRunAdminRecovery, canModerateContent } from '@/lib/user-journey';
 import {
     useAdminPending, useAdminStats, useUpdateListingStatus,
-    useDisputes, useUpdateDisputeStatus, useAdminAuditLog, useAdminFraudDashboard, useAdminRecovery
+    useDisputes, useUpdateDisputeStatus, useAdminAuditLog, useAdminFraudDashboard, useAdminRecovery,
+    useAdminUsers, useUpdateUserStatus
 } from '@/hooks/api/useApi';
 import type { PendingItem, Dispute, AuditLogEntry } from '@/hooks/api/useApi';
 import {
@@ -102,6 +103,26 @@ const AdminPage = () => {
     const auditLogs = useMemo(() => auditResponse?.data ?? [], [auditResponse?.data]);
     const fraudData = fraudResponse?.data ?? null;
     const fraudUsers = useMemo(() => fraudData?.flaggedUsers ?? [], [fraudData]);
+
+    const [userPage, setUserPage] = useState(1);
+    const { data: usersResponse, isLoading: usersLoading, refetch: refetchUsers } = useAdminUsers(
+        { page: userPage, limit: 10, search: activeTab === 'users' ? searchQuery : undefined },
+        { enabled: activeTab === 'users' }
+    );
+    const usersData = usersResponse?.data;
+    const updateUserStatus = useUpdateUserStatus();
+
+    const handleUserAction = (userId: string, action: 'ban' | 'verify' | 'unban') => {
+        updateUserStatus.mutate({ userId, action }, {
+            onSuccess: () => {
+                toast({ title: 'Success', description: `User status updated to ${action}.` });
+                refetchUsers();
+            },
+            onError: (err) => {
+                toast({ title: 'Update Failed', variant: 'destructive', description: err.message || 'Could not update user.' });
+            }
+        });
+    };
 
     const pendingListings = useMemo(() => pendingResponse?.data ?? [], [pendingResponse?.data]);
     const stats = statsResponse?.data;
@@ -615,22 +636,98 @@ const AdminPage = () => {
                                     {stats ? stats.totalUsers : '--'} TOTAL
                                 </Badge>
                             </div>
-                            <div className="border border-white/10 bg-black/20 p-12">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    <div className="p-6 border border-white/10 bg-white/5 space-y-2">
-                                        <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Total Users</p>
-                                        <span className="text-3xl font-display font-bold">{stats?.totalUsers ?? '--'}</span>
+                            <div className="border border-white/10 bg-black/20 p-6 overflow-hidden">
+                                {usersLoading ? (
+                                    <div className="flex h-32 items-center justify-center">
+                                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                     </div>
-                                    <div className="p-6 border border-white/10 bg-white/5 space-y-2">
-                                        <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Active Disputes</p>
-                                        <span className="text-3xl font-display font-bold text-amber-400">{stats?.activeDisputes ?? '--'}</span>
+                                ) : !usersData?.users.length ? (
+                                    <div className="flex flex-col h-40 items-center justify-center text-white/40 space-y-2">
+                                        <Users className="w-8 h-8" />
+                                        <p className="text-sm font-display tracking-widest uppercase">No Users Found</p>
                                     </div>
-                                    <div className="p-6 border border-white/10 bg-white/5 space-y-2">
-                                        <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Completed Exchanges</p>
-                                        <span className="text-3xl font-display font-bold text-emerald-400">{stats?.completedExchanges ?? '--'}</span>
+                                ) : (
+                                    <div className="w-full overflow-x-auto">
+                                        <Table className="w-full">
+                                            <TableHeader>
+                                                <TableRow className="border-white/10 hover:bg-transparent">
+                                                    <TableHead className="text-[10px] uppercase tracking-widest text-primary font-bold min-w-[200px]">Entity</TableHead>
+                                                    <TableHead className="text-[10px] uppercase tracking-widest text-primary font-bold min-w-[150px]">Role</TableHead>
+                                                    <TableHead className="text-[10px] uppercase tracking-widest text-primary font-bold min-w-[150px]">Status</TableHead>
+                                                    <TableHead className="text-[10px] uppercase tracking-widest text-primary font-bold text-right min-w-[120px]">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {usersData.users.map((u) => (
+                                                    <TableRow key={u.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                                                        <TableCell className="py-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-bold tracking-wide">{u.fullName}</span>
+                                                                <span className="text-xs text-white/40 font-mono">{u.email}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <div className="flex flex-col justify-center">
+                                                                <span className="text-xs">{u.role}</span>
+                                                                {u.privilegeLevel && <span className="text-[10px] text-white/40">{u.privilegeLevel}</span>}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {u.isRestricted ? (
+                                                                <Badge variant="destructive" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 text-[10px]">Restricted</Badge>
+                                                            ) : u.role === 'STUDENT_VERIFIED' ? (
+                                                                <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 text-[10px]">Verified</Badge>
+                                                            ) : (
+                                                                <Badge variant="outline" className="text-white/40 text-[10px]">Unverified</Badge>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                {u.role !== 'STUDENT_VERIFIED' && !u.isRestricted && (
+                                                                    <Button size="sm" variant="outline" className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400 h-7" onClick={() => handleUserAction(u.id, 'verify')} disabled={updateUserStatus.isPending}>
+                                                                        Verify
+                                                                    </Button>
+                                                                )}
+                                                                {u.isRestricted ? (
+                                                                    <Button size="sm" variant="outline" className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400 h-7" onClick={() => handleUserAction(u.id, 'unban')} disabled={updateUserStatus.isPending}>
+                                                                        Unban
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button size="sm" variant="outline" className="border-red-500/30 text-red-500 hover:bg-red-500/10 hover:text-red-400 h-7" onClick={() => handleUserAction(u.id, 'ban')} disabled={updateUserStatus.isPending}>
+                                                                        Ban
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
                                     </div>
-                                </div>
-                                <p className="text-white/20 text-[10px] uppercase tracking-widest mt-8 text-center">Search is available on moderation tabs with list data</p>
+                                )}
+                                {usersData && usersData.pagination.totalPages > 1 && (
+                                    <div className="flex items-center justify-between mt-4 border-t border-white/10 pt-4">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={userPage === 1}
+                                            onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                                        >
+                                            Prev
+                                        </Button>
+                                        <span className="text-xs text-white/50">
+                                            Page {usersData.pagination.page} of {usersData.pagination.totalPages}
+                                        </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            disabled={userPage === usersData.pagination.totalPages}
+                                            onClick={() => setUserPage(p => p + 1)}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

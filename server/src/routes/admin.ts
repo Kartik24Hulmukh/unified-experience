@@ -36,11 +36,45 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(200).send(apiData(stats));
   });
 
+  /** GET /users — list all users */
+  app.get('/users', async (request, reply) => {
+    const query = request.query as Record<string, string>;
+    const parsePage = (s: string | undefined) => {
+      const n = s ? parseInt(s, 10) : NaN;
+      return Number.isFinite(n) && n > 0 ? n : undefined;
+    };
+    const result = await adminService.getAllUsers({
+      page: parsePage(query.page),
+      limit: parsePage(query.limit),
+      search: query.search,
+    });
+    return reply.status(200).send(apiData(result));
+  });
+
   /** GET /users/:userId — full user drilldown */
   app.get('/users/:userId', async (request, reply) => {
     const { userId } = request.params as { userId: string };
     const drilldown = await adminService.getUserDrilldown(userId);
     return reply.status(200).send(apiData(drilldown));
+  });
+
+  /** POST /users/:userId/status — ban/verify user */
+  app.post('/users/:userId/status', async (request, reply) => {
+    const { userId } = request.params as { userId: string };
+    const body = request.body as { action: 'ban' | 'verify' | 'unban' };
+    const result = await adminService.updateUserStatus(userId, body);
+    
+    await adminService.createAuditLog({
+      actorId: request.userId!,
+      action: `USER_${body.action.toUpperCase()}`,
+      entityType: 'User',
+      entityId: userId,
+      actorRole: request.userRole,
+      ipAddress: request.ip,
+      metadata: { newStatus: body.action },
+    });
+
+    return reply.status(200).send(apiData(result));
   });
 
   /** GET /audit — audit trail (field names mapped to match frontend AuditLogEntry) */

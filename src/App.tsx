@@ -197,8 +197,9 @@ const App = () => (
                     <ErrorBoundary boundary="LazyRoutes">
                       <Suspense fallback={<FullPageLoader />}>
                         <Routes>
-                        {/* Public routes */}
-                        <Route path="/" element={<RouteErrorBoundary name="Landing"><LandingPage /></RouteErrorBoundary>} />
+                        {/* Landing Page is Index (MasterExperience + Campus Events) */}
+                        <Route path="/" element={<RouteErrorBoundary name="Landing"><Index /></RouteErrorBoundary>} />
+                        <Route path="/splash" element={<RouteErrorBoundary name="Splash"><LandingPage /></RouteErrorBoundary>} />
                         <Route path="/login" element={<RouteErrorBoundary name="Login"><LoginPage /></RouteErrorBoundary>} />
                         <Route path="/signup" element={<RouteErrorBoundary name="Signup"><SignupPage /></RouteErrorBoundary>} />
                         <Route path="/verify" element={<RouteErrorBoundary name="Verify"><VerificationPage /></RouteErrorBoundary>} />
@@ -218,7 +219,7 @@ const App = () => (
                         <Route path="/jobs" element={<RouteErrorBoundary name="Jobs"><JobsPage /></RouteErrorBoundary>} />
                         <Route path="/mess" element={<RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary>} />
                         <Route path="/hospital" element={<RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary>} />
-                        <Route path="/agency" element={<RouteErrorBoundary name="Agency"><AgentsHub /></RouteErrorBoundary>} />
+                        <Route path="/agency" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="Agency"><AgentsHub /></RouteErrorBoundary></ProtectedRoute>} />
 
                         {/* Profile — any authenticated user */}
                         <Route path="/profile" element={<ProtectedRoute><RouteErrorBoundary name="Profile"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />

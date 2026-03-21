@@ -267,18 +267,44 @@ const ResalePage = () => {
       {/* Browse Section */}
       <section className="py-20 sm:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5">
         <div className="max-w-7xl mx-auto space-y-16">
-          <ModuleSearchFilter
-            onSearch={setSearchQuery}
-            onFilterChange={handleFilterChange}
-            resultCount={filteredItems.length}
-            categories={[
-              { id: 'books', label: 'Books', count: categoryCounts.books ?? 0 },
-              { id: 'calculators', label: 'Calculators', count: categoryCounts.calculators ?? 0 },
-              { id: 'instruments', label: 'Instruments', count: categoryCounts.instruments ?? 0 },
-              { id: 'lab', label: 'Lab Equipment', count: categoryCounts.lab ?? 0 }
-            ]}
-            priceRange={[0, 5000]}
-          />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex-1">
+              <ModuleSearchFilter
+                onSearch={setSearchQuery}
+                onFilterChange={handleFilterChange}
+                resultCount={filteredItems.length}
+                categories={[
+                  { id: 'books', label: 'Books', count: categoryCounts.books ?? 0 },
+                  { id: 'calculators', label: 'Calculators', count: categoryCounts.calculators ?? 0 },
+                  { id: 'instruments', label: 'Instruments', count: categoryCounts.instruments ?? 0 },
+                  { id: 'lab', label: 'Lab Equipment', count: categoryCounts.lab ?? 0 }
+                ]}
+                priceRange={[0, 5000]}
+              />
+            </div>
+            
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  toast({ title: 'Sign In Required', description: 'Please sign in to list items for exchange.', variant: 'destructive' });
+                  return;
+                }
+                if (!canCreateListing) {
+                  toast({ title: 'Action Unavailable', description: 'Your account is currently restricted from creating listings.', variant: 'destructive' });
+                  return;
+                }
+                setIsModalOpen(true);
+              }}
+              className={`flex-shrink-0 px-8 py-3 h-12 flex items-center justify-center font-display uppercase tracking-widest text-xs font-bold group relative overflow-hidden transition-colors ${isAuthenticated && canCreateListing
+                  ? 'bg-portal text-portal-foreground border border-portal-foreground hover:bg-portal-foreground hover:text-portal'
+                  : 'bg-portal-foreground/10 text-portal/30 border border-portal-foreground/10'
+                }`}
+            >
+              <span className="relative z-10 flex items-center">
+                Sell Item <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
+              </span>
+            </button>
+          </div>
 
           {/* Use a properly-sized skeleton grid while data loads so the page height
                is stable (no CLS) and the user knows content is incoming. */}

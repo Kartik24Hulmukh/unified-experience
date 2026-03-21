@@ -57,10 +57,10 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   signup: (fullName: string, email: string, password: string) => Promise<void>;
-  verifyOtp: (otp: string) => Promise<void>;
-  googleSignIn: (credential: string) => Promise<void>;
+  verifyOtp: (otp: string) => Promise<User>;
+  googleSignIn: (credential: string) => Promise<User>;
   logout: () => void;
 }
 
@@ -345,6 +345,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         trust,
         restriction,
       });
+
+      return user;
     } catch (err) {
       setState((prev) => ({ ...prev, isLoading: false }));
       throw err;
@@ -420,6 +422,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         trust: { status: 'GOOD_STANDING', reasons: [] },
         restriction: { isRestricted: false, blockedActions: [], reasons: [] },
       });
+
+      return user;
     } catch (err) {
       setState((prev) => ({ ...prev, isLoading: false }));
       throw err;
@@ -494,6 +498,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         trust,
         restriction,
       });
+
+      return user;
     } catch (err) {
       setState((prev) => ({ ...prev, isLoading: false }));
       throw err;

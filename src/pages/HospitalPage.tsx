@@ -11,12 +11,14 @@ import FaqItem from '@/components/FaqItem';
 import WordMarquee from '@/components/WordMarquee';
 const hospitalHero = '/Hospital.png';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
+import ScanlineOverlay from '@/components/ScanlineOverlay';
 import {
   Search, X, ArrowRight, Phone, Clock, Activity,
   Heart, Stethoscope, Pill, AlertTriangle,
   ChevronDown, MapPin, Shield, Siren,
-  Cross, Ambulance, Thermometer, BriefcaseMedical
+  Cross, Ambulance, Thermometer, BriefcaseMedical, Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -134,6 +136,8 @@ const HospitalPage = () => {
   const mainRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 1000]);
+  const [isBooking, setIsBooking] = useState(false);
 
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'hospital' });
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
@@ -143,7 +147,7 @@ const HospitalPage = () => {
     const defaultHospitals = hospitals.map(h => h.category.toLowerCase());
     defaultHospitals.forEach(cat => counts[cat] = (counts[cat] || 0) + 1);
     visibleItems.forEach(item => {
-      const cat = item.category.toLowerCase();
+      const cat = (item.category || '').toLowerCase();
       counts[cat] = (counts[cat] || 0) + 1;
     });
     return counts;
@@ -169,25 +173,52 @@ const HospitalPage = () => {
     ];
     return listItems.filter(
       item => {
+        const itemTitle = item.title || '';
+        const itemCategory = item.category || '';
+        
         const matchesSearch =
-          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.category.toLowerCase().includes(searchQuery.toLowerCase());
+          itemTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          itemCategory.toLowerCase().includes(searchQuery.toLowerCase());
+          
         const matchesCategory = !activeCategory ||
-          item.category.toLowerCase() === activeCategory.toLowerCase();
-        return matchesSearch && matchesCategory;
+          itemCategory.toLowerCase() === activeCategory.toLowerCase();
+          
+        const rawPrice = item.price ? Number(item.price) : 0;
+        const matchesPrice = rawPrice >= priceFilter[0] && rawPrice <= priceFilter[1];
+        
+        return matchesSearch && matchesCategory && matchesPrice;
       }
     );
-  }, [searchQuery, activeCategory, visibleItems]);
+  }, [searchQuery, activeCategory, priceFilter, visibleItems]);
 
-  const handleFilterChange = (filters: { categories?: string[] }) => {
+  const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
     if (filters.categories !== undefined) {
       setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
+    }
+    if (filters.price !== undefined) {
+      setPriceFilter(filters.price);
     }
   };
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  const handleAppointmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsBooking(true);
+    
+    // Simulate network delay
+    await new Promise(res => setTimeout(res, 1200));
+
+    toast.success('Booking Confirmed', {
+      description: 'Your appointment request has been submitted. Look out for a confirmation SMS shortly.',
+      position: 'top-center'
+    });
+
+    setIsBooking(false);
+    (e.target as HTMLFormElement).reset();
+  };
 
   /* GSAP Animations */
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
@@ -241,6 +272,7 @@ const HospitalPage = () => {
 
   return (
     <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
+      <ScanlineOverlay />
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section ref={heroRef} className="relative min-h-[100dvh] flex items-end overflow-hidden">
@@ -484,6 +516,116 @@ const HospitalPage = () => {
                 <p className="text-white/25 text-xs font-body leading-relaxed group-hover:text-white/40 transition-colors">{tip.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ APPOINTMENTS & DOCTORS ═══════════════ */}
+      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 hosp-reveal">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
+          {/* Availability Grids */}
+          <div>
+            <div className="flex items-center gap-4 mb-4">
+              <Stethoscope className="w-4 h-4 text-emerald-400/60" />
+              <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Doctor Schedules</span>
+            </div>
+            <h2 className="text-white font-display text-3xl md:text-5xl font-bold mb-8">
+              AVAILABILITY <span className="text-emerald-400">GRID</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Doctor 1 */}
+              <div className="p-4 border border-white/10 bg-white/[0.02] hover:border-emerald-400/30 transition-colors">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-white font-display font-bold uppercase">Dr. A. Sharma</h3>
+                    <p className="text-emerald-400/70 text-[10px] font-mono uppercase tracking-widest">General Physician</p>
+                  </div>
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-white/40">Mon - Wed</span>
+                    <span className="text-white/80">09:00 - 14:00</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-white/40">Thu - Fri</span>
+                    <span className="text-white/80">14:00 - 19:00</span>
+                  </div>
+                </div>
+              </div>
+              {/* Doctor 2 */}
+              <div className="p-4 border border-white/10 bg-white/[0.02] hover:border-emerald-400/30 transition-colors">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-white font-display font-bold uppercase">Dr. M. Patel</h3>
+                    <p className="text-emerald-400/70 text-[10px] font-mono uppercase tracking-widest">Psychologist</p>
+                  </div>
+                  <div className="w-2 h-2 bg-white/20 rounded-full" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-white/40">Tue, Thu</span>
+                    <span className="text-white/80">10:00 - 16:00</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-white/40">Saturday</span>
+                    <span className="text-white/80">09:00 - 13:00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Appointment Form */}
+          <div>
+            <div className="flex items-center gap-4 mb-4">
+              <Clock className="w-4 h-4 text-emerald-400/60" />
+              <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Book a slot</span>
+            </div>
+            <h2 className="text-white font-display text-3xl md:text-5xl font-bold mb-8">
+              APPOINTMENT <span className="text-emerald-400">BOOKING</span>
+            </h2>
+            <form onSubmit={handleAppointmentSubmit} className="space-y-4 p-6 border border-white/10 bg-white/[0.02]">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Facility</label>
+                  <select required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50">
+                    <option value="">-- Choose Center --</option>
+                    <option value="campus">Campus Medical Center</option>
+                    <option value="cooper">Dr. R.N. Cooper Hospital</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Doctor</label>
+                  <select required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50">
+                    <option value="">-- Any Available --</option>
+                    <option value="sharma">Dr. A. Sharma</option>
+                    <option value="patel">Dr. M. Patel</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Date</label>
+                  <input type="date" required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50 [color-scheme:dark]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Time</label>
+                  <input type="time" required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50 [color-scheme:dark]" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Symptoms / Reason</label>
+                <textarea required rows={2} placeholder="Briefly describe why you are visiting..." className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50 resize-none"></textarea>
+              </div>
+              <button 
+                type="submit" 
+                disabled={isBooking}
+                className="w-full flex items-center justify-center py-4 mt-2 bg-emerald-400 text-black font-display text-sm font-bold uppercase hover:bg-emerald-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isBooking ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Booking'}
+              </button>
+            </form>
           </div>
         </div>
       </section>

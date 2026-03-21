@@ -107,7 +107,7 @@ const SignupPage = () => {
                 <div className="order-1 relative group">
                     <div className="absolute -inset-1 bg-gradient-to-l from-primary/20 to-teal-500/20 rounded-2xl blur-xl transition-all duration-1000 group-hover:opacity-100 opacity-50" />
 
-                    <div className="relative bg-[#0a0a0a] border border-white/10 p-8 md:p-12 rounded-2xl shadow-2xl backdrop-blur-3xl overflow-hidden">
+                    <div className="relative z-10 bg-[#0a0a0a] border border-white/10 p-8 md:p-12 rounded-2xl shadow-2xl backdrop-blur-3xl overflow-hidden">
                         {/* ── Google Sign-In — Primary CTA ── */}
                         {hasRealGIS && (
                         <Button

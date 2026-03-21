@@ -6,9 +6,10 @@ import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
 import ListingFormModal from '@/components/ListingFormModal';
 import ResourceListingForm from '@/components/ResourceListingForm';
-const academicsHero = '/Academics.jpg';
 import { Search, X, Plus } from 'lucide-react';
 import { useListings } from '@/hooks/api/useApi';
+
+const academicsHero = '/Academics.jpg';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,6 +55,7 @@ const AcademicsPage = () => {
   const canCreateListing = canPerform('CREATE_LISTING');
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 1000]);
 
   // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ 
@@ -69,61 +71,48 @@ const AcademicsPage = () => {
       notes: 1,    // Default items
     };
     visibleItems.forEach(item => {
-      const cat = item.category.toLowerCase();
-      counts[cat] = (counts[cat] || 0) + 1;
+      const cat = (item.category || '').toLowerCase();
+      if (cat) {
+        counts[cat] = (counts[cat] || 0) + 1;
+      }
     });
     return counts;
   }, [visibleItems]);
 
   const filteredItems = useMemo(() => {
-    const defaultAcademics = [
-      {
-        id: 'acad1',
-        title: 'BTech First Year Notes',
-        price: '350',
-        category: 'notes',
-        institution: 'MCTRGIT',
-        image: '/Academics.jpg',
-        semester: '1'
-      },
-      {
-        id: 'acad2',
-        title: 'Engineering Mechanics Books',
-        price: '500',
-        category: 'books',
-        institution: 'MCTRGIT',
-        image: '/Academics.jpg',
-        semester: '2'
-      }
-    ];
-    const combinedVisible = [...defaultAcademics, ...visibleItems];
-
-    return combinedVisible.filter(item => {
+    return visibleItems.filter(item => {
+      const itemCategory = item.category || '';
       const matchesSearch =
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase());
+        itemCategory.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesCategory = !activeCategory ||
-        item.category.toLowerCase() === activeCategory.toLowerCase();
+        itemCategory.toLowerCase() === activeCategory.toLowerCase();
       
       // Branch filter: check if item has branch property or if category/title includes branch code
       const itemBranch = (item as any).branch || '';
       const matchesBranch = !selectedBranch ||
         itemBranch.toLowerCase() === selectedBranch.toLowerCase() ||
-        item.category.toLowerCase().includes(selectedBranch.toLowerCase()) ||
+        itemCategory.toLowerCase().includes(selectedBranch.toLowerCase()) ||
         item.title.toLowerCase().includes(selectedBranch.toLowerCase());
 
       // Semester filter
       const itemSemester = (item as any).semester?.toString() || '';
       const matchesSemester = !selectedSemester || itemSemester === selectedSemester.toString();
 
-      return matchesSearch && matchesCategory && matchesBranch && matchesSemester;
-    });
-  }, [searchQuery, activeCategory, selectedBranch, selectedSemester, visibleItems]);
+      const rawPrice = item.price ? Number(item.price) : 0;
+      const matchesPrice = rawPrice >= priceFilter[0] && rawPrice <= priceFilter[1];
 
-  const handleFilterChange = (filters: { categories?: string[] }) => {
+      return matchesSearch && matchesCategory && matchesBranch && matchesSemester && matchesPrice;
+    });
+  }, [searchQuery, activeCategory, selectedBranch, selectedSemester, priceFilter, visibleItems]);
+
+  const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
     if (filters.categories !== undefined) {
       setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
+    }
+    if (filters.price !== undefined) {
+      setPriceFilter(filters.price);
     }
   };
 
@@ -313,15 +302,6 @@ const AcademicsPage = () => {
             ) : (
               <>
                 <ListingGrid items={filteredItems} />
-
-                {filteredItems.length === 0 && (
-                  <div className="py-24 text-center space-y-6">
-                    <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
-                      <X className="w-8 h-8 text-white -rotate-45" />
-                    </div>
-                    <p className="text-white/20 uppercase tracking-[0.4em] font-bold text-xs italic">Academic Index Mismatch: Entity Not Found</p>
-                  </div>
-                )}
               </>
             )}
           </div>

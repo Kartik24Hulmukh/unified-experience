@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import gsap from 'gsap';
 import logger from '@/lib/logger';
 import {
@@ -379,7 +379,7 @@ function MyListings({ userId }: { userId: string }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {listings.map((item) => (
-            <div key={item.id} className="p-4 border border-white/10 bg-black/20 space-y-3 group hover:border-primary/30 transition-all">
+            <Link key={item.id} to={`/listing/${item.id}`} className="block p-4 border border-white/10 bg-black/20 space-y-3 group hover:border-primary/30 transition-all">
               <div className="flex justify-between items-start">
                 <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${
                   item.status === 'APPROVED' ? 'border-emerald-500/30 text-emerald-400' : 
@@ -396,7 +396,7 @@ function MyListings({ userId }: { userId: string }) {
                 <span className="text-white/40">₹{item.price}</span>
                 <span className="text-white/20">{new Date(item.createdAt).toLocaleDateString()}</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

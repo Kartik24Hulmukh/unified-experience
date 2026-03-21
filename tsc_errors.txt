@@ -1,0 +1,10 @@
+﻿src/pages/ListingDetailPage.tsx(5,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(6,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(7,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(8,82): error TS2307: Cannot find module '@/hooks/api/useApi' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(9,47): error TS2307: Cannot find module '@/components/FallbackUI' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(10,26): error TS2307: Cannot find module '@/hooks/use-toast' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(11,25): error TS2307: Cannot find module '@/contexts/AuthContext' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(12,32): error TS2307: Cannot find module '@/hooks/useRestriction' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(13,85): error TS2307: Cannot find module '@/components/ui/dialog' or its corresponding type declarations.
+src/pages/ListingDetailPage.tsx(14,167): error TS2307: Cannot find module '@/components/ui/alert-dialog' or its corresponding type declarations.

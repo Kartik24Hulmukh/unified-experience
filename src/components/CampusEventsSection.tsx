@@ -10,7 +10,7 @@ const events = [
     date: 'MAR 15',
     type: 'TECHNICAL',
     title: 'TECHFEST 2026',
-    desc: 'Annual technical festival ΓÇö hackathons, competitive coding, robotics and IoT exhibitions open to all branches.',
+    desc: 'Annual technical festival — hackathons, competitive coding, robotics and IoT exhibitions open to all branches.',
     tag: 'Tech Fest',
   },
   {
@@ -34,7 +34,7 @@ const events = [
     date: 'APR 18',
     type: 'ACADEMIC',
     title: 'RESEARCH EXPO',
-    desc: 'Annual research paper presentation and poster symposium ΓÇö showcase your innovations to faculty and peers.',
+    desc: 'Annual research paper presentation and poster symposium — showcase your innovations to faculty and peers.',
     tag: 'Symposium',
   },
   {
@@ -197,7 +197,7 @@ const CampusEventsSection = () => {
 
             <p className="text-portal-foreground/40 font-body text-sm leading-relaxed"
                style={{ maxWidth: '240px' }}>
-              Upcoming fests, workshops &amp; institutional events at MCTRGIT ΓÇö
+              Upcoming fests, workshops &amp; institutional events at MCTRGIT —
               stay connected, never miss out.
             </p>
 
@@ -269,7 +269,7 @@ const CampusEventsSection = () => {
                     className="font-mono text-[9px] uppercase tracking-[0.45em] mb-3"
                     style={{ color: `${color}70` }}
                   >
-                    {event.date} ┬╖ 2026
+                    {event.date} · 2026
                   </p>
 
                   {/* Title */}
@@ -308,7 +308,7 @@ const CampusEventsSection = () => {
                       </span>
                     </div>
                     <span className="text-portal-foreground/20 font-mono text-[8px] uppercase tracking-widest group-hover:text-portal-foreground/40 transition-colors duration-300">
-                      EXPLORE →
+                      EXPLORE &rarr;
                     </span>
                   </div>
 

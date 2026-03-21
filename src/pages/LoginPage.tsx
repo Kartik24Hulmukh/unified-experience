@@ -68,11 +68,11 @@ const LoginPage = () => {
     async function onSubmit(values: z.infer<typeof loginSchema>) {
         setIsLoading(true);
         try {
-            await login(values.email, values.password);
+            const loggedInUser = await login(values.email, values.password);
             toast({ title: "Access Granted", description: "Welcome to the BErozgar Trust Exchange." });
             
             // Immediately navigate here as a fallback
-            const destination = user?.role === 'admin' ? '/admin' : from;
+            const destination = loggedInUser?.role === 'admin' ? '/admin' : from;
             navigate(destination, { replace: true });
         } catch (err) {
             hasRedirected.current = false;
@@ -87,10 +87,10 @@ const LoginPage = () => {
         if (isGoogleLoading) return;
         try {
             const result = await promptSignIn();
-            await googleSignIn(result.credential);
+            const loggedInUser = await googleSignIn(result.credential);
             toast({ title: "Google Sign-In Successful", description: `Signed in as ${result.email || 'your Google account'}` });
             
-            const destination = user?.role === 'admin' ? '/admin' : from;
+            const destination = loggedInUser?.role === 'admin' ? '/admin' : from;
             navigate(destination, { replace: true });
         } catch (err) {
             hasRedirected.current = false;

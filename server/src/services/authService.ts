@@ -606,18 +606,40 @@ export async function refreshAccessToken(
     throw new UnauthorizedError('Invalid refresh token');
   }
 
+  // Expired?
+  if (record.expiresAt < new Date()) {
+    throw new UnauthorizedError('Refresh token expired. Please log in again.');
+  }
+
   // Revoked? Possible breach — revoke ALL tokens for this user
   if (record.revokedAt) {
+    // ── Grace Period (Network Race Condition Fix) ──
+    // If multiple tabs refresh simultaneously, the second request hits this block.
+    // If revoked < 30s ago, return a fresh access token without rotating the refresh token.
+    const graceWindowMs = 30 * 1000;
+    const isWithinGracePeriod = Date.now() - record.revokedAt.getTime() < graceWindowMs;
+
+    if (isWithinGracePeriod) {
+      // Just issue a new access token. The other concurrent request is rotating the cookie.
+      const accessToken = signAccessToken({
+        sub: record.user.id,
+        email: record.user.email,
+        role: record.user.role,
+      });
+      // Return the SAME old raw token so the caller can refresh the cookie with the old token.
+      // Wait, returning the old raw token will overwrite the new cookie with the old one?
+      // Setting rawOldToken as the refresh token tells the route to Set-Cookie again.
+      // Tab 1 will Set-Cookie new_token, Tab 2 will Set-Cookie old_token => BOOM, session breaks.
+      // We must tell the route NOT to set a new cookie, or we generate a placeholder.
+      return { accessToken, refreshToken: '' }; // Handled specially by the route
+    }
+
+    // Outside grace period -> probable token theft / reuse
     await prisma.refreshToken.updateMany({
       where: { userId: record.userId },
       data: { revokedAt: new Date() },
     });
     throw new UnauthorizedError('Refresh token reuse detected. All sessions revoked.');
-  }
-
-  // Expired?
-  if (record.expiresAt < new Date()) {
-    throw new UnauthorizedError('Refresh token expired. Please log in again.');
   }
 
   // Rotate: revoke old, issue new — atomic

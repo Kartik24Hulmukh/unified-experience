@@ -13,6 +13,8 @@ export function getAdminSearchConfig(activeTab: AdminTab): { enabled: boolean; p
   switch (activeTab) {
     case 'pending':
       return { enabled: true, placeholder: 'Search pending listings...' };
+    case 'users':
+      return { enabled: true, placeholder: 'Search users by name or email...' };
     case 'disputes':
       return { enabled: true, placeholder: 'Search disputes...' };
     case 'logs':

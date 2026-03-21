@@ -301,7 +301,7 @@ const EssentialsPage = () => {
                         </span>
                       </div>
                       <div className="w-10 h-10 border border-white/10 flex items-center justify-center group-hover:border-white/20 transition-colors">
-                        <Icon className={`w-4 h-4 text-white/25 group-hover:${accentColor.featureIcon} transition-colors`} />
+                        <Icon className={`w-4 h-4 text-white/25 ${accentColor.featureIcon} transition-colors`} />
                       </div>
                     </div>
 

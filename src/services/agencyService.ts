@@ -66,10 +66,8 @@ class AgencyService {
   private githubToken: string | null = null;
 
   constructor() {
-    // These would typically come from environment variables or a secure vault
-    // For now, we look for placeholders that the user can fill
-    this.geminiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || null;
-    this.githubToken = (import.meta as any).env.VITE_GITHUB_TOKEN || null;
+    this.geminiKey = env.VITE_GEMINI_API_KEY || null;
+    this.githubToken = env.VITE_GITHUB_TOKEN || null;
   }
 
   /**
@@ -91,7 +89,7 @@ class AgencyService {
     }
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.geminiKey}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.geminiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,16 +102,17 @@ class AgencyService {
               and "message" (a concise, technical status update). 
               Only respond with the JSON array.`
             }]
-          }]
+          }],
+          generationConfig: {
+            responseMimeType: "application/json",
+          }
         })
       });
 
       const data = await response.json();
       const planText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
-      // Basic JSON cleaning if Gemini includes markdown
-      const cleanPlan = planText.replace(/```json|```/g, '').trim();
-      const dynamicSteps = JSON.parse(cleanPlan);
+      const dynamicSteps = JSON.parse(planText);
 
       return { success: true, mode: 'live', steps: dynamicSteps };
     } catch (error) {

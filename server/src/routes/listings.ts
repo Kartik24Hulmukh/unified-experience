@@ -78,4 +78,34 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(200).send(apiData(listing));
     },
   );
+
+  /** PUT /listings/:id — update listing details (auth required) */
+  app.put(
+    '/listings/:id',
+    {
+      preHandler: [authenticate, idempotency],
+      preValidation: validate(createListingSchema),
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const listing = await listingService.updateListing(
+        id,
+        request.body as CreateListingInput,
+        request.userId!,
+        request.userRole!,
+      );
+      return reply.status(200).send(apiData(listing));
+    },
+  );
+
+  /** DELETE /listings/:id — delete listing (auth required) */
+  app.delete(
+    '/listings/:id',
+    { preHandler: [authenticate] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      await listingService.deleteListing(id, request.userId!, request.userRole!);
+      return reply.status(200).send({ message: 'Listing deleted successfully' });
+    },
+  );
 }

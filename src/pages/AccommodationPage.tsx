@@ -113,6 +113,8 @@ const AccommodationPage = () => {
   const [activeArea, setActiveArea] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [heroLoaded, setHeroLoaded] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 30000]);
 
   const { displayedLines, isComplete } = useTypewriter(consoleLines, 25, 150, 800);
 
@@ -122,11 +124,33 @@ const AccommodationPage = () => {
 
   const filteredItems = useMemo(() => {
     return visibleItems.filter(
-      item =>
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+      item => {
+        const itemTitle = item.title || '';
+        const itemCategory = item.category || '';
+        
+        const matchesSearch =
+          itemTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          itemCategory.toLowerCase().includes(searchQuery.toLowerCase());
+          
+        const matchesCategory = !activeCategory ||
+          itemCategory.toLowerCase() === activeCategory.toLowerCase();
+          
+        const matchesPrice =
+          Number(item.price) >= priceFilter[0] && Number(item.price) <= priceFilter[1];
+          
+        return matchesSearch && matchesCategory && matchesPrice;
+      }
     );
-  }, [searchQuery, visibleItems]);
+  }, [searchQuery, activeCategory, priceFilter, visibleItems]);
+
+  const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
+    if (filters.categories !== undefined) {
+      setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
+    }
+    if (filters.price !== undefined) {
+      setPriceFilter(filters.price);
+    }
+  };
 
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -259,7 +283,7 @@ const AccommodationPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
+    <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground overflow-hidden relative">
 
       {/* ═══════════════ HERO SECTION ═══════════════ */}
       <section ref={heroRef} className="relative min-h-[100dvh] flex flex-col justify-between overflow-hidden">
@@ -437,7 +461,7 @@ const AccommodationPage = () => {
       <DataTicker />
 
       {/* ═══════════════ ZONE EXPLORER ═══════════════ */}
-      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 reveal-section">
+      <section className="py-10 sm:py-16 md:py-20 px-4 sm:px-8 md:px-16 reveal-section">
         <div className="max-w-7xl mx-auto">
           {/* Section header */}
           <div className="flex items-center gap-4 mb-4">
@@ -571,7 +595,7 @@ const AccommodationPage = () => {
       </section>
 
       {/* ═══════════════ SECURITY PROTOCOLS ═══════════════ */}
-      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 reveal-section">
+      <section className="py-10 sm:py-16 md:py-20 px-4 sm:px-8 md:px-16 border-t border-white/5 reveal-section">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <Database className="w-4 h-4 text-cyan-400/60" />
@@ -634,7 +658,7 @@ const AccommodationPage = () => {
       </section>
 
       {/* ═══════════════ BROWSE LISTINGS ═══════════════ */}
-      <section ref={browseRef} className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 reveal-section">
+      <section ref={browseRef} className="py-10 sm:py-16 md:py-20 px-4 sm:px-8 md:px-16 border-t border-white/5 reveal-section">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="flex items-center gap-4 mb-4">
             <Search className="w-4 h-4 text-cyan-400/60" />
@@ -648,7 +672,7 @@ const AccommodationPage = () => {
 
           <ModuleSearchFilter
             onSearch={setSearchQuery}
-            onFilterChange={() => {}}
+            onFilterChange={handleFilterChange}
             resultCount={filteredItems.length}
             categories={[
               { id: 'near', label: 'Near Campus', count: 2 },

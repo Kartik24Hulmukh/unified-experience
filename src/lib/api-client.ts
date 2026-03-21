@@ -164,12 +164,20 @@ export async function handleTokenRefresh(): Promise<string> {
       throw new ApiError('No active session', 'UNAUTHORIZED', 401);
     }
 
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-      credentials: 'include',  // sends httpOnly refresh cookie
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        credentials: 'include',  // sends httpOnly refresh cookie
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       // Refresh failed → full logout

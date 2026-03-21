@@ -124,13 +124,13 @@ const ContextNav = memo(function ContextNav() {
 
       if (isMenuOpen) {
         if (prefersReduced) {
-          gsap.set(menuRef.current!, { clipPath: 'circle(150% at calc(100% - 40px) 40px)' });
+          gsap.set(menuRef.current!, { clipPath: 'circle(150% at calc(100vw - 40px) 40px)' });
           gsap.set(menuRef.current!.querySelectorAll('.nav-item'), { opacity: 1, x: 0, clearProps: 'all' });
         } else {
           gsap.fromTo(
             menuRef.current!,
-            { clipPath: 'circle(0% at calc(100% - 40px) 40px)' },
-            { clipPath: 'circle(150% at calc(100% - 40px) 40px)', duration: 0.8, ease: 'power3.inOut' }
+            { clipPath: 'circle(0% at calc(100vw - 40px) 40px)' },
+            { clipPath: 'circle(150% at calc(100vw - 40px) 40px)', duration: 0.8, ease: 'power3.inOut' }
           );
 
           const menuNavItems = menuRef.current!.querySelectorAll('.nav-item');
@@ -142,10 +142,10 @@ const ContextNav = memo(function ContextNav() {
         }
       } else {
         if (prefersReduced) {
-          gsap.set(menuRef.current!, { clipPath: 'circle(0% at calc(100% - 40px) 40px)' });
+          gsap.set(menuRef.current!, { clipPath: 'circle(0% at calc(100vw - 40px) 40px)' });
         } else {
           gsap.to(menuRef.current!, {
-            clipPath: 'circle(0% at calc(100% - 40px) 40px)',
+            clipPath: 'circle(0% at calc(100vw - 40px) 40px)',
             duration: 0.6,
             ease: 'power3.inOut',
           });
@@ -326,12 +326,12 @@ const ContextNav = memo(function ContextNav() {
       <div
         ref={menuRef}
         className="fixed inset-0 z-40 flex overflow-y-auto bg-portal"
-        style={{ clipPath: 'circle(0% at calc(100% - 40px) 40px)', willChange: isMenuOpen ? 'clip-path' : 'auto', pointerEvents: isMenuOpen ? 'auto' : 'none' }}
+        style={{ clipPath: 'circle(0% at calc(100vw - 40px) 40px)', willChange: isMenuOpen ? 'clip-path' : 'auto', pointerEvents: isMenuOpen ? 'auto' : 'none' }}
         role="dialog"
         aria-modal={isMenuOpen}
         aria-label="Navigation menu"
       >
-        <div className="mx-auto min-h-full w-full max-w-4xl px-4 pt-[calc(env(safe-area-inset-top)+5rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] sm:px-8 md:px-16 md:pt-28">
+        <div className="mx-auto min-h-full w-full max-w-4xl px-4 pt-[calc(env(safe-area-inset-top)_+_5rem)] pb-[calc(env(safe-area-inset-bottom)_+_2rem)] sm:px-8 md:px-16 md:pt-28">
           <nav className="space-y-4 md:space-y-6">
             {displayNavItems.map((item) => (
               <Link
@@ -344,7 +344,7 @@ const ContextNav = memo(function ContextNav() {
               >
                 <div className="flex items-baseline gap-4 md:gap-8">
                   <span className="text-portal-foreground/40 text-sm font-body">{item.number}</span>
-                  <span className="text-portal-foreground font-display text-4xl md:text-7xl font-bold uppercase tracking-tight group-hover:tracking-wide transition-[color,letter-spacing] duration-300">
+                  <span className="text-portal-foreground font-display text-[clamp(1.5rem,8vw,4.5rem)] font-bold uppercase tracking-tight group-hover:tracking-wide transition-[color,letter-spacing] duration-300">
                     {item.label}
                   </span>
                 </div>

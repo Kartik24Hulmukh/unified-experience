@@ -78,7 +78,7 @@ describe('admin console and browse helpers', () => {
     expect(getAdminSearchConfig('disputes')).toEqual({ enabled: true, placeholder: 'Search disputes...' });
     expect(getAdminSearchConfig('logs')).toEqual({ enabled: true, placeholder: 'Search audit logs...' });
     expect(getAdminSearchConfig('fraud')).toEqual({ enabled: true, placeholder: 'Search fraud flags...' });
-    expect(getAdminSearchConfig('users')).toEqual({ enabled: false, placeholder: 'Search unavailable on this tab' });
+    expect(getAdminSearchConfig('users')).toEqual({ enabled: true, placeholder: 'Search users by name or email...' });
     expect(getAdminSearchConfig('activity')).toEqual({ enabled: false, placeholder: 'Search unavailable on this tab' });
   });
 

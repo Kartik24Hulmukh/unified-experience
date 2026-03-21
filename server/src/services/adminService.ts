@@ -131,6 +131,55 @@ export async function getUserDrilldown(userId: string) {
   };
 }
 
+export async function getAllUsers(options: { page?: number; limit?: number; search?: string }) {
+  const page = options.page ?? 1;
+  const limit = Math.min(options.limit ?? 50, 100);
+  const skip = (page - 1) * limit;
+
+  const where: any = options.search ? {
+    OR: [
+      { fullName: { contains: options.search } },
+      { email: { contains: options.search } }
+    ]
+  } : {};
+
+  const [users, total] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        role: true,
+        privilegeLevel: true,
+        isRestricted: true,
+        createdAt: true,
+        adminFlags: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    users,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+}
+
+export async function updateUserStatus(userId: string, data: { action: 'ban' | 'verify' | 'unban' }) {
+  if (data.action === 'ban') {
+    return prisma.user.update({ where: { id: userId }, data: { isRestricted: true } });
+  } else if (data.action === 'unban') {
+    return prisma.user.update({ where: { id: userId }, data: { isRestricted: false } });
+  } else if (data.action === 'verify') {
+    return prisma.user.update({ where: { id: userId }, data: { role: 'STUDENT_VERIFIED' } });
+  }
+  throw new Error('Invalid user action');
+}
+
 /* ═══════════════════════════════════════════════════
    Audit Trail
    ═══════════════════════════════════════════════════ */

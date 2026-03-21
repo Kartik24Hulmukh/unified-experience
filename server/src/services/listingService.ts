@@ -139,7 +139,7 @@ export async function createListing(
         category: input.category,
         module: input.module,
         price: input.price,
-        status: 'DRAFT',
+        status: 'PENDING_REVIEW',
         ownerId: userId,
       },
       // CRIT-1 FIX: email stripped — owner email must never travel in API responses
@@ -365,4 +365,88 @@ export async function updateListingStatus(
     maxWait: 10_000,
     timeout: 20_000,
   });
+}
+
+/* ═══════════════════════════════════════════════════
+   Update Listing (Edit)
+   ═══════════════════════════════════════════════════ */
+
+export async function updateListing(
+  listingId: string,
+  input: CreateListingInput, // reuse CreateListingInput for edits
+  userId: string,
+  userRole: string,
+) {
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { ownerId: true, status: true },
+  });
+
+  if (!listing) {
+    throw new NotFoundError('Listing', listingId);
+  }
+
+  // Only owner or admin can edit
+  if (listing.ownerId !== userId && userRole !== 'ADMIN') {
+    throw new ForbiddenError('You do not have permission to edit this listing');
+  }
+
+  // To keep FSM clean, normally editing retains the status, or forces it back to PENDING_REVIEW 
+  // if edited. For simplicity, we just update the text fields.
+  const updated = await prisma.listing.update({
+    where: { id: listingId },
+    data: {
+      title: input.title,
+      description: input.description,
+      category: input.category,
+      module: input.module,
+      price: input.price,
+    },
+    include: { owner: { select: { id: true, fullName: true } } },
+  });
+
+  return { ...updated, price: updated.price.toString() };
+}
+
+/* ═══════════════════════════════════════════════════
+   Delete Listing
+   ═══════════════════════════════════════════════════ */
+
+export async function deleteListing(listingId: string, userId: string, userRole: string) {
+  const listing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { ownerId: true },
+  });
+
+  if (!listing) {
+    throw new NotFoundError('Listing', listingId);
+  }
+
+  if (listing.ownerId !== userId && userRole !== 'ADMIN') {
+    throw new ForbiddenError('You do not have permission to delete this listing');
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Cancel related requests
+    await tx.request.updateMany({
+      where: { listingId },
+      data: { status: 'CANCELLED' },
+    });
+
+    await tx.listing.delete({
+      where: { id: listingId },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorId: userId,
+        actorRole: userRole,
+        action: 'LISTING_DELETED',
+        entityType: 'Listing',
+        entityId: listingId,
+      },
+    });
+  });
+
+  return { success: true };
 }

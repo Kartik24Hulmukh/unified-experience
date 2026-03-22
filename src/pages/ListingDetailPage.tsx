@@ -123,7 +123,7 @@ const ListingDetailPage = () => {
             <header className="border-b border-white/5 px-4 pt-24 pb-6 sm:px-8 md:px-16 md:pt-28 md:pb-8 flex justify-between items-center">
                 <Button
                     variant="ghost"
-                    onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/resale')}
+                    onClick={() => window.history.length > 1 ? navigate(-1) : navigate(`/${listing.module}`)}
                     className="text-white/40 hover:text-white uppercase text-[10px] font-bold tracking-widest -ml-2"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -537,7 +537,7 @@ const ListingDetailPage = () => {
                                     onSuccess: () => {
                                         toast({ title: 'Listing deleted' });
                                         setIsDeleteModalOpen(false);
-                                        navigate('/resale');
+                                        navigate(`/${listing.module}`);
                                     },
                                     onError: () => toast({ title: 'Error', description: 'Could not delete listing.', variant: 'destructive' })
                                 });

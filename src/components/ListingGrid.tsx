@@ -20,14 +20,6 @@ const ListingGrid = memo(({ items }: ListingGridProps) => {
         <div
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 md:px-0"
         >
-            {items.length === 0 && (
-                <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
-                    <div className="w-16 h-16 border border-white/10 rotate-45 flex items-center justify-center mb-6">
-                        <div className="w-4 h-4 bg-white/10" />
-                    </div>
-                    <p className="text-white/40 text-sm font-bold uppercase tracking-widest">No results found</p>
-                </div>
-            )}
             {items.map((item, index) => (
                 <Link
                     key={item.id}

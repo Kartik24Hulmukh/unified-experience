@@ -24,7 +24,7 @@ async function main() {
   const buyerPw = await argon2.hash('Buyer@1234');
   const buyer = await prisma.user.upsert({
     where: { email: 'buyer@mctrgit.ac.in' },
-    update: {},
+    update: { password: buyerPw },
     create: {
       email: 'buyer@mctrgit.ac.in',
       fullName: 'Buyer Student',

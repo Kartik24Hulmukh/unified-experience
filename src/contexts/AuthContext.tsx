@@ -138,10 +138,18 @@ const INITIAL_STATE: AuthState = {
   restriction: null,
 };
 
+const getInitialState = (): AuthState => {
+  const storedUser = sessionManager.getUser();
+  return {
+    ...INITIAL_STATE,
+    isHydrated: !storedUser, // If there's no stored user, we are already hydrated (unauthenticated)
+  };
+};
+
 const LOGOUT_REDIRECT_KEY = 'berozgar_post_logout_redirect';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>(INITIAL_STATE);
+  const [state, setState] = useState<AuthState>(getInitialState);
   const hydrationRef = useRef(false);
   // CRIT-04 FIX: hold the pending signup password in memory only.
   // It is set in signup() and cleared in verifyOtp() / logout().

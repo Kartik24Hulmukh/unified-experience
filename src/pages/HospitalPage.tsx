@@ -19,6 +19,7 @@ import {
   Cross, Ambulance, Thermometer, BriefcaseMedical, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SEO } from '@/components/SEO';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -271,8 +272,10 @@ const HospitalPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
-      <ScanlineOverlay />
+    <>
+      <SEO title="Campus Healthcare" description="Quick access to nearby hospitals, clinics, pharmacies, and emergency services. Student-verified with pricing transparency." />
+      <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
+        <ScanlineOverlay />
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section ref={heroRef} className="relative min-h-[100dvh] flex items-end overflow-hidden">
@@ -760,6 +763,7 @@ const HospitalPage = () => {
         </div>
       </section>
     </div>
+    </>
   );
 };
 

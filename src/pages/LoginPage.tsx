@@ -74,9 +74,9 @@ const LoginPage = () => {
             // Immediately navigate here as a fallback
             const destination = loggedInUser?.role === 'admin' ? '/admin' : from;
             navigate(destination, { replace: true });
-        } catch (err) {
+        } catch (err: any) {
             hasRedirected.current = false;
-            const msg = err instanceof Error ? err.message : "Invalid credentials. Please try again.";
+            const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Invalid credentials. Please try again.");
             toast({ title: "Access Denied", description: msg, variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -92,9 +92,9 @@ const LoginPage = () => {
             
             const destination = loggedInUser?.role === 'admin' ? '/admin' : from;
             navigate(destination, { replace: true });
-        } catch (err) {
+        } catch (err: any) {
             hasRedirected.current = false;
-            const msg = err instanceof Error ? err.message : "Could not authenticate with Google.";
+            const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not authenticate with Google.");
             toast({ title: "Google Sign-In Failed", description: msg, variant: "destructive" });
         }
     }

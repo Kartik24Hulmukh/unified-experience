@@ -151,7 +151,7 @@ const EssentialsPage = () => {
             className="ess-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"
-            fetchPriority="high"
+            fetchpriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />

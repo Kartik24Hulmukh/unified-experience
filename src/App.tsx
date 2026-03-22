@@ -15,6 +15,8 @@ import { FullPageLoader } from "./components/FallbackUI";
 import { handleApiError } from "@/lib/error-handler";
 import { ApiError } from "@/lib/api-client";
 import { trackPageView } from "@/lib/monitoring";
+import { LazyMotion, domAnimation } from 'framer-motion';
+import { HelmetProvider } from 'react-helmet-async';
 
 // Lazy-load heavy global decorations — not needed for first paint
 const GooeyCursor = lazy(() => import('./components/GooeyCursor'));
@@ -165,9 +167,10 @@ function AuthLogoutRedirectSyncer() {
 }
 
 const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider
+  <HelmetProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider
         attribute="class"
         defaultTheme="light"
         enableSystem={false}
@@ -210,15 +213,15 @@ const App = () => (
                         <Route path="/home" element={<RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary>} />
                         <Route path="/dashboard" element={<Navigate to="/home" replace />} />
 
-                        {/* Module routes — publicly viewable, actions restricted to authenticated users */}
-                        <Route path="/resale" element={<RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary>} />
-                        <Route path="/listing/:id" element={<RouteErrorBoundary name="ListingDetail"><ListingDetailPage /></RouteErrorBoundary>} />
-                        <Route path="/accommodation" element={<RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary>} />
-                        <Route path="/essentials" element={<RouteErrorBoundary name="Essentials"><EssentialsPage /></RouteErrorBoundary>} />
-                        <Route path="/academics" element={<RouteErrorBoundary name="Academics"><AcademicsPage /></RouteErrorBoundary>} />
-                        <Route path="/jobs" element={<RouteErrorBoundary name="Jobs"><JobsPage /></RouteErrorBoundary>} />
-                        <Route path="/mess" element={<RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary>} />
-                        <Route path="/hospital" element={<RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary>} />
+                        {/* Module routes — actions and viewing restricted to authenticated users to prevent data leaks */}
+                        <Route path="/resale" element={<ProtectedRoute><RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/listing/:id" element={<ProtectedRoute><RouteErrorBoundary name="ListingDetail"><ListingDetailPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/accommodation" element={<ProtectedRoute><RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/essentials" element={<ProtectedRoute><RouteErrorBoundary name="Essentials"><EssentialsPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/academics" element={<ProtectedRoute><RouteErrorBoundary name="Academics"><AcademicsPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/jobs" element={<ProtectedRoute><RouteErrorBoundary name="Jobs"><JobsPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/mess" element={<ProtectedRoute><RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/hospital" element={<ProtectedRoute><RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary></ProtectedRoute>} />
                         <Route path="/agency" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="Agency"><AgentsHub /></RouteErrorBoundary></ProtectedRoute>} />
 
                         {/* Profile — any authenticated user */}
@@ -242,7 +245,8 @@ const App = () => (
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
-  </ErrorBoundary>
+    </ErrorBoundary>
+  </HelmetProvider>
 );
 
 export default App;

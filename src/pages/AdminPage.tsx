@@ -278,7 +278,7 @@ const AdminPage = () => {
             )}
 
             {/* Sidebar Architecture */}
-            <aside className={`fixed inset-y-0 left-0 z-50 lg:relative lg:flex lg:translate-x-0 w-64 border-r border-white/5 bg-black/90 lg:bg-black/40 flex flex-col transition-transform duration-300 ${
+            <aside className={`admin-sidebar fixed inset-y-0 left-0 z-50 lg:relative lg:flex lg:translate-x-0 w-64 border-r border-white/5 bg-black/90 lg:bg-black/40 flex flex-col transition-transform duration-300 ${
                 isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}>
                 <div className="p-8 border-b border-white/5 space-y-4 relative">
@@ -344,7 +344,7 @@ const AdminPage = () => {
                                 <MoreVertical className="w-5 h-5 rotate-90" />
                             </button>
                         </div>
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-bold uppercase italic italic-syne leading-none">
+                        <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold uppercase italic italic-syne leading-none">
                             <SplitText trigger="load">MODERATION</SplitText>
                         </h1>
                         <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.4em]">Internal Resource Audit Terminal</p>
@@ -364,8 +364,8 @@ const AdminPage = () => {
                         <div className="flex items-center justify-between w-full md:w-auto gap-4">
                             <div className="flex items-center gap-3">
                                 <div className="flex flex-col items-end">
-                                    <span className="text-[8px] uppercase tracking-[0.2em] opacity-40 font-mono">Identity</span>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">{user?.fullName?.split(' ')[0] || 'Admin'}</span>
+                                    <span className="text-[8px] uppercase tracking-[0.2em] opacity-40 font-mono hidden md:inline">Identity</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest truncate max-w-[80px] md:max-w-[120px]">{user?.fullName?.split(' ')[0] || 'Admin'}</span>
                                 </div>
                                 <div className="relative w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-white text-black text-xs font-bold uppercase transition-all duration-300 hover:scale-110 cursor-default">
                                     {user?.fullName?.[0] || 'K'}

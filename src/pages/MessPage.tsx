@@ -19,6 +19,7 @@ import {
   MapPin, Truck, ShieldCheck, Heart, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SEO } from '@/components/SEO';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -248,8 +249,10 @@ const MessPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
-      <ScanlineOverlay />
+    <>
+      <SEO title="Mess & Tiffin Services" description="Discover verified mess services, tiffin providers, and campus canteens. Student-reviewed, hygiene-checked, and priced for your budget." />
+      <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
+        <ScanlineOverlay />
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section ref={heroRef} className="relative min-h-[100dvh] flex items-end overflow-hidden">
@@ -735,6 +738,7 @@ const MessPage = () => {
         </div>
       </section>
     </div>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BErozgar - Client Monitoring and Telemetry
  *
  * Provides a concrete monitoring layer that always captures local diagnostics
@@ -93,9 +93,17 @@ async function flushAnalyticsBuffer(): Promise<void> {
       return;
     }
 
+    // Must dynamically import to avoid circular dependency
+    const { getCsrfToken } = await import('@/lib/api-client');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+
     await fetch(INGEST_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: payload,
       keepalive: true,
       credentials: 'include',

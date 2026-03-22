@@ -24,7 +24,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const signupSchema = z.object({
     fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
-    email: z.string().email({ message: "Invalid email address" }),
+    email: z.string().email({ message: "Invalid email address" }).regex(/^[a-zA-Z0-9._%+-]+@mctrgit\.ac\.in$/, "Must be a valid @mctrgit.ac.in address"),
     password: z.string().min(8, { message: "Password must be at least 8 characters" }),
 });
 
@@ -68,8 +68,8 @@ const SignupPage = () => {
             // active from the /signup page-load transition, silently dropping this
             // programmatic redirect. isLoading already guards against double-submission.
             navigate("/verify", { replace: false });
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : "Could not create your account. Please try again.";
+        } catch (err: any) {
+            const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not create your account. Please try again.");
             toast({
                 title: "Registration Failed",
                 description: msg,
@@ -90,8 +90,8 @@ const SignupPage = () => {
                 title: "Welcome!",
                 description: `Signed in as ${result.email || 'your Google account'}. Your Google account has been verified.`,
             });
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : "Could not authenticate with Google.";
+        } catch (err: any) {
+            const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not authenticate with Google.");
             toast({
                 title: "Google Sign-In Failed",
                 description: msg,

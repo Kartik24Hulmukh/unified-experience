@@ -169,7 +169,7 @@ const AcademicsPage = () => {
           <img
             src={academicsHero}
             alt=""
-            fetchPriority="high"
+            fetchpriority="high"
             loading="eager"
             className="acad-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover block"
             style={{ opacity: 0, contentVisibility: 'auto' }}

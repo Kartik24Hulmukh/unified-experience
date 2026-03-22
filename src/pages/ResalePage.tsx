@@ -14,6 +14,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useListings } from '@/hooks/api/useApi';
 import { countBrowseListingsByCategory, getBrowseVisibleListings } from '@/lib/browse-listings';
 import { LoadingSpinner, ErrorFallback, SkeletonListingGrid } from '@/components/FallbackUI';
+import { SEO } from '@/components/SEO';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -125,7 +126,9 @@ const ResalePage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-[100dvh] bg-portal">
+    <>
+      <SEO title="Campus Resale" description="Buy and sell engineering books, calculators, and lab equipment on campus." />
+      <div ref={mainRef} className="min-h-[100dvh] bg-portal">
       {/* Hero Section - Full bleed with diagonal split */}
       <section ref={heroRef} className="relative h-[100dvh] overflow-hidden">
         {/* Background Image with Parallax */}
@@ -381,6 +384,7 @@ const ResalePage = () => {
         />
       </ListingFormModal>
     </div>
+    </>
   );
 };
 

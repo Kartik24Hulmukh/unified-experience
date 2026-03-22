@@ -16,6 +16,7 @@ import housingHandover from '@/assets/housing-handover.jpg';
 import { useListings } from '@/hooks/api/useApi';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
+import { SEO } from '@/components/SEO';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -283,6 +284,8 @@ const AccommodationPage = () => {
   }, []);
 
   return (
+    <>
+    <SEO title="Campus Accommodations" description="Find verified flats, PGs, and hostels mapped close to your college. Connect with landlords directly through our secure platform." />
     <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground overflow-hidden relative">
 
       {/* ═══════════════ HERO SECTION ═══════════════ */}
@@ -863,6 +866,7 @@ const AccommodationPage = () => {
         />
       </ListingFormModal>
     </div>
+    </>
   );
 };
 

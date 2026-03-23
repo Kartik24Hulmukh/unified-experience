@@ -17,9 +17,21 @@ initMonitoring();
 
 /* ─── Global safety net: catch ALL unhandled errors/rejections ──── */
 window.addEventListener('error', (event) => {
-   
+  // Hide benign ResizeObserver issues that flood the console during responsive transitions
+  if (event.message === 'ResizeObserver loop completed with undelivered notifications.') {
+    event.stopImmediatePropagation();
+    return;
+  }
   console.error('[GLOBAL] Uncaught error:', event.error ?? event.message);
 });
+
+// Suppress native console error for ResizeObserver
+const originalError = window.onerror;
+window.onerror = function(msg, url, line, col, error) {
+  if (msg === 'ResizeObserver loop completed with undelivered notifications.') return true;
+  if (originalError) return originalError(msg, url, line, col, error);
+  return false;
+};
 
 window.addEventListener('unhandledrejection', (event) => {
    

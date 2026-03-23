@@ -8,6 +8,7 @@
 import Fastify, { type FastifyError } from 'fastify';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
+import compress from '@fastify/compress';
 import { env } from '@/config/env';
 import { registerCors } from '@/plugins/cors';
 import { registerRateLimit } from '@/plugins/rate-limit';
@@ -85,6 +86,7 @@ export async function buildApp() {
   await registerRateLimit(app);
   await app.register(csrfPlugin);
   await app.register(sanitizePlugin);
+  await app.register(compress, { global: true, encodings: ['brotli', 'gzip'] });
 
   // ── Request ID propagation ──────────────────────
   app.addHook('onRequest', async (request, reply) => {

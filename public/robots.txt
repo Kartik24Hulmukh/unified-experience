@@ -1,23 +1,13 @@
-User-agent: Googlebot
-Allow: /
-Disallow: /admin
-Disallow: /profile
-Disallow: /api
-
-User-agent: Bingbot
-Allow: /
-Disallow: /admin
-Disallow: /profile
-Disallow: /api
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Allow: /resale
+Allow: /accommodation
+Allow: /hospital
+Allow: /mess
+
+# Disallow specific non-indexable routes
 Disallow: /admin
 Disallow: /profile
-Disallow: /api
+
+# Sitemap location
+Sitemap: https://berozgar.in/sitemap.xml

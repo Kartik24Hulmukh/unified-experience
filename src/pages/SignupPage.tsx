@@ -24,7 +24,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const signupSchema = z.object({
     fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
-    email: z.string().email({ message: "Invalid email address" }).regex(/^[a-zA-Z0-9._%+-]+@mctrgit\.ac\.in$/, "Must be a valid @mctrgit.ac.in address"),
+    email: z.string().email({ message: "Invalid email address" }),
     password: z.string().min(8, { message: "Password must be at least 8 characters" }),
 });
 
@@ -186,7 +186,7 @@ const SignupPage = () => {
                                                 <div className="relative">
                                                     <Mail className="absolute left-0 top-3 w-4 h-4 text-white/30" />
                                                     <Input
-                                                        placeholder="you@mctrgit.ac.in"
+                                                        placeholder="you@gmail.com"
                                                         {...field}
                                                         className="bg-black/50 border-white/10 text-white h-12 rounded-none border-b-2 border-x-0 border-t-0 pl-8 focus-visible:ring-0 focus-visible:border-primary transition-all duration-300"
                                                     />
@@ -262,14 +262,14 @@ const SignupPage = () => {
                         </h1>
 
                         <p className="text-white/60 text-base sm:text-lg max-w-md mx-auto lg:mx-0 font-body leading-relaxed">
-                            Use your <span className="text-primary font-semibold">@mctrgit.ac.in</span> Google account for instant verified access.
+                            Use your Google or personal email account for instant access.
                             Email signup is also available with OTP verification.
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 pt-6 text-left max-w-sm mx-auto lg:mx-0 w-full">
                         {[
-                            "Campus domain (@mctrgit.ac.in) required",
+                            "Valid email account required",
                             "Google Sign-In — instant, no OTP needed",
                             "Email signup with OTP verification",
                             "Privacy-first, zero data commercialization"

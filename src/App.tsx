@@ -200,9 +200,10 @@ const App = () => (
                     <ErrorBoundary boundary="LazyRoutes">
                       <Suspense fallback={<FullPageLoader />}>
                         <Routes>
-                        {/* Landing Page is Index (MasterExperience + Campus Events) */}
-                        <Route path="/" element={<RouteErrorBoundary name="Landing"><Index /></RouteErrorBoundary>} />
-                        <Route path="/splash" element={<RouteErrorBoundary name="Splash"><LandingPage /></RouteErrorBoundary>} />
+                        {/* Landing Page (Cinematic Splash) */}
+                        <Route path="/" element={<RouteErrorBoundary name="Landing"><LandingPage /></RouteErrorBoundary>} />
+                        <Route path="/splash" element={<Navigate to="/" replace />} />
+                        
                         <Route path="/login" element={<RouteErrorBoundary name="Login"><LoginPage /></RouteErrorBoundary>} />
                         <Route path="/signup" element={<RouteErrorBoundary name="Signup"><SignupPage /></RouteErrorBoundary>} />
                         <Route path="/verify" element={<RouteErrorBoundary name="Verify"><VerificationPage /></RouteErrorBoundary>} />

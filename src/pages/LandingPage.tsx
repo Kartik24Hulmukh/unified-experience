@@ -239,9 +239,11 @@ const LandingPage = () => {
         <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 md:px-12 py-6">
           {/* Brand */}
           <div ref={navBrandRef} className="flex items-center gap-3 opacity-0">
-            <div className="w-7 h-7 border-2 border-white/80 rotate-45 flex items-center justify-center">
-              <div className="w-2.5 h-2.5 bg-white/80" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="BErozgar Logo" 
+              className="w-7 h-7 object-contain" 
+            />
             <span className="text-white font-display font-bold text-lg tracking-tight uppercase hidden md:block">
               BErozgar
             </span>

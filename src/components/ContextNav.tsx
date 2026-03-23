@@ -217,9 +217,11 @@ const ContextNav = memo(function ContextNav() {
           >
             <span className="sr-only">BErozgar</span>
             <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 md:w-8 md:h-8 border-2 ${isNavDark ? 'border-portal-foreground' : 'border-foreground'} rotate-45 flex items-center justify-center`}>
-                <div className={`w-2 h-2 md:w-3 md:h-3 ${isNavDark ? 'bg-portal-foreground' : 'bg-foreground'}`} />
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="BErozgar Logo" 
+                className={`w-6 h-6 md:w-8 md:h-8 object-contain transition-opacity ${isNavDark ? 'opacity-90' : 'opacity-100'}`} 
+              />
               <span className="hidden md:block uppercase">BErozgar</span>
             </div>
           </Link>

@@ -10,7 +10,7 @@ interface SEOProps {
   image?: string;
 }
 
-export function SEO({ title, description, type = 'website', name = 'BErozgar', image = 'https://berozgar.in/logo.jpeg' }: SEOProps) {
+export function SEO({ title, description, type = 'website', name = 'BErozgar', image = 'https://berozgar.in/logo.png' }: SEOProps) {
   const isOrganization = type === 'website';
   const location = useLocation();
   const currentUrl = `https://berozgar.in${location.pathname}`;
@@ -21,7 +21,7 @@ export function SEO({ title, description, type = 'website', name = 'BErozgar', i
     "@type": isOrganization ? "Organization" : "WebPage",
     "name": name,
     "url": currentUrl,
-    "logo": "https://berozgar.in/logo.jpeg",
+    "logo": "https://berozgar.in/logo.png",
     "description": description,
     "sameAs": [
       "https://twitter.com/Berozgar",

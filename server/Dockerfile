@@ -1,42 +1,40 @@
-# ═══════════════════════════════════════════════════
-# BErozgar API — Multi-stage Dockerfile
-# ═══════════════════════════════════════════════════
+# ─── Build Stage ───
+FROM node:20-alpine AS builder
 
-# ── Base ────────────────────────────────────────────
-FROM node:20-alpine AS base
 WORKDIR /app
-RUN corepack enable
+# Copy package manifests and install dependencies
+COPY package*.json ./
+RUN npm ci
 
-# ── Dependencies ────────────────────────────────────
-FROM base AS deps
-COPY package.json package-lock.json* ./
-RUN npm ci --ignore-scripts
-# Prisma needs to generate after install
+# Copy server source code and prisma schema
+COPY tsconfig.json .
 COPY prisma ./prisma
+COPY src ./src
+
+# Generate prisma client and build TypeScript
 RUN npx prisma generate
+RUN npm run build
 
-# ── Development ─────────────────────────────────────
-FROM base AS development
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
-COPY . .
-EXPOSE 3001
-CMD ["npx", "tsx", "watch", "src/server.ts"]
+# ─── Production Stage ───
+FROM node:20-alpine AS runner
 
-# ── Build ───────────────────────────────────────────
-FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npx tsc
-
-# ── Production ──────────────────────────────────────
-FROM base AS production
+WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=build /app/dist ./dist
-COPY prisma ./prisma
-COPY package.json ./
+
+# Copy package manifests for production install
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy generated Prisma client
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy built code
+COPY --from=builder /app/dist ./dist
+
+# Create a non-root user for security
+RUN addgroup -S nodejs && adduser -S -G nodejs fastifyuser
+USER fastifyuser
+
 EXPOSE 3001
-USER node
-CMD ["node", "dist/server.js"]
+CMD ["npm", "start"]

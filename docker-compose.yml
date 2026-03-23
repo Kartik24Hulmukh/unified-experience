@@ -1,62 +1,56 @@
-# ═══════════════════════════════════════════════════
-# BErozgar — Docker Compose (Development)
-# ═══════════════════════════════════════════════════
-#
-# Usage:
-#   docker-compose up -d        # Start Postgres + API
-#   docker-compose down          # Stop all
-#   docker-compose logs -f api   # Follow API logs
-#
+version: '3.8'
 
 services:
-  # ── PostgreSQL 15 ─────────────────────────────────
-  postgres:
+  db:
     image: postgres:15-alpine
-    container_name: berozgar-postgres
-    restart: unless-stopped
-    ports:
-      - "5433:5432"
+    container_name: berozgar_postgres
     environment:
-      POSTGRES_USER: berozgar
-      POSTGRES_PASSWORD: berozgar123
-      POSTGRES_DB: berozgar
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mctrgit_secure_db_pass_123}
+      POSTGRES_DB: berozgar_prod
+    ports:
+      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U berozgar -d berozgar"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # ── BErozgar API ──────────────────────────────────
-  api:
+  backend:
     build:
       context: ./server
       dockerfile: Dockerfile
-      target: development
-    container_name: berozgar-api
+    container_name: berozgar_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Prisma connection string uses the hostname 'db' provided by Docker Compose Networking
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-mctrgit_secure_db_pass_123}@db:5432/berozgar_prod?schema=public
+      PORT: 3001
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_sign_key_for_production}
+      # Tell Fastify to trust Nginx proxy loopback ip for rate limiting algorithms
+      TRUST_PROXY: '172.16.0.0/12,192.168.0.0/16,10.0.0.0/8'
+      DOMAIN_SCOPE: ${DOMAIN_SCOPE:-.mctrgit.ac.in}
+    expose:
+      - "3001"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: berozgar_frontend
     restart: unless-stopped
     ports:
-      - "3001:3001"
-    environment:
-      NODE_ENV: development
-      PORT: 3001
-      HOST: 0.0.0.0
-      DATABASE_URL: postgresql://berozgar:berozgar123@postgres:5432/berozgar?schema=public
-      JWT_SECRET: dev-secret-change-me-in-production-minimum-32-chars
-      JWT_ACCESS_EXPIRES_IN: 15m
-      JWT_REFRESH_EXPIRES_DAYS: 7
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-placeholder}
-      CORS_ORIGIN: http://localhost:5173
-      RATE_LIMIT_MAX: 100
-      RATE_LIMIT_WINDOW_MS: 60000
-    volumes:
-      - ./server/src:/app/src:ro
-      - ./server/prisma:/app/prisma:ro
+      # Exposes the application to the internet on standard web port 80
+      - "80:80"
     depends_on:
-      postgres:
-        condition: service_healthy
+      - backend
 
 volumes:
   pgdata:
-    driver: local

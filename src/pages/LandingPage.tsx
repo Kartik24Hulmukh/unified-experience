@@ -167,22 +167,7 @@ const LandingPage = () => {
     return () => ctx.revert();
   }, []);
 
-  /* ── Floating portal animation ── */
-  useEffect(() => {
-    if (!loadComplete || !portalContainerRef.current) return;
 
-    const ctx = gsap.context(() => {
-      gsap.to(portalContainerRef.current!, {
-        y: -12,
-        duration: 3,
-        ease: 'sine.inOut',
-        yoyo: true,
-        repeat: -1,
-      });
-    }, portalContainerRef);
-
-    return () => ctx.revert();
-  }, [loadComplete]);
 
   /* ── CTA handler ── */
   const handleEnter = () => {
@@ -236,9 +221,9 @@ const LandingPage = () => {
           ═══════════════════════════════════════════ */}
       <div ref={contentRef} className="relative h-full w-full flex flex-col">
         {/* ── Top Nav Bar ── */}
-        <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 md:px-12 py-6">
+        <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 md:px-12 py-6 pointer-events-none">
           {/* Brand */}
-          <div ref={navBrandRef} className="flex items-center gap-3 opacity-0">
+          <div ref={navBrandRef} className="flex items-center gap-3 opacity-0 pointer-events-auto">
             <img 
               src="/logo.png" 
               alt="BErozgar Logo" 
@@ -310,7 +295,7 @@ const LandingPage = () => {
           <div ref={ctaRef} className="mt-10 md:mt-14 opacity-0">
             <button
               onClick={handleEnter}
-              className="group relative px-8 md:px-12 py-4 md:py-5 border-2 border-white/20 uppercase font-display text-xs md:text-sm tracking-[0.3em] md:tracking-[0.4em] text-white/80 transition-all duration-600 hover:border-white/60 hover:tracking-[0.6em] cursor-pointer overflow-hidden"
+              className="group relative px-8 md:px-12 py-4 md:py-5 border-2 border-white/20 uppercase font-display text-xs md:text-sm tracking-[0.3em] md:tracking-[0.4em] text-white/80 transition-all duration-600 hover:border-white/60 hover:tracking-[0.6em] cursor-pointer overflow-hidden z-30"
             >
               <span className="relative z-10 flex items-center gap-3 md:gap-4 transition-colors duration-500 group-hover:text-black">
                 ENTER CAMPUS OS
@@ -323,9 +308,9 @@ const LandingPage = () => {
         </div>
 
         {/* ── Bottom Meta ── */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 flex items-end justify-between px-6 md:px-12 py-6">
+        <div className="absolute bottom-0 left-0 right-0 z-20 flex items-end justify-between px-6 md:px-12 py-6 pointer-events-none">
           {/* Left */}
-          <div ref={metaLeftRef} className="opacity-0">
+          <div ref={metaLeftRef} className="opacity-0 pointer-events-auto">
             <p className="text-white/15 text-[9px] font-mono tracking-[0.3em] uppercase">
               MCTRGIT // 2026
             </p>
@@ -342,7 +327,7 @@ const LandingPage = () => {
           </div>
 
           {/* Right */}
-          <div ref={metaRightRef} className="opacity-0 text-right">
+          <div ref={metaRightRef} className="opacity-0 text-right pointer-events-auto">
             <p className="text-white/15 text-[9px] font-mono tracking-[0.3em] uppercase">
               v0.1.0 // Campus OS
             </p>

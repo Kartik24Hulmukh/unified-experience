@@ -20,8 +20,6 @@ class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: Reac
   state: WebGLGuardState = { hasError: false };
   static getDerivedStateFromError(): WebGLGuardState { return { hasError: true }; }
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // HIGH-E FIX: use console.error so production log aggregators (Sentry, etc.)
-    // capture WebGL crashes rather than swallowing them at warn level.
     console.error('[Portal3D] WebGL crashed — showing fallback', error, info);
   }
   render() {
@@ -48,46 +46,23 @@ const ShieldFallback = () => (
 const disposeScene = (scene: THREE.Scene) => {
   scene.traverse((object) => {
     if (object instanceof THREE.Mesh) {
-      if (object.geometry) {
-        object.geometry.dispose();
-      }
+      if (object.geometry) object.geometry.dispose();
       if (object.material) {
-        if (Array.isArray(object.material)) {
-          object.material.forEach((mat) => mat.dispose());
-        } else {
-          object.material.dispose();
-        }
+        if (Array.isArray(object.material)) object.material.forEach((mat) => mat.dispose());
+        else object.material.dispose();
       }
     }
   });
 };
 
-// Component to handle cleanup on unmount — uses useLayoutEffect
-// to dispose before the browser paints the next frame
 const SceneCleanup = () => {
   const { gl, scene } = useThree();
-
   useLayoutEffect(() => {
     return () => {
-      // Dispose all scene objects
       disposeScene(scene);
-      // Dispose the WebGL renderer
       gl.dispose();
-      // HIGH-D FIX: forcibly lose the WebGL context so the browser reclaims
-      // the slot from its 8-context limit. Using queueMicrotask instead of
-      // setTimeout(500) ensures the context is released at the end of the
-      // current microtask queue — fast enough to prevent exhausting the
-      // browser's ~8-context ceiling on rapid route changes, but still
-      // deferred so gl.dispose() above has fully completed.
-      const canvas = gl.domElement;
-      queueMicrotask(() => {
-        // We removed the aggressive manual loseContext() here because it triggers
-        // a false-positive "WebGL context lost" error in the browser console that
-        // QA tools misinterpret as an unintentional crash.
-      });
     };
   }, [gl, scene]);
-
   return null;
 };
 
@@ -98,6 +73,7 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
   const targetScale = useRef(new THREE.Vector3(1, 1, 1));
   const { pointer } = useThree();
   const hovered = useRef(false);
+  const hoverLerp = useRef(0);
 
   const geos = useMemo(() => {
     const W = 0.78, HT = 0.88, HB = 1.0;
@@ -120,7 +96,6 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
     const rimOuter = makeShield(W * 1.12, HT * 1.07, HB * 1.06);
     rimOuter.holes.push(inner.clone());
 
-    // Orange top-left
     const orange = new THREE.Shape();
     orange.moveTo(-W, HT * 0.78);
     orange.quadraticCurveTo(-W * 0.5, HT, 0, HT * 1.06);
@@ -128,7 +103,6 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
     orange.lineTo(-W, 0);
     orange.closePath();
 
-    // Green top-right
     const green = new THREE.Shape();
     green.moveTo(0, HT * 1.06);
     green.quadraticCurveTo(W * 0.5, HT, W, HT * 0.78);
@@ -136,7 +110,6 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
     green.lineTo(0, 0);
     green.closePath();
 
-    // Blue bottom
     const blue = new THREE.Shape();
     blue.moveTo(-W, 0);
     blue.lineTo(W, 0);
@@ -146,261 +119,111 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
     blue.quadraticCurveTo(-W, -HB * 0.35, -W, 0);
     blue.closePath();
 
-    // NO .center() — we position via mesh z-offset instead
-    const bodyGeo = new THREE.ExtrudeGeometry(inner, {
-      depth: BODY_DEPTH,
-      bevelEnabled: true,
-      bevelThickness: 0.03,
-      bevelSize: 0.025,
-      bevelSegments: 4,
-    });
-
-    const rimGeo = new THREE.ExtrudeGeometry(rimOuter, {
-      depth: RIM_DEPTH,
-      bevelEnabled: true,
-      bevelThickness: 0.025,
-      bevelSize: 0.02,
-      bevelSegments: 3,
-    });
-
     return {
-      body: bodyGeo,
-      rim: rimGeo,
+      body: new THREE.ExtrudeGeometry(inner, { depth: BODY_DEPTH, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.025, bevelSegments: 4 }),
+      rim: new THREE.ExtrudeGeometry(rimOuter, { depth: RIM_DEPTH, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.02, bevelSegments: 3 }),
       orange: new THREE.ShapeGeometry(orange),
       green: new THREE.ShapeGeometry(green),
       blue: new THREE.ShapeGeometry(blue),
     };
   }, []);
 
-  // Dispose geometries on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
-      geos.body.dispose();
-      geos.rim.dispose();
-      geos.orange.dispose();
-      geos.green.dispose();
-      geos.blue.dispose();
+      Object.values(geos).forEach(g => g.dispose());
     };
   }, [geos]);
 
   useFrame((_state, delta) => {
     if (!groupRef.current) return;
     const g = groupRef.current;
-
-    // Frame-rate independent damping: normalize lerp factors to 60fps baseline.
-    // At 60fps delta≈0.0167, so dt60≈1. At 144fps dt60≈0.42, at 30fps dt60≈2.
-    const dt60 = delta * 60;
-    // Clamp to avoid spiral on tab-switch (delta can spike)
-    const dtClamped = Math.min(dt60, 3);
-
-    // Frame-rate independent exponential decay: 1 - (1-factor)^dt
+    
+    const dtClamped = Math.min(delta * 60, 3);
     const damp = (factor: number) => 1 - Math.pow(1 - factor, dtClamped);
 
-    mouse.current.x += (pointer.x - mouse.current.x) * damp(0.03);
-    mouse.current.y += (pointer.y - mouse.current.y) * damp(0.03);
+    hoverLerp.current += (hovered.current ? 1 : 0 - hoverLerp.current) * damp(0.12);
+    mouse.current.x += (pointer.x - mouse.current.x) * damp(0.04);
+    mouse.current.y += (pointer.y - mouse.current.y) * damp(0.04);
 
-    // Scroll-driven rotation — cappen.com style cinematic momentum
-    // Base rotation accelerates as user scrolls, creating an immersive zoom feel
-    const h = hovered.current;
     const scrollP = scrollProgressRef?.current ?? 0;
-    const baseSpeed = h ? 0.08 : 0.25;
-    // Scroll amplifies rotation: 1x at top → 4x at full scroll (exponential ramp)
-    const scrollBoost = scrollP * scrollP * 3.5;
-    autoAngle.current += delta * (baseSpeed + scrollBoost);
+    const baseSpeed = hovered.current ? 0.08 : 0.25;
+    autoAngle.current += delta * (baseSpeed + scrollP * scrollP * 3.5);
 
-    const tY = autoAngle.current + (h ? mouse.current.x * 0.6 : 0);
-    // Scroll adds progressive X-axis tilt for dramatic depth perspective
-    const scrollTilt = scrollP * 0.15;
-    const tX = h
-      ? -mouse.current.y * 0.25
-      : Math.sin(_state.clock.elapsedTime * 0.3) * 0.04 + scrollTilt;
+    const tY = autoAngle.current + (mouse.current.x * 0.6 * hoverLerp.current);
+    const tX = hovered.current ? -mouse.current.y * 0.25 : Math.sin(_state.clock.elapsedTime * 0.3) * 0.04 + scrollP * 0.15;
 
-    // Lerp factor increases with scroll for snappier response during zoom
     const lerpFactor = damp(0.035 + scrollP * 0.04);
     g.rotation.y += (tY - g.rotation.y) * lerpFactor;
     g.rotation.x += (tX - g.rotation.x) * lerpFactor;
-    // Subtle floating bob — dampens as scroll progresses (shield stabilizes during zoom)
-    g.position.y = Math.sin(_state.clock.elapsedTime * 0.35) * 0.015 * (1 - scrollP * 0.8);
+    g.position.y = Math.sin(_state.clock.elapsedTime * 0.35) * 0.08 * (1 - scrollP * 0.8);
 
-    const s = h ? 1.05 : 1.0;
+    const s = 1.0 + (0.05 * hoverLerp.current);
     targetScale.current.set(s, s, s);
-    g.scale.lerp(targetScale.current, damp(0.04));
+    g.scale.lerp(targetScale.current, damp(0.1));
   });
 
-  // Extrude goes z: 0→depth. Offset mesh by -depth/2 to center at z=0.
-  // Then front face = depth/2, back face = -depth/2 (via bevel).
-  // Flat sections sit just above the front face.
-  const bodyZ = -BODY_DEPTH / 2;   // -0.09
-  const rimZ = -RIM_DEPTH / 2;     // -0.11
-  const FRONT = BODY_DEPTH / 2 + 0.01;  // 0.10 — just above front face
+  const bodyZ = -BODY_DEPTH / 2;
+  const rimZ = -RIM_DEPTH / 2;
+  const FRONT = BODY_DEPTH / 2 + 0.01;
   const DIV = FRONT + 0.005;
   const ICON = FRONT + 0.015;
-  const BACK = -(BODY_DEPTH / 2 + 0.01); // behind back face
 
   return (
-    <group
-      ref={groupRef}
-      onPointerOver={() => { hovered.current = true; }}
-      onPointerOut={() => { hovered.current = false; }}
-    >
-      {/* ─── Shield body (offset so centered at z=0) ─── */}
+    <group ref={groupRef} onPointerOver={() => { hovered.current = true; }} onPointerOut={() => { hovered.current = false; }}>
       <mesh geometry={geos.body} position={[0, 0, bodyZ]}>
-        <meshStandardMaterial
-          color="#1a2332"
-          metalness={0.4}
-          roughness={0.5}
-          side={THREE.DoubleSide}
-        />
+        <meshStandardMaterial color="#1a2332" metalness={0.4} roughness={0.5} side={THREE.DoubleSide} />
       </mesh>
-
-      {/* ─── Gold rim ─── */}
       <mesh geometry={geos.rim} position={[0, 0, rimZ]}>
-        <meshStandardMaterial
-          color="#D4A843"
-          metalness={0.9}
-          roughness={0.1}
-          emissive="#B8922E"
-          emissiveIntensity={0.4}
-          side={THREE.DoubleSide}
-        />
+        <meshStandardMaterial color="#D4A843" metalness={0.9} roughness={0.1} emissive="#B8922E" emissiveIntensity={0.4} side={THREE.DoubleSide} />
       </mesh>
-
-      {/* ─── VIVID front-face colored sections ─── */}
-      <mesh geometry={geos.orange} position={[0, 0, FRONT]}>
-        <meshBasicMaterial color="#FF9800" />
-      </mesh>
-      <mesh geometry={geos.green} position={[0, 0, FRONT]}>
-        <meshBasicMaterial color="#4CAF50" />
-      </mesh>
-      <mesh geometry={geos.blue} position={[0, 0, FRONT]}>
-        <meshBasicMaterial color="#2196F3" />
-      </mesh>
-
-      {/* ─── Gold dividers ─── */}
-      <mesh position={[0, 0, DIV]}>
-        <boxGeometry args={[1.58, 0.035, 0.01]} />
-        <meshBasicMaterial color="#D4A843" />
-      </mesh>
-      <mesh position={[0, 0.47, DIV]}>
-        <boxGeometry args={[0.035, 0.94, 0.01]} />
-        <meshBasicMaterial color="#D4A843" />
-      </mesh>
-
-      {/* ═══════ LARGE ICONS ═══════ */}
-
-      {/* Σ / Z (orange, top-left) */}
+      <mesh geometry={geos.orange} position={[0, 0, FRONT]}><meshBasicMaterial color="#FF9800" /></mesh>
+      <mesh geometry={geos.green} position={[0, 0, FRONT]}><meshBasicMaterial color="#4CAF50" /></mesh>
+      <mesh geometry={geos.blue} position={[0, 0, FRONT]}><meshBasicMaterial color="#2196F3" /></mesh>
+      <mesh position={[0, 0, DIV]}><boxGeometry args={[1.58, 0.035, 0.01]} /><meshBasicMaterial color="#D4A843" /></mesh>
+      <mesh position={[0, 0.47, DIV]}><boxGeometry args={[0.035, 0.94, 0.01]} /><meshBasicMaterial color="#D4A843" /></mesh>
+      
+      {/* Σ / Z */}
       <group position={[-0.39, 0.47, ICON]}>
-        <mesh position={[0, 0.14, 0]}>
-          <boxGeometry args={[0.24, 0.04, 0.018]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
-        <mesh rotation={[0, 0, -0.82]}>
-          <boxGeometry args={[0.34, 0.035, 0.018]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
-        <mesh position={[0, -0.14, 0]}>
-          <boxGeometry args={[0.24, 0.04, 0.018]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
+        <mesh position={[0, 0.14, 0]}><boxGeometry args={[0.24, 0.04, 0.018]} /><meshBasicMaterial color="#FFFFFF" /></mesh>
+        <mesh rotation={[0, 0, -0.82]}><boxGeometry args={[0.34, 0.035, 0.018]} /><meshBasicMaterial color="#FFFFFF" /></mesh>
+        <mesh position={[0, -0.14, 0]}><boxGeometry args={[0.24, 0.04, 0.018]} /><meshBasicMaterial color="#FFFFFF" /></mesh>
       </group>
 
-      {/* Open Book (green, top-right) */}
+      {/* Book */}
       <group position={[0.39, 0.47, ICON]}>
-        <mesh position={[-0.07, 0.02, 0]} rotation={[0, 0, 0.08]}>
-          <boxGeometry args={[0.13, 0.22, 0.014]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
-        <mesh position={[0.07, 0.02, 0]} rotation={[0, 0, -0.08]}>
-          <boxGeometry args={[0.13, 0.22, 0.014]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
-        <mesh position={[0, -0.015, 0.008]}>
-          <boxGeometry args={[0.018, 0.25, 0.016]} />
-          <meshBasicMaterial color="#D4A843" />
-        </mesh>
-        {[-0.04, 0.0, 0.04, 0.08].map((ly) => (
-          <mesh key={`ll${ly}`} position={[-0.07, ly, 0.01]}>
-            <boxGeometry args={[0.08, 0.012, 0.004]} />
-            <meshBasicMaterial color="#4CAF50" />
-          </mesh>
+        <mesh position={[-0.07, 0.02, 0]} rotation={[0, 0, 0.08]}><boxGeometry args={[0.13, 0.22, 0.014]} /><meshBasicMaterial color="#FFFFFF" /></mesh>
+        <mesh position={[0.07, 0.02, 0]} rotation={[0, 0, -0.08]}><boxGeometry args={[0.13, 0.22, 0.014]} /><meshBasicMaterial color="#FFFFFF" /></mesh>
+        <mesh position={[0, -0.015, 0.008]}><boxGeometry args={[0.018, 0.25, 0.016]} /><meshBasicMaterial color="#D4A843" /></mesh>
+        {[-0.04, 0, 0.04, 0.08].map(ly => (
+          <mesh key={ly} position={[-0.07, ly, 0.01]}><boxGeometry args={[0.08, 0.012, 0.004]} /><meshBasicMaterial color="#4CAF50" /></mesh>
         ))}
-        {[-0.04, 0.0, 0.04, 0.08].map((ly) => (
-          <mesh key={`rl${ly}`} position={[0.07, ly, 0.01]}>
-            <boxGeometry args={[0.08, 0.012, 0.004]} />
-            <meshBasicMaterial color="#4CAF50" />
-          </mesh>
+        {[-0.04, 0, 0.04, 0.08].map(ly => (
+          <mesh key={ly} position={[0.07, ly, 0.01]}><boxGeometry args={[0.08, 0.012, 0.004]} /><meshBasicMaterial color="#4CAF50" /></mesh>
         ))}
       </group>
 
-      {/* Calculator (blue, bottom) */}
-      <group position={[0, -0.50, ICON]}>
-        <mesh>
-          <boxGeometry args={[0.22, 0.30, 0.014]} />
-          <meshBasicMaterial color="#FFFFFF" />
-        </mesh>
-        <mesh position={[0, 0.085, 0.01]}>
-          <boxGeometry args={[0.16, 0.055, 0.006]} />
-          <meshBasicMaterial color="#1565C0" />
-        </mesh>
-        {[-0.046, 0, 0.046].map((bx) =>
-          [0.01, -0.035, -0.08].map((by) => (
-            <mesh key={`b${bx}${by}`} position={[bx, by, 0.01]}>
-              <boxGeometry args={[0.038, 0.03, 0.006]} />
-              <meshBasicMaterial color="#1565C0" />
-            </mesh>
-          ))
-        )}
-        <mesh position={[0, -0.12, 0.01]}>
-          <boxGeometry args={[0.12, 0.028, 0.006]} />
-          <meshBasicMaterial color="#FF9800" />
-        </mesh>
+      {/* Calc */}
+      <group position={[0, -0.5, ICON]}>
+        <mesh><boxGeometry args={[0.22, 0.3, 0.014]} /><meshBasicMaterial color="#FFFFFF" /></mesh>
+        <mesh position={[0, 0.085, 0.01]}><boxGeometry args={[0.16, 0.055, 0.006]} /><meshBasicMaterial color="#1565C0" /></mesh>
+        {[-0.046, 0, 0.046].map(bx => [0.01, -0.035, -0.08].map(by => (
+          <mesh key={`${bx}-${by}`} position={[bx, by, 0.01]}><boxGeometry args={[0.038, 0.03, 0.006]} /><meshBasicMaterial color="#1565C0" /></mesh>
+        )))}
+        <mesh position={[0, -0.12, 0.01]}><boxGeometry args={[0.12, 0.028, 0.006]} /><meshBasicMaterial color="#FF9800" /></mesh>
       </group>
-
-      {/* ─── Back face (visible when rotated past 90°) ─── */}
-      <mesh geometry={geos.orange} position={[0, 0, BACK]}>
-        <meshBasicMaterial color="#FF9800" side={THREE.BackSide} />
-      </mesh>
-      <mesh geometry={geos.green} position={[0, 0, BACK]}>
-        <meshBasicMaterial color="#4CAF50" side={THREE.BackSide} />
-      </mesh>
-      <mesh geometry={geos.blue} position={[0, 0, BACK]}>
-        <meshBasicMaterial color="#2196F3" side={THREE.BackSide} />
-      </mesh>
     </group>
   );
 });
 
-// Display name for debugging
 ShieldLogo.displayName = 'ShieldLogo';
 
-interface Portal3DProps {
-  className?: string;
-  scrollProgressRef?: { current: number };
-}
-
-const Portal3D = memo(({ className = '', scrollProgressRef }: Portal3DProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  // R3F Canvas handles resize internally via its own ResizeObserver.
-  // The old manual resize handler was a no-op wrapped in debounce that
-  // leaked timer references. Removed entirely — R3F's `resize` prop handles it.
-
+const Portal3D = memo(({ className = '', scrollProgressRef }: { className?: string; scrollProgressRef?: { current: number } }) => {
   return (
-    <div 
-      ref={containerRef}
-      className={`w-full h-full ${className}`} 
-      style={{ cursor: 'grab' }}
-    >
+    <div className={`w-full h-full ${className}`} style={{ cursor: 'grab' }}>
       <WebGLErrorBoundary fallback={<ShieldFallback />}>
         <Canvas
           camera={{ position: [0, 0, 3.5], fov: 40 }}
-          gl={{ 
-            antialias: true, 
-            alpha: true, 
-            toneMapping: THREE.NoToneMapping,
-            powerPreference: 'high-performance',
-            preserveDrawingBuffer: false,
-          }}
+          gl={{ antialias: true, alpha: true, toneMapping: THREE.NoToneMapping, powerPreference: 'high-performance' }}
           dpr={CLAMPED_DPR}
           style={{ background: 'transparent' }}
           resize={{ debounce: 100, scroll: false }}
@@ -417,7 +240,5 @@ const Portal3D = memo(({ className = '', scrollProgressRef }: Portal3DProps) => 
   );
 });
 
-// Display name for debugging
 Portal3D.displayName = 'Portal3D';
-
 export default Portal3D;

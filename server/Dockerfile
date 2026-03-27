@@ -1,40 +1,35 @@
-# ─── Build Stage ───
-FROM node:20-alpine AS builder
-
+FROM node:20-alpine AS base
 WORKDIR /app
-# Copy package manifests and install dependencies
-COPY package*.json ./
-RUN npm ci
+RUN corepack enable
 
-# Copy server source code and prisma schema
-COPY tsconfig.json .
+FROM base AS deps
+COPY package.json package-lock.json* ./
+RUN npm ci --ignore-scripts
 COPY prisma ./prisma
-COPY src ./src
-
-# Generate prisma client and build TypeScript
 RUN npx prisma generate
-RUN npm run build
 
-# ─── Production Stage ───
-FROM node:20-alpine AS runner
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npx esbuild src/server.ts \
+    --bundle \
+    --platform=node \
+    --target=node20 \
+    --format=cjs \
+    --outfile=dist/server.cjs \
+    --alias:@=./src \
+    --external:./node_modules/* \
+    --external:@prisma/client \
+    --external:dotenv
 
-WORKDIR /app
+FROM base AS production
 ENV NODE_ENV=production
-
-# Copy package manifests for production install
-COPY package*.json ./
-RUN npm ci --omit=dev
-
-# Copy generated Prisma client
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
-# Copy built code
-COPY --from=builder /app/dist ./dist
-
-# Create a non-root user for security
-RUN addgroup -S nodejs && adduser -S -G nodejs fastifyuser
-USER fastifyuser
-
+COPY --from=deps /app/node_modules ./node_modules
+RUN apk add --no-cache wget
+COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/dist ./dist
+COPY prisma ./prisma
+COPY package.json ./
 EXPOSE 3001
-CMD ["npm", "start"]
+USER node
+CMD ["node", "dist/server.cjs"]

@@ -11,10 +11,9 @@ import * as THREE from 'three';
 const BODY_DEPTH = 0.18;
 const RIM_DEPTH = 0.22;
 
-// Clamped DPR for resize stability (max 2)
 const CLAMPED_DPR: [number, number] = [1, 2];
 
-/* ─── Lightweight error boundary for WebGL Canvas ──────────────── */
+/* ─── WebGL Guard ─── */
 interface WebGLGuardState { hasError: boolean }
 class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, WebGLGuardState> {
   state: WebGLGuardState = { hasError: false };
@@ -27,39 +26,25 @@ class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: Reac
   }
 }
 
-/** Static CSS-only shield placeholder shown when WebGL context fails */
 const ShieldFallback = () => (
-  <div style={{
-    width: '100%', height: '100%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  }}>
-    <div style={{
-      width: 120, height: 140,
-      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-      clipPath: 'polygon(50% 0%, 100% 25%, 100% 65%, 50% 100%, 0% 65%, 0% 25%)',
-      opacity: 0.7,
-    }} />
+  <div className="w-full h-full flex items-center justify-center">
+    <div style={{ width: 120, height: 140, background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', clipPath: 'polygon(50% 0%, 100% 25%, 100% 65%, 50% 100%, 0% 65%, 0% 25%)', opacity: 0.7 }} />
   </div>
 );
 
-// Dispose all Three.js resources in a scene
-const disposeScene = (scene: THREE.Scene) => {
-  scene.traverse((object) => {
-    if (object instanceof THREE.Mesh) {
-      if (object.geometry) object.geometry.dispose();
-      if (object.material) {
-        if (Array.isArray(object.material)) object.material.forEach((mat) => mat.dispose());
-        else object.material.dispose();
-      }
-    }
-  });
+const disposeObject = (obj: any) => {
+  if (obj.geometry) obj.geometry.dispose();
+  if (obj.material) {
+    if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
+    else obj.material.dispose();
+  }
 };
 
 const SceneCleanup = () => {
   const { gl, scene } = useThree();
   useLayoutEffect(() => {
     return () => {
-      disposeScene(scene);
+      scene.traverse((o) => { if ((o as any).isMesh) disposeObject(o); });
       gl.dispose();
     };
   }, [gl, scene]);
@@ -69,15 +54,9 @@ const SceneCleanup = () => {
 const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current: number } }) => {
   const groupRef = useRef<THREE.Group>(null);
   const autoAngle = useRef(0);
-  const mouse = useRef({ x: 0, y: 0 });
-  const targetScale = useRef(new THREE.Vector3(1, 1, 1));
-  const { pointer } = useThree();
-  const hovered = useRef(false);
-  const hoverLerp = useRef(0);
 
   const geos = useMemo(() => {
     const W = 0.78, HT = 0.88, HB = 1.0;
-
     const makeShield = (w: number, ht: number, hb: number) => {
       const s = new THREE.Shape();
       s.moveTo(-w, ht * 0.78);
@@ -96,70 +75,46 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
     const rimOuter = makeShield(W * 1.12, HT * 1.07, HB * 1.06);
     rimOuter.holes.push(inner.clone());
 
-    const orange = new THREE.Shape();
-    orange.moveTo(-W, HT * 0.78);
-    orange.quadraticCurveTo(-W * 0.5, HT, 0, HT * 1.06);
-    orange.lineTo(0, 0);
-    orange.lineTo(-W, 0);
-    orange.closePath();
-
-    const green = new THREE.Shape();
-    green.moveTo(0, HT * 1.06);
-    green.quadraticCurveTo(W * 0.5, HT, W, HT * 0.78);
-    green.lineTo(W, 0);
-    green.lineTo(0, 0);
-    green.closePath();
-
-    const blue = new THREE.Shape();
-    blue.moveTo(-W, 0);
-    blue.lineTo(W, 0);
-    blue.quadraticCurveTo(W, -HB * 0.35, W * 0.55, -HB * 0.65);
-    blue.quadraticCurveTo(W * 0.28, -HB * 0.85, 0, -HB);
-    blue.quadraticCurveTo(-W * 0.28, -HB * 0.85, -W * 0.55, -HB * 0.65);
-    blue.quadraticCurveTo(-W, -HB * 0.35, -W, 0);
-    blue.closePath();
+    const oS = new THREE.Shape(); oS.moveTo(-W, HT * 0.78); oS.quadraticCurveTo(-W * 0.5, HT, 0, HT * 1.06); oS.lineTo(0, 0); oS.lineTo(-W, 0); oS.closePath();
+    const gS = new THREE.Shape(); gS.moveTo(0, HT * 1.06); gS.quadraticCurveTo(W * 0.5, HT, W, HT * 0.78); gS.lineTo(W, 0); gS.lineTo(0, 0); gS.closePath();
+    const bS = new THREE.Shape(); bS.moveTo(-W, 0); bS.lineTo(W, 0); bS.quadraticCurveTo(W, -HB * 0.35, W * 0.55, -HB * 0.65); bS.quadraticCurveTo(W * 0.28, -HB * 0.85, 0, -HB); bS.quadraticCurveTo(-W * 0.28, -HB * 0.85, -W * 0.55, -HB * 0.65); bS.quadraticCurveTo(-W, -HB * 0.35, -W, 0); bS.closePath();
 
     return {
       body: new THREE.ExtrudeGeometry(inner, { depth: BODY_DEPTH, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.025, bevelSegments: 4 }),
       rim: new THREE.ExtrudeGeometry(rimOuter, { depth: RIM_DEPTH, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.02, bevelSegments: 3 }),
-      orange: new THREE.ShapeGeometry(orange),
-      green: new THREE.ShapeGeometry(green),
-      blue: new THREE.ShapeGeometry(blue),
+      orange: new THREE.ShapeGeometry(oS),
+      green: new THREE.ShapeGeometry(gS),
+      blue: new THREE.ShapeGeometry(bS),
     };
   }, []);
 
   useEffect(() => {
-    return () => {
-      Object.values(geos).forEach(g => g.dispose());
-    };
+    return () => Object.values(geos).forEach(g => g.dispose());
   }, [geos]);
 
   useFrame((_state, delta) => {
     if (!groupRef.current) return;
     const g = groupRef.current;
     
+    // Smooth frame-rate independent rotation
     const dtClamped = Math.min(delta * 60, 3);
     const damp = (factor: number) => 1 - Math.pow(1 - factor, dtClamped);
 
-    hoverLerp.current += (hovered.current ? 1 : 0 - hoverLerp.current) * damp(0.12);
-    mouse.current.x += (pointer.x - mouse.current.x) * damp(0.04);
-    mouse.current.y += (pointer.y - mouse.current.y) * damp(0.04);
-
     const scrollP = scrollProgressRef?.current ?? 0;
-    const baseSpeed = hovered.current ? 0.08 : 0.25;
-    autoAngle.current += delta * (baseSpeed + scrollP * scrollP * 3.5);
+    // Automatic rotation speed — slightly boosted by scroll for dynamic feel
+    autoAngle.current += delta * (0.28 + scrollP * scrollP * 3.5);
 
-    const tY = autoAngle.current + (mouse.current.x * 0.6 * hoverLerp.current);
-    const tX = hovered.current ? -mouse.current.y * 0.25 : Math.sin(_state.clock.elapsedTime * 0.3) * 0.04 + scrollP * 0.15;
+    // Target rotation based on autoAngle
+    const tY = autoAngle.current;
+    const tX = Math.sin(_state.clock.elapsedTime * 0.4) * 0.06 + scrollP * 0.15;
 
-    const lerpFactor = damp(0.035 + scrollP * 0.04);
+    // Apply smooth damping
+    const lerpFactor = damp(0.04 + scrollP * 0.04);
     g.rotation.y += (tY - g.rotation.y) * lerpFactor;
     g.rotation.x += (tX - g.rotation.x) * lerpFactor;
+    
+    // Gentle floating bob
     g.position.y = Math.sin(_state.clock.elapsedTime * 0.35) * 0.08 * (1 - scrollP * 0.8);
-
-    const s = 1.0 + (0.05 * hoverLerp.current);
-    targetScale.current.set(s, s, s);
-    g.scale.lerp(targetScale.current, damp(0.1));
   });
 
   const bodyZ = -BODY_DEPTH / 2;
@@ -169,7 +124,7 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
   const ICON = FRONT + 0.015;
 
   return (
-    <group ref={groupRef} onPointerOver={() => { hovered.current = true; }} onPointerOut={() => { hovered.current = false; }}>
+    <group ref={groupRef}>
       <mesh geometry={geos.body} position={[0, 0, bodyZ]}>
         <meshStandardMaterial color="#1a2332" metalness={0.4} roughness={0.5} side={THREE.DoubleSide} />
       </mesh>
@@ -182,7 +137,7 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
       <mesh position={[0, 0, DIV]}><boxGeometry args={[1.58, 0.035, 0.01]} /><meshBasicMaterial color="#D4A843" /></mesh>
       <mesh position={[0, 0.47, DIV]}><boxGeometry args={[0.035, 0.94, 0.01]} /><meshBasicMaterial color="#D4A843" /></mesh>
       
-      {/* Σ / Z */}
+      {/* Sigma / Z */}
       <group position={[-0.39, 0.47, ICON]}>
         <mesh position={[0, 0.14, 0]}><boxGeometry args={[0.24, 0.04, 0.018]} /><meshBasicMaterial color="#FFFFFF" /></mesh>
         <mesh rotation={[0, 0, -0.82]}><boxGeometry args={[0.34, 0.035, 0.018]} /><meshBasicMaterial color="#FFFFFF" /></mesh>
@@ -219,7 +174,7 @@ ShieldLogo.displayName = 'ShieldLogo';
 
 const Portal3D = memo(({ className = '', scrollProgressRef }: { className?: string; scrollProgressRef?: { current: number } }) => {
   return (
-    <div className={`w-full h-full ${className}`} style={{ cursor: 'grab' }}>
+    <div className={`w-full h-full ${className}`}>
       <WebGLErrorBoundary fallback={<ShieldFallback />}>
         <Canvas
           camera={{ position: [0, 0, 3.5], fov: 40 }}

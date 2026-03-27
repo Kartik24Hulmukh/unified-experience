@@ -1,7 +1,6 @@
 import { useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-// ScrollTrigger registered in lib/gsap-init.ts
 
 const PRINCIPLES = [
   { title: 'Trust First',         desc: 'Verified users, admin oversight' },
@@ -26,67 +25,74 @@ const FooterSection = () => {
     if (!section) return;
 
     const ctx = gsap.context(() => {
+      // ── Eyebrow ──────────────────────────────────────────────────────────
+      gsap.from(
+        '.ftr-eyebrow',
+        {
+          opacity: 0, y: 20, duration: 0.8, ease: 'power3.out',
+          scrollTrigger: { trigger: section, start: 'top 95%' },
+        }
+      );
 
       // ── Main heading ───────────────────────────────────────────────────────
       gsap.from(
         '.ftr-heading',
         {
-          opacity: 0, y: 60, duration: 1, ease: 'power3.out',
-          scrollTrigger: { trigger: section, start: 'top 95%' },
+          opacity: 0, y: 50, duration: 1, ease: 'power3.out',
+          scrollTrigger: { trigger: section, start: 'top 90%' },
         },
       );
 
-      // ── Description paragraph ──────────────────────────────────────────────
+      // ── Description ────────────────────────────────────────────────────────
       gsap.from(
         '.ftr-desc',
         {
           opacity: 0, y: 30, duration: 0.9, ease: 'power2.out',
-          scrollTrigger: { trigger: section, start: 'top 95%' },
+          scrollTrigger: { trigger: section, start: 'top 85%' },
         },
       );
 
-      // ── Stats row — staggered ──────────────────────────────────────────────
+      // ── Stats row ──────────────────────────────────────────────────────────
       gsap.from(
         '.ftr-stat',
         {
-          opacity: 0, y: 25, stagger: 0.12, duration: 0.7, ease: 'power2.out',
+          opacity: 0, y: 25, stagger: 0.1, duration: 0.7, ease: 'power2.out',
           scrollTrigger: { trigger: '.ftr-stats', start: 'top 95%' },
         },
       );
 
-      // ── Module links — staggered ───────────────────────────────────────────
+      // ── Module links ───────────────────────────────────────────────────────
       gsap.from(
         '.ftr-module',
         {
-          opacity: 0, y: 16, stagger: 0.07, duration: 0.55, ease: 'power2.out',
+          opacity: 0, y: 15, stagger: 0.05, duration: 0.5, ease: 'power2.out',
           scrollTrigger: { trigger: '.ftr-modules', start: 'top 95%' },
         },
       );
 
-      // ── Principles grid — staggered ────────────────────────────────────────
+      // ── Principles ─────────────────────────────────────────────────────────
       gsap.from(
         '.ftr-principle',
         {
-          opacity: 0, x: -18, stagger: 0.1, duration: 0.65, ease: 'power2.out',
-          scrollTrigger: { trigger: '.ftr-principles', start: 'top 98%' },
+          opacity: 0, x: -15, stagger: 0.1, duration: 0.6, ease: 'power2.out',
+          scrollTrigger: { trigger: '.ftr-principles', start: 'top 95%' },
         },
       );
 
-      // ── Bottom divider scaleX on enter ────────────────────────────────────
+      // ── Bottom bar ─────────────────────────────────────────────────────────
       gsap.fromTo(
         '.ftr-divider',
         { scaleX: 0, transformOrigin: 'left' },
         {
-          scaleX: 1, duration: 1.1, ease: 'power3.inOut',
+          scaleX: 1, duration: 1, ease: 'power3.inOut',
           scrollTrigger: { trigger: '.ftr-bottom', start: 'top bottom' },
         },
       );
 
-      // ── Bottom bar text ────────────────────────────────────────────────────
       gsap.from(
         '.ftr-bottom-text',
         {
-          opacity: 0, y: 12, stagger: 0.15, duration: 0.6, ease: 'power2.out',
+          opacity: 0, y: 10, stagger: 0.1, duration: 0.6, ease: 'power2.out',
           scrollTrigger: { trigger: '.ftr-bottom', start: 'top bottom' },
         },
       );
@@ -99,37 +105,33 @@ const FooterSection = () => {
   return (
     <footer
       ref={sectionRef}
-      className="relative bg-portal min-h-[90vh] flex flex-col pt-32 pb-16"
+      className="relative bg-portal min-h-[85vh] flex flex-col pt-24 pb-12 overflow-hidden"
     >
-      {/* Grid overlay — same density as CampusEventsSection */}
+      {/* Dynamic Grid Background */}
       <div
-        className="absolute inset-0 pointer-events-none z-0"
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(163,255,18,0.02) 1px, transparent 1px),' +
-            'linear-gradient(90deg, rgba(163,255,18,0.02) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
+            'linear-gradient(rgba(163,255,18,1) 1px, transparent 1px), linear-gradient(90deg, rgba(163,255,18,1) 1px, transparent 1px)',
+          backgroundSize: '100px 100px',
         }}
       />
 
-      {/* Radial vignette */}
-      <div
-        className="absolute inset-0 pointer-events-none z-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(163,255,18,0.04) 0%, transparent 70%)',
-        }}
-      />
+      <div className="relative z-10 w-full max-w-[1280px] mx-auto px-6 sm:px-12 md:px-20 flex-1 flex flex-col">
+        
+        {/* ── Eyebrow Tag ────────────────────────────────────────────────────── */}
+        <div className="ftr-eyebrow flex items-center justify-center gap-4 mb-8">
+          <div className="h-px w-8 bg-[#a3ff12]/30 hidden sm:block" />
+          <span className="text-[#a3ff12] font-mono text-[9px] uppercase tracking-[0.5em] font-medium">
+            Institutional Platform
+          </span>
+          <div className="h-px w-8 bg-[#a3ff12]/30 hidden sm:block" />
+        </div>
 
-      <div className="relative z-10 w-full max-w-[1800px] mx-auto px-6 sm:px-12 md:px-24 flex-1 flex flex-col justify-between">
-
-        {/* ── Eyebrow ────────────────────────────────────────────────────────── */}
-
-
-        {/* ── Main heading ───────────────────────────────────────────────────── */}
+        {/* ── Heading ────────────────────────────────────────────────────────── */}
         <h2
-          className="ftr-heading font-display font-bold uppercase leading-[0.9] tracking-[-0.05em] text-center text-portal-foreground mb-8"
-          style={{ fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}
+          className="ftr-heading font-display font-bold uppercase leading-[0.9] tracking-[-0.05em] text-center text-portal-foreground mb-10"
+          style={{ fontSize: 'clamp(3rem, 7vw, 5.5rem)' }}
         >
           A Trust-Centric
           <br />
@@ -137,65 +139,75 @@ const FooterSection = () => {
         </h2>
 
         {/* ── Description ────────────────────────────────────────────────────── */}
-        <p className="ftr-desc text-portal-foreground/40 font-body text-base leading-relaxed text-center max-w-xl mx-auto mb-16">
+        <p className="ftr-desc text-portal-foreground/40 font-body text-base leading-relaxed text-center max-w-xl mx-auto mb-20">
           BErozgar transforms informal student practices into a structured,
           trusted platform for academic exchange, accommodation discovery,
           and daily living support.
         </p>
 
-        {/* ── Stats row ──────────────────────────────────────────────────────── */}
-        <div className="ftr-stats flex flex-col sm:flex-row justify-between items-center sm:items-start gap-8 md:gap-12 mb-16 w-full mx-auto">
+        {/* ── Stats Row ──────────────────────────────────────────────────────── */}
+        <div className="ftr-stats grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-6 mb-24 max-w-4xl mx-auto w-full">
           {STATS.map((s) => (
-            <div key={s.label} className="ftr-stat text-center sm:text-left flex flex-col items-center sm:items-start w-full sm:w-1/3">
-              <p className="text-portal-foreground/25 font-mono text-[9px] uppercase tracking-[0.4em] mb-2">
+            <div key={s.label} className="ftr-stat flex flex-col items-center text-center px-4">
+              <p className="text-portal-foreground/25 font-mono text-[9px] uppercase tracking-[0.4em] mb-3">
                 {s.label}
               </p>
-              <p className="text-portal-foreground font-display text-lg uppercase tracking-wide">
+              <p className="text-portal-foreground font-display text-xl uppercase tracking-wide">
                 {s.value}
               </p>
             </div>
           ))}
         </div>
 
-        {/* ── Horizontal rule ────────────────────────────────────────────────── */}
-        <div className="h-px bg-portal-foreground/10 mb-12" />
-
-        {/* ── Module quick-links ─────────────────────────────────────────────── */}
-        <div className="ftr-modules flex flex-wrap justify-center gap-x-8 gap-y-6 mb-14">
+        {/* ── Modules Quick Links ────────────────────────────────────────────── */}
+        <div className="ftr-modules flex flex-wrap justify-center gap-x-10 gap-y-6 mb-20 py-8 border-y border-portal-foreground/5">
           {MODULES.map((mod) => (
             <span
               key={mod}
-              className="ftr-module font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] text-portal-foreground/60 hover:text-[#a3ff12] transition-colors duration-300 cursor-default"
+              className="ftr-module font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] text-portal-foreground/60 hover:text-[#a3ff12] transition-colors duration-300 cursor-pointer"
             >
               {mod}
             </span>
           ))}
         </div>
 
-        {/* ── Core Principles ────────────────────────────────────────────────── */}
-        <div className="ftr-principles grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-20 w-full">
+        {/* ── Principles Grid ────────────────────────────────────────────────── */}
+        <div className="ftr-principles grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-24">
           {PRINCIPLES.map((p) => (
-            <div key={p.title} className="ftr-principle border-l border-[#a3ff12]/20 pl-4 w-full">
-              <h3 className="text-portal-foreground font-display text-sm md:text-xs uppercase tracking-wider mb-2">
+            <div key={p.title} className="ftr-principle border-l border-[#a3ff12]/20 pl-6 group">
+              <h3 className="text-portal-foreground font-display text-sm uppercase tracking-wider mb-3 group-hover:text-[#a3ff12] transition-colors duration-300">
                 {p.title}
               </h3>
-              <p className="text-portal-foreground/50 text-xs font-body leading-relaxed">
+              <p className="text-portal-foreground/50 text-[12px] font-body leading-relaxed">
                 {p.desc}
               </p>
             </div>
           ))}
         </div>
 
-        {/* ── Bottom bar ─────────────────────────────────────────────────────── */}
-        <div className="ftr-bottom w-full">
-          <div className="ftr-divider h-px bg-portal-foreground/20 mb-7" />
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="ftr-bottom-text text-portal-foreground/40 font-mono text-[10px] uppercase tracking-[0.3em] text-center md:text-left">
+        {/* ── Bottom Section ─────────────────────────────────────────────────── */}
+        <div className="ftr-bottom mt-auto">
+          <div className="ftr-divider h-px bg-portal-foreground/15 mb-10" />
+          
+          <div className="flex flex-col lg:flex-row justify-between items-center gap-6 pb-4">
+            {/* Logo/Context Branding */}
+            <div className="ftr-bottom-text flex items-center gap-3">
+               <div className="w-8 h-8 rounded-sm bg-[#a3ff12] flex items-center justify-center font-display font-bold text-black text-[12px]">B</div>
+               <div className="flex flex-col">
+                  <span className="text-portal-foreground font-display text-[11px] uppercase tracking-tighter leading-none">BErozgar</span>
+                  <span className="text-portal-foreground/30 font-mono text-[8px] uppercase tracking-[0.2em] leading-none mt-1">Campus Portal v1.4</span>
+               </div>
+            </div>
+
+            <p className="ftr-bottom-text text-portal-foreground/40 font-mono text-[9px] uppercase tracking-[0.3em] order-3 lg:order-2">
               © 2026 BErozgar — Rozgar for Resources
             </p>
-            <p className="ftr-bottom-text text-portal-foreground/40 font-mono text-[10px] uppercase tracking-[0.3em] text-center md:text-right">
-              Non-Commercial · Privacy-Aware · Admin-Governed
-            </p>
+
+            <div className="ftr-bottom-text flex gap-8 order-2 lg:order-3">
+               <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em] hover:text-[#a3ff12] cursor-pointer transition-colors">Privacy</span>
+               <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em] hover:text-[#a3ff12] cursor-pointer transition-colors">Security</span>
+               <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em] hover:text-[#a3ff12] cursor-pointer transition-colors">Governance</span>
+            </div>
           </div>
         </div>
 

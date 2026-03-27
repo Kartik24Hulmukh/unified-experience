@@ -66,7 +66,7 @@ const ContextNav = memo(function ContextNav() {
   const isLandingPage = location.pathname === '/';
   const isHomepage = location.pathname === '/home';
 
-    const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics', '/admin', '/profile'];
+    const darkBgPages = ['/resale', '/accommodation', '/essentials', '/academics', '/admin', '/profile', '/mess', '/hospital', '/jobs'];
     const isDarkBgPage = darkBgPages.includes(location.pathname);
 
   // Track scroll position and update nav style

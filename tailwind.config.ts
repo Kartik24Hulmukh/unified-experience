@@ -1,4 +1,4 @@
-﻿import type { Config } from "tailwindcss";
+import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
@@ -66,6 +66,17 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        "cyber-black": "#0a0a0c",
+        "cyber-blue": "#00f0ff",
+        "cyber-accent-blue": "#00a3ff",
+        "cyber-gray": {
+          900: "#111115",
+          800: "#1a1a20",
+          600: "#2a2a35",
+          500: "#4a4a5a",
+          400: "#8a8a9a",
+          300: "#cccccc"
         },
       },
       borderRadius: {

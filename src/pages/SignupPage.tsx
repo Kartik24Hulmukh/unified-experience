@@ -186,7 +186,7 @@ const SignupPage = () => {
                                                 <div className="relative">
                                                     <Mail className="absolute left-0 top-3 w-4 h-4 text-white/30" />
                                                     <Input
-                                                        placeholder="you@gmail.com"
+                                                        placeholder="you@mctrgit.ac.in"
                                                         {...field}
                                                         className="bg-black/50 border-white/10 text-white h-12 rounded-none border-b-2 border-x-0 border-t-0 pl-8 focus-visible:ring-0 focus-visible:border-primary transition-all duration-300"
                                                     />

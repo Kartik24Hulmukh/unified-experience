@@ -90,6 +90,11 @@ const LandingPage = () => {
         yPercent: -100,
         duration: 0.5,
         ease: 'power4.inOut',
+        onComplete: () => {
+          if (loaderRef.current) {
+            loaderRef.current.style.display = 'none';
+          }
+        }
       });
 
       // Content reveal — stagger from bottom
@@ -224,11 +229,13 @@ const LandingPage = () => {
         <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 md:px-12 py-6 pointer-events-none">
           {/* Brand */}
           <div ref={navBrandRef} className="flex items-center gap-3 opacity-0 pointer-events-auto">
-            <img 
-              src="/logo.png" 
-              alt="BErozgar Logo" 
-              className="w-7 h-7 object-contain" 
-            />
+            <div className="flex items-center justify-center w-7 h-7 bg-white rounded-md overflow-hidden border border-white/10 shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+              <img 
+                src="/logo.png" 
+                alt="BErozgar Logo" 
+                className="w-full h-full object-contain scale-90" 
+              />
+            </div>
             <span className="text-white font-display font-bold text-lg tracking-tight uppercase hidden md:block">
               BErozgar
             </span>
@@ -273,13 +280,15 @@ const LandingPage = () => {
               {/* Portal inside the text row */}
               <div
                 ref={portalContainerRef}
-                className="relative w-[clamp(60px,8vw,120px)] h-[clamp(60px,8vw,120px)] shrink-0 opacity-0"
+                className="relative w-[clamp(60px,8vw,120px)] h-[clamp(60px,8vw,120px)] shrink-0 opacity-0 flex items-center justify-center pointer-events-none"
               >
-                <Suspense fallback={
-                  <div className="w-full h-full border-2 border-white/20 rotate-45 animate-pulse" />
-                }>
-                  <Portal3D className="w-full h-full" />
-                </Suspense>
+                {loadComplete ? (
+                  <Suspense fallback={<div className="w-4/5 h-4/5 border-2 border-white/20 rotate-45 animate-pulse" />}>
+                    <Portal3D className="w-full h-full" />
+                  </Suspense>
+                ) : (
+                  <div className="w-4/5 h-4/5 border-2 border-white/20 rotate-45 animate-pulse" />
+                )}
               </div>
             </div>
           </div>

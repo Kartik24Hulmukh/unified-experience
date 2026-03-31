@@ -86,7 +86,7 @@ export async function buildApp() {
   await registerRateLimit(app);
   await app.register(csrfPlugin);
   await app.register(sanitizePlugin);
-  await app.register(compress, { global: true, encodings: ['brotli', 'gzip'] });
+  await app.register(compress, { global: true });
 
   // ── Request ID propagation ──────────────────────
   app.addHook('onRequest', async (request, reply) => {

@@ -46,9 +46,9 @@ const JobsPage = () => {
           </div>
           
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 uppercase tracking-tight">
-            <SplitText text="OPPORTUNITY" delay={0.1} /> <br />
+            <SplitText delay={0.1}>OPPORTUNITY</SplitText> <br />
             <span className="text-cyber-blue">
-              <SplitText text="EXCHANGE" delay={0.3} />
+              <SplitText delay={0.3}>EXCHANGE</SplitText>
             </span>
           </h1>
           

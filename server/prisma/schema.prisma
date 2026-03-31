@@ -1,7 +1,3 @@
-// BErozgar — Production Database Schema
-// PostgreSQL 15+ via Prisma ORM
-// Phase 2+: Full integrity. UUID PKs, snake_case columns, FK cascades.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,9 +7,184 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ═══════════════════════════════════════════════════
-// Enums
-// ═══════════════════════════════════════════════════
+model User {
+  id                  String          @id @default(uuid())
+  googleId            String?         @unique @map("google_id")
+  email               String          @unique
+  fullName            String          @map("full_name")
+  password            String?
+  role                UserRole        @default(PUBLIC_USER)
+  trustStatus         String          @default("GOOD_STANDING") @map("trust_status")
+  verified            Boolean         @default(false)
+  completedExchanges  Int             @default(0) @map("completed_exchanges")
+  cancelledRequests   Int             @default(0) @map("cancelled_requests")
+  adminFlags          Int             @default(0) @map("admin_flags")
+  failedLoginAttempts Int             @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?       @map("locked_until")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+  avatarUrl           String?         @map("avatar_url")
+  isRestricted        Boolean         @default(false) @map("is_restricted")
+  privilegeLevel      PrivilegeLevel  @default(STANDARD) @map("privilege_level")
+  restrictionReason   String?         @map("restriction_reason")
+  collegeStudentId    String?         @unique @map("college_student_id")
+  auditLogs           AuditLog[]      @relation("AuditActor")
+  disputesAgainst     Dispute[]       @relation("AgainstDisputes")
+  disputes            Dispute[]       @relation("RaisedDisputes")
+  listings            Listing[]
+  otps                Otp[]
+  refreshTokens       RefreshToken[]
+  buyerRequests       Request[]       @relation("BuyerRequests")
+  sellerRequests      Request[]       @relation("SellerRequests")
+  collegeStudent      CollegeStudent? @relation(fields: [collegeStudentId], references: [id])
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model CollegeStudent {
+  id            String   @id @default(uuid())
+  name          String
+  officialEmail String   @unique @map("official_email")
+  phone         String?
+  department    String?
+  year          String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  user          User?
+
+  @@index([officialEmail])
+  @@map("college_students")
+}
+
+model RefreshToken {
+  id              String    @id @default(uuid())
+  token           String    @unique
+  userId          String    @map("user_id")
+  expiresAt       DateTime  @map("expires_at")
+  revokedAt       DateTime? @map("revoked_at")
+  replacedByToken String?   @map("replaced_by_token")
+  userAgent       String?   @map("user_agent")
+  ipAddress       String?   @map("ip_address")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Otp {
+  id        String    @id @default(uuid())
+  email     String
+  code      String
+  userId    String?   @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  attempts  Int       @default(0)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, code])
+  @@map("otps")
+}
+
+model Listing {
+  id          String        @id @default(uuid())
+  ownerId     String        @map("owner_id")
+  title       String
+  price       Decimal       @default(0)
+  status      ListingStatus @default(DRAFT)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  category    String?
+  description String?
+  module      String?
+  disputes    Dispute[]     @relation("DisputeListing")
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  requests    Request[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt(sort: Desc)])
+  @@map("listings")
+}
+
+model Request {
+  id        String        @id @default(uuid())
+  listingId String        @map("listing_id")
+  buyerId   String        @map("buyer_id")
+  status    RequestStatus @default(IDLE)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  sellerId  String        @map("seller_id")
+  version   Int           @default(0)
+  disputes  Dispute[]
+  buyer     User          @relation("BuyerRequests", fields: [buyerId], references: [id])
+  listing   Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  seller    User          @relation("SellerRequests", fields: [sellerId], references: [id])
+
+  @@index([listingId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@map("requests")
+}
+
+model Dispute {
+  id          String        @id @default(uuid())
+  requestId   String?       @map("request_id")
+  raisedById  String        @map("raised_by")
+  status      DisputeStatus @default(OPEN)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  againstId   String        @map("against_id")
+  description String
+  listingId   String?       @map("listing_id")
+  type        DisputeType
+  against     User          @relation("AgainstDisputes", fields: [againstId], references: [id])
+  listing     Listing?      @relation("DisputeListing", fields: [listingId], references: [id])
+  raisedBy    User          @relation("RaisedDisputes", fields: [raisedById], references: [id])
+  request     Request?      @relation(fields: [requestId], references: [id])
+
+  @@index([raisedById])
+  @@index([againstId])
+  @@index([status])
+  @@map("disputes")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  actorRole  String?  @map("actor_role")
+  ipAddress  String?  @map("ip_address")
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model IdempotencyKey {
+  id             String   @id @default(uuid())
+  key            String   @unique
+  userId         String   @map("user_id")
+  responseStatus Int      @map("response_status")
+  responseBody   Json     @map("response_body")
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([key, userId])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
 
 enum UserRole {
   STUDENT_VERIFIED
@@ -23,12 +194,11 @@ enum UserRole {
 
 enum PrivilegeLevel {
   STANDARD
+  SUPER
   OBSERVER
   REVIEWER
-  SUPER
 }
 
-// ListingStatus maps 1:1 to ListingMachine states
 enum ListingStatus {
   DRAFT
   PENDING_REVIEW
@@ -43,7 +213,6 @@ enum ListingStatus {
   REMOVED
 }
 
-// RequestStatus maps 1:1 to RequestMachine states
 enum RequestStatus {
   IDLE
   SENT
@@ -71,240 +240,4 @@ enum DisputeType {
   ITEM_NOT_AS_DESCRIBED
   NO_SHOW
   OTHER
-}
-
-// ═══════════════════════════════════════════════════
-// Users
-// ═══════════════════════════════════════════════════
-
-model User {
-  id                 String         @id @default(uuid())
-  googleId           String?        @unique @map("google_id")
-  email              String         @unique
-  fullName           String         @map("full_name")
-  password           String?        // null for Google-only accounts
-  role               UserRole       @default(PUBLIC_USER)
-  privilegeLevel     PrivilegeLevel @default(STANDARD) @map("privilege_level")
-  trustStatus        String         @default("GOOD_STANDING") @map("trust_status")
-  verified           Boolean        @default(false)
-  avatarUrl          String?        @map("avatar_url")
-
-  // College linkage — set when email exists in CollegeStudentRegistry
-  collegeStudentId   String?        @unique @map("college_student_id")
-  collegeStudent     CollegeStudent? @relation(fields: [collegeStudentId], references: [id])
-
-  // Restriction state
-  isRestricted       Boolean  @default(false) @map("is_restricted")
-  restrictionReason  String?  @map("restriction_reason")
-
-  completedExchanges Int      @default(0) @map("completed_exchanges")
-  cancelledRequests  Int      @default(0) @map("cancelled_requests")
-  adminFlags         Int      @default(0) @map("admin_flags")
-
-  // Account lockout — 5 failed logins → 15 min lockout
-  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
-  lockedUntil         DateTime? @map("locked_until")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt    @map("updated_at")
-
-  // Relations
-  listings         Listing[]
-  buyerRequests    Request[]      @relation("BuyerRequests")
-  sellerRequests   Request[]      @relation("SellerRequests")
-  disputes         Dispute[]      @relation("RaisedDisputes")
-  disputesAgainst  Dispute[]      @relation("AgainstDisputes")
-  auditLogs        AuditLog[]     @relation("AuditActor")
-  refreshTokens    RefreshToken[]
-  otps             Otp[]
-
-  @@index([email])
-  @@index([role])
-  @@map("users")
-}
-
-// ═══════════════════════════════════════════════════
-// College Student Registry — official college student records
-// ═══════════════════════════════════════════════════
-
-model CollegeStudent {
-  id             String  @id @default(uuid())
-  name           String
-  officialEmail  String  @unique @map("official_email")
-  phone          String?
-  department     String?
-  year           String?
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Reverse relation — at most one linked User
-  user User?
-
-  @@index([officialEmail])
-  @@map("college_students")
-}
-
-// ═══════════════════════════════════════════════════
-// Auth — Refresh Tokens (server-side rotation)
-// ═══════════════════════════════════════════════════
-
-model RefreshToken {
-  id              String    @id @default(uuid())
-  token           String    @unique// SHA-256 hex hash
-  userId          String    @map("user_id")
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt       DateTime  @map("expires_at")
-  revokedAt       DateTime? @map("revoked_at")
-  replacedByToken String?   @map("replaced_by_token")
-  userAgent       String?   @map("user_agent")
-  ipAddress       String?   @map("ip_address")
-  createdAt       DateTime  @default(now()) @map("created_at")
-
-  @@index([token])
-  @@index([userId])
-  @@map("refresh_tokens")
-}
-
-// ═══════════════════════════════════════════════════
-// Auth — OTP Verification
-// ═══════════════════════════════════════════════════
-
-model Otp {
-  id        String    @id @default(uuid())
-  email     String
-  code      String
-  userId    String?   @map("user_id")
-  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime  @map("expires_at")
-  usedAt    DateTime? @map("used_at")
-  attempts  Int       @default(0)
-  createdAt DateTime  @default(now()) @map("created_at")
-
-  @@index([email, code])
-  @@map("otps")
-}
-
-// ═══════════════════════════════════════════════════
-// Listings
-// ═══════════════════════════════════════════════════
-
-model Listing {
-  id          String        @id @default(uuid())
-  ownerId     String        @map("owner_id")
-  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  category    String?
-  module      String?       // Academic module / course code
-  price       Decimal       @default(0)
-  status      ListingStatus @default(DRAFT)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt    @map("updated_at")
-
-  // Relations
-  requests Request[]
-  disputes Dispute[]  @relation("DisputeListing")
-
-  @@index([ownerId])
-  @@index([status])
-  @@index([category])
-  @@index([createdAt(sort: Desc)])
-  @@map("listings")
-}
-
-// ═══════════════════════════════════════════════════
-// Requests (Exchange Lifecycle)
-// ═══════════════════════════════════════════════════
-
-model Request {
-  id        String        @id @default(uuid())
-  listingId String        @map("listing_id")
-  listing   Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyerId   String        @map("buyer_id")
-  buyer     User          @relation("BuyerRequests", fields: [buyerId], references: [id])
-  sellerId  String        @map("seller_id")
-  seller    User          @relation("SellerRequests", fields: [sellerId], references: [id])
-  status    RequestStatus @default(IDLE)
-  version   Int           @default(0) // Optimistic locking counter
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt    @map("updated_at")
-
-  // Relations
-  disputes Dispute[]
-
-  @@index([listingId])
-  @@index([buyerId])
-  @@index([sellerId])
-  @@index([status])
-  @@map("requests")
-}
-
-// ═══════════════════════════════════════════════════
-// Disputes
-// ═══════════════════════════════════════════════════
-
-model Dispute {
-  id          String        @id @default(uuid())
-  requestId   String?       @map("request_id")
-  request     Request?      @relation(fields: [requestId], references: [id])
-  listingId   String?       @map("listing_id")
-  listing     Listing?      @relation("DisputeListing", fields: [listingId], references: [id])
-  raisedById  String        @map("raised_by")
-  raisedBy    User          @relation("RaisedDisputes", fields: [raisedById], references: [id])
-  againstId   String        @map("against_id")
-  against     User          @relation("AgainstDisputes", fields: [againstId], references: [id])
-  type        DisputeType
-  description String
-  status      DisputeStatus @default(OPEN)
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([raisedById])
-  @@index([againstId])
-  @@index([status])
-  @@map("disputes")
-}
-
-// ═══════════════════════════════════════════════════
-// Audit Log
-// ═══════════════════════════════════════════════════
-
-model AuditLog {
-  id         String   @id @default(uuid())
-  actorId    String?  @map("actor_id")
-  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
-  action     String
-  entityType String?  @map("entity_type")
-  entityId   String?  @map("entity_id")
-  actorRole  String?  @map("actor_role")
-  ipAddress  String?  @map("ip_address")
-  metadata   Json?
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([actorId])
-  @@index([action])
-  @@index([entityType, entityId])
-  @@index([createdAt(sort: Desc)])
-  @@map("audit_logs")
-}
-
-// ═══════════════════════════════════════════════════
-// Idempotency Keys
-// ═══════════════════════════════════════════════════
-
-model IdempotencyKey {
-  id             String   @id @default(uuid())
-  key            String   @unique
-  userId         String   @map("user_id")
-  responseStatus Int      @map("response_status")
-  responseBody   Json     @map("response_body")
-  expiresAt      DateTime @map("expires_at")
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  @@index([key, userId])
-  @@index([expiresAt])
-  @@map("idempotency_keys")
 }

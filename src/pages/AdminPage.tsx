@@ -13,8 +13,10 @@ import {
     Lock,
     Search,
     Filter,
-    RefreshCw
+    RefreshCw,
+    Home
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
     Table,
     TableBody,
@@ -78,6 +80,7 @@ type ConfirmationState = {
 } | null;
 
 const AdminPage = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<AdminTab>('pending');
     const [searchQuery, setSearchQuery] = useState('');
     const [confirmation, setConfirmation] = useState<ConfirmationState>(null);
@@ -168,9 +171,18 @@ const AdminPage = () => {
                 return;
             }
 
-            const tl = gsap.timeline();
-            tl.fromTo('.admin-sidebar', { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power4.out' })
-                .fromTo('.admin-main', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.6');
+            const mm = gsap.matchMedia();
+
+            mm.add("(min-width: 1024px)", () => {
+                const tl = gsap.timeline();
+                tl.fromTo('.admin-sidebar', { x: -100, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: 'power4.out', clearProps: 'transform' })
+                  .fromTo('.admin-main', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', clearProps: 'transform' }, '-=0.6');
+            });
+
+            mm.add("(max-width: 1023px)", () => {
+                const tl = gsap.timeline();
+                tl.fromTo('.admin-main', { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out', clearProps: 'transform' });
+            });
         }, containerRef);
 
         return () => { gsapCtxRef.current?.revert(); };
@@ -268,7 +280,7 @@ const AdminPage = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
-        <div ref={containerRef} className="min-h-[100dvh] bg-portal flex text-white overflow-hidden relative">
+        <div ref={containerRef} className="min-h-[100dvh] bg-[#050505] flex text-white overflow-hidden relative">
             {/* Sidebar Architecture - Mobile Overlay */}
             {isSidebarOpen && (
                 <div 
@@ -290,8 +302,12 @@ const AdminPage = () => {
                         <X className="w-5 h-5" />
                     </button>
                     <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 border border-primary rotate-45 flex items-center justify-center">
-                            <Lock className="w-4 h-4 text-primary -rotate-45" />
+                        <div className="flex items-center justify-center w-7 h-7 bg-white rounded-md overflow-hidden border border-white/10 shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+                            <img 
+                                src="/logo.png" 
+                                alt="BErozgar Logo" 
+                                className="w-full h-full object-contain scale-90" 
+                            />
                         </div>
                         <span className="font-display font-bold tracking-tighter text-xl">CONSOLE</span>
                     </div>
@@ -299,6 +315,15 @@ const AdminPage = () => {
                 </div>
 
                 <nav className="flex-1 py-8 px-4 space-y-2 overflow-y-auto">
+                    <button
+                        onClick={() => navigate('/home')}
+                        aria-label="Back to Home"
+                        className="w-full flex items-center space-x-3 px-4 py-3 mb-4 transition-all duration-300 group hover:bg-white/5 border border-white/5 rounded-none"
+                    >
+
+                        <Home className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+                        <span className="text-[11px] uppercase font-bold tracking-widest text-white/60 group-hover:text-white">Back to Home</span>
+                    </button>
                     {[
                         { id: 'pending', label: 'Pending Approvals', icon: ShieldCheck },
                         { id: 'users', label: 'Verified Entities', icon: Users },
@@ -363,23 +388,14 @@ const AdminPage = () => {
                         </div>
                         <div className="flex items-center justify-between w-full md:w-auto gap-4">
                             <div className="flex items-center gap-3">
-                                <div className="flex flex-col items-end">
-                                    <span className="text-[8px] uppercase tracking-[0.2em] opacity-40 font-mono hidden md:inline">Identity</span>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest truncate max-w-[80px] md:max-w-[120px]">{user?.fullName?.split(' ')[0] || 'Admin'}</span>
+                                <div className="flex flex-col items-end justify-center mr-2">
+                                    <span className="text-[8px] uppercase tracking-[0.3em] opacity-40 font-mono hidden md:block mb-0.5">Identity</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] truncate max-w-[80px] md:max-w-[120px]">{user?.fullName?.split(' ')[0] || 'Admin'}</span>
                                 </div>
                                 <div className="relative w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-white text-black text-xs font-bold uppercase transition-all duration-300 hover:scale-110 cursor-default">
                                     {user?.fullName?.[0] || 'K'}
                                 </div>
                             </div>
-                            <Button
-                                variant="outline"
-                                disabled
-                                title="Filters coming soon"
-                                className="h-10 border-white/10 rounded-none text-[10px] font-bold tracking-widest uppercase px-4 sm:px-6 opacity-30 cursor-not-allowed"
-                            >
-                                <Filter className="w-3 h-3 mr-2" />
-                                <span className="hidden xs:inline">Matrix Filter</span>
-                            </Button>
                         </div>
                     </div>
                 </header>
@@ -926,8 +942,6 @@ const AdminPage = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            {/* Scanlines - z below cursor: --z-scanline: 80, --z-cursor: 90 (ISSUE-12) */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[var(--z-scanline)] bg-[length:100%_2px,3px_100%]" />
         </div >
     );
 };

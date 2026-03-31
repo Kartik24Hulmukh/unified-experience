@@ -13,7 +13,7 @@ import { hashToken } from '@/lib/token-hash';
 import { verifyGoogleToken } from '@/lib/google-oauth';
 import { generateOtp, getOtpExpiry, isOtpExpired } from '@/lib/otp';
 import { sendOtpEmail } from '@/lib/email';
-import { AUTH, ADMIN_REGISTRY } from '@/config/constants';
+import { AUTH, isEmailAdminAllowed } from '@/config/constants';
 import { env } from '@/config/env';
 import {
   UnauthorizedError,
@@ -25,6 +25,7 @@ import { computeTrust } from '@/domain/trustEngine';
 import { computeRestriction } from '@/domain/restrictionEngine';
 import type {
   SignupInput,
+  ResendOtpInput,
   LoginInput,
   VerifyOtpInput,
   GoogleSignInInput,
@@ -179,6 +180,54 @@ export async function signup(input: SignupInput): Promise<{ message: string }> {
   return { message: 'Verification code sent to your email' };
 }
 
+/** Resend OTP for an email currently in the signup flow */
+export async function resendOtp(input: ResendOtpInput): Promise<{ message: string }> {
+  // Check for existing verified user
+  const existing = await prisma.user.findUnique({
+    where: { email: input.email },
+  });
+
+  if (existing?.verified) {
+    return { message: 'Verification code sent to your email' };
+  }
+
+  // Generate and store OTP
+  const otp = generateOtp();
+  const otpRecord = await prisma.otp.create({
+    data: {
+      email: input.email,
+      code: otp,
+      expiresAt: getOtpExpiry(),
+    },
+  });
+
+  try {
+    await sendOtpEmail({
+      to: input.email,
+      otp,
+      expiresInMinutes: AUTH.OTP_EXPIRES_MINUTES,
+    });
+  } catch (err) {
+    await prisma.otp.delete({ where: { id: otpRecord.id } }).catch(() => {});
+    throw new ValidationError('Unable to send verification email. Please try again later.');
+  }
+
+  try {
+    await prisma.auditLog.create({
+      data: {
+        actorId: null,
+        action: 'AUTH_SIGNUP_REQUEST', // Reusing action as it's a resend
+        entityType: 'User',
+        metadata: { email: input.email, type: 'RESEND' },
+      },
+    });
+  } catch {
+    // Non-fatal
+  }
+
+  return { message: 'Verification code sent to your email' };
+}
+
 /* ═══════════════════════════════════════════════════
    Verify OTP & Create Account
    ═══════════════════════════════════════════════════ */
@@ -246,8 +295,9 @@ export async function verifyOtp(
 
   // Check college registry and admin registry to determine role
   const collegeRecord = await lookupCollegeStudent(input.email);
-  const isAdmin = ADMIN_REGISTRY.includes(input.email.toLowerCase().trim());
+  const isAdmin = isEmailAdminAllowed(input.email);
   const assignedRole = isAdmin ? 'ADMIN' : (collegeRecord ? 'STUDENT_VERIFIED' : 'PUBLIC_USER');
+
 
   // HIGH-A FIX: pre-compute all in-memory token values BEFORE the transaction.
   const accessToken = signAccessToken({
@@ -398,7 +448,7 @@ export async function login(
   // SELF-HEAL FEATURE: ensure admin/student roles are properly applied
   // if they were registered while .env wasn't loaded or if registry updated.
   let isRoleUpdated = false;
-  const isAdmin = ADMIN_REGISTRY.includes(user.email.toLowerCase().trim());
+  const isAdmin = isEmailAdminAllowed(user.email);
   const collegeRecord = await lookupCollegeStudent(user.email);
   if (isAdmin && user.role !== 'ADMIN') {
     user.role = 'ADMIN';
@@ -501,7 +551,7 @@ export async function googleSignIn(
 
   // Determine role based on college registry and admin registry.
   const collegeRecord = await lookupCollegeStudent(profile.email);
-  const isAdmin = ADMIN_REGISTRY.includes(profile.email.toLowerCase().trim());
+  const isAdmin = isEmailAdminAllowed(profile.email);
   const assignedRole = isAdmin ? 'ADMIN' : (collegeRecord ? 'STUDENT_VERIFIED' : 'PUBLIC_USER');
 
   // Upsert user — create if new, link Google ID if existing
@@ -615,9 +665,9 @@ export async function refreshAccessToken(
   if (record.revokedAt) {
     // ── Grace Period (Network Race Condition Fix) ──
     // If multiple tabs refresh simultaneously, the second request hits this block.
-    // If revoked < 30s ago, return a fresh access token without rotating the refresh token.
-    const graceWindowMs = 30 * 1000;
-    const isWithinGracePeriod = Date.now() - record.revokedAt.getTime() < graceWindowMs;
+    // If revoked < env.REFRESH_GRACE_PERIOD_MS ago, return a fresh access token.
+    const isWithinGracePeriod =
+      Date.now() - record.revokedAt.getTime() < env.REFRESH_GRACE_PERIOD_MS;
 
     if (isWithinGracePeriod) {
       // Just issue a new access token. The other concurrent request is rotating the cookie.
@@ -724,7 +774,7 @@ export async function getCurrentUser(userId: string) {
 
   // SELF-HEAL FEATURE: ensure admin/student roles are properly applied dynamically.
   let isRoleUpdated = false;
-  const isAdmin = ADMIN_REGISTRY.includes(user.email.toLowerCase().trim());
+  const isAdmin = isEmailAdminAllowed(user.email);
   const collegeRecord = await lookupCollegeStudent(user.email);
   if (isAdmin && user.role !== 'ADMIN') {
     user.role = 'ADMIN';

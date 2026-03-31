@@ -19,12 +19,14 @@ import { validate } from '@/middleware/validate';
 import { normalize } from '@/shared/response';
 import {
   signupSchema,
+  resendOtpSchema,
   verifyOtpSchema,
   loginSchema,
   googleSignInSchema,
 } from '@/shared/validation';
 import type {
   SignupInput,
+  ResendOtpInput,
   VerifyOtpInput,
   LoginInput,
   GoogleSignInInput,
@@ -116,6 +118,25 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const result = await authService.signup(request.body as SignupInput);
+      return reply.status(200).send(result);
+    },
+  );
+
+  /** POST /resend-otp — resend code to an email in the flow */
+  app.post(
+    '/resend-otp',
+    { preValidation: validate(resendOtpSchema) },
+    async (request, reply) => {
+      const { email } = request.body as { email: string };
+      if (!checkEmailRateLimit(email)) {
+        return reply.status(429).send({
+          error: 'Too Many Requests',
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: 'Too many resend attempts. Please wait.',
+        });
+      }
+
+      const result = await authService.resendOtp(request.body as ResendOtpInput);
       return reply.status(200).send(result);
     },
   );
@@ -280,5 +301,23 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const token =
       (request.cookies as Record<string, string | undefined>)['_csrf'] ?? null;
     return reply.status(200).send({ csrfToken: token });
+  });
+
+  /** GET /dev-otp — Return the latest OTP for a given email (FOR TESTING ONLY) */
+  app.get('/dev-otp', async (request, reply) => {
+    // SECURITY: Limit to development/test environments
+    if (process.env.NODE_ENV === 'production') {
+      return reply.status(404).send({ error: 'Not found' });
+    }
+    const { email } = request.query as { email?: string };
+    if (!email) return reply.status(400).send({ error: 'Email required' });
+    
+    // Quick inline import to avoid editing imports at top of file
+    const { prisma } = await import('@/lib/prisma');
+    const otp = await prisma.otp.findFirst({
+      where: { email },
+      orderBy: { createdAt: 'desc' }
+    });
+    return reply.status(200).send({ code: otp?.code || null });
   });
 }

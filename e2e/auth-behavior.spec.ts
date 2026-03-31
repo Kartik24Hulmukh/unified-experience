@@ -8,7 +8,7 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
     test.describe.configure({ mode: 'serial' });
 
     test('Phase 1 — Signup (Email): User created only after OTP verification with correct defaults', async ({ page }) => {
-        await page.goto('http://127.0.0.1:8080/signup');
+        await page.goto('http://127.0.0.1:8080/signup', { waitUntil: 'domcontentloaded' });
         // Expand email form when CTA is present (some builds render it expanded by default).
         const signupCta = page.getByText(/or sign up with email|use legacy mail/i).first();
         if (await signupCta.isVisible().catch(() => false)) {
@@ -60,7 +60,7 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
     test('Phase 3 — Logout: Logout instantly logs out all open tabs (multi-tab sync)', async ({ context }) => {
         // Setup: Tab 1 (Main)
         const page1 = await context.newPage();
-        await page1.goto('http://127.0.0.1:8080/login');
+        await page1.goto('http://127.0.0.1:8080/login', { waitUntil: 'domcontentloaded' });
 
         // Expand email form only if not already shown — when GIS is unavailable
         // (headless), the form is expanded by default and the button reads "HIDE AUTH".
@@ -77,7 +77,7 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
 
         // Setup: Tab 2 (Secondary)
         const page2 = await context.newPage();
-        await page2.goto('http://127.0.0.1:8080/home');
+        await page2.goto('http://127.0.0.1:8080/home', { waitUntil: 'domcontentloaded' });
         // Because of the hydration fix in AuthContext, Tab 2 should successfully call /auth/refresh and remain on /home
         await expect(page2).toHaveURL(/\/home/, { timeout: 20000 });
 

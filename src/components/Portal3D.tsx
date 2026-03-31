@@ -180,7 +180,7 @@ const Portal3D = memo(({ className = '', scrollProgressRef }: { className?: stri
           camera={{ position: [0, 0, 3.5], fov: 40 }}
           gl={{ antialias: true, alpha: true, toneMapping: THREE.NoToneMapping, powerPreference: 'high-performance' }}
           dpr={CLAMPED_DPR}
-          style={{ background: 'transparent' }}
+          style={{ background: 'transparent', pointerEvents: 'none' }}
           resize={{ debounce: 100, scroll: false }}
         >
           <SceneCleanup />

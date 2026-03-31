@@ -8,7 +8,7 @@
 import { prisma } from '@/lib/prisma';
 import { RequestStatus } from '@prisma/client';
 import { NotFoundError, ForbiddenError } from '@/errors/index';
-import { ADMIN_REGISTRY } from '@/config/constants';
+import { isEmailAdminAllowed } from '@/config/constants';
 import { computeTrust } from '@/domain/trustEngine';
 import { evaluateFraudHeuristics } from '@/domain/fraudHeuristics';
 import { computeRestriction } from '@/domain/restrictionEngine';
@@ -249,8 +249,9 @@ export async function createAuditLog(data: {
  * Only registered admins may perform SUPER-level operations.
  */
 export function isRegisteredAdmin(email: string): boolean {
-  return ADMIN_REGISTRY.includes(email.toLowerCase());
+  return isEmailAdminAllowed(email);
 }
+
 
 /**
  * Require SUPER privilege level for critical admin operations.

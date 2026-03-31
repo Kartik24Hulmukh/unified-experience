@@ -139,11 +139,7 @@ const INITIAL_STATE: AuthState = {
 };
 
 const getInitialState = (): AuthState => {
-  const storedUser = sessionManager.getUser();
-  return {
-    ...INITIAL_STATE,
-    isHydrated: !storedUser, // If there's no stored user, we are already hydrated (unauthenticated)
-  };
+  return { ...INITIAL_STATE };
 };
 
 const LOGOUT_REDIRECT_KEY = 'berozgar_post_logout_redirect';

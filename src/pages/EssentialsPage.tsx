@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import GlitchText from '@/components/GlitchText';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import WordMarquee from '@/components/WordMarquee';
-import essentialsTiffin from '@/assets/essentials-tiffin.jpg';
+import essentialsPreview from '@/assets/essentials-preview.jpg';
 import {
   ArrowRight, Utensils, Stethoscope, Pill, Truck,
   ShieldCheck, Heart, Flame, Phone, Ambulance,
@@ -146,7 +146,7 @@ const EssentialsPage = () => {
         {/* Background — essentials-tiffin.jpg at low opacity */}
         <div className="absolute inset-0 z-0">
           <img
-            src={essentialsTiffin}
+            src={essentialsPreview}
             alt=""
             className="ess-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}

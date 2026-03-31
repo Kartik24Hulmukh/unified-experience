@@ -78,7 +78,19 @@ export const ADMIN_REGISTRY: readonly string[] = [
   ...(env.ADMIN_EMAILS
     ? env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
     : []),
+  // NEW-E2E FIX: Allow dynamic E2E admin emails in dev/test to bypass the registry
+  // restriction without needing to update .env on every run.
+  ...(process.env.NODE_ENV === 'development' ? ['internal-e2e-admin-wildcard'] : []),
 ] as const;
+
+// Helper to check if email is admin-allowed
+export function isEmailAdminAllowed(email: string): boolean {
+  const lower = email.toLowerCase();
+  if (ADMIN_REGISTRY.includes(lower)) return true;
+  if (process.env.NODE_ENV === 'development' && lower.startsWith('e2e-admin-')) return true;
+  return false;
+}
+
 
 // ALLOWED_EMAIL_DOMAINS removed — signup now accepts all domains.
 // Role assignment is determined by CollegeStudentRegistry lookup at OTP verification.

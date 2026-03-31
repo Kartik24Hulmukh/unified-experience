@@ -66,37 +66,30 @@ const AcademicsPage = () => {
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      syllabus: 1, // Default items
-      notes: 1,    // Default items
-    };
-    visibleItems.forEach(item => {
+    return visibleItems.reduce<Record<string, number>>((acc, item) => {
       const cat = (item.category || '').toLowerCase();
-      if (cat) {
-        counts[cat] = (counts[cat] || 0) + 1;
-      }
-    });
-    return counts;
+      if (cat) acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {});
   }, [visibleItems]);
 
   const filteredItems = useMemo(() => {
     return visibleItems.filter(item => {
-      const itemCategory = item.category || '';
+      const itemCategory = (item.category || '').toLowerCase();
       const matchesSearch =
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        itemCategory.toLowerCase().includes(searchQuery.toLowerCase());
+        itemCategory.includes(searchQuery.toLowerCase());
       
       const matchesCategory = !activeCategory ||
-        itemCategory.toLowerCase() === activeCategory.toLowerCase();
+        itemCategory === activeCategory.toLowerCase();
       
-      // Branch filter: check if item has branch property or if category/title includes branch code
-      const itemBranch = (item as any).branch || '';
+      const itemBranch = ((item as any).branch || '').toLowerCase();
+      const sb = (selectedBranch || '').toLowerCase();
       const matchesBranch = !selectedBranch ||
-        itemBranch.toLowerCase() === selectedBranch.toLowerCase() ||
-        itemCategory.toLowerCase().includes(selectedBranch.toLowerCase()) ||
-        item.title.toLowerCase().includes(selectedBranch.toLowerCase());
+        itemBranch === sb ||
+        itemCategory.includes(sb) ||
+        item.title.toLowerCase().includes(sb);
 
-      // Semester filter
       const itemSemester = (item as any).semester?.toString() || '';
       const matchesSemester = !selectedSemester || itemSemester === selectedSemester.toString();
 
@@ -169,7 +162,7 @@ const AcademicsPage = () => {
           <img
             src={academicsHero}
             alt=""
-            fetchpriority="high"
+            fetchPriority="high"
             loading="eager"
             className="acad-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover block"
             style={{ opacity: 0, contentVisibility: 'auto' }}
@@ -283,13 +276,11 @@ const AcademicsPage = () => {
               onSearch={setSearchQuery}
               onFilterChange={handleFilterChange}
               resultCount={filteredItems.length}
-              categories={[
-                { id: 'syllabus', label: 'Syllabus', count: categoryCounts.syllabus ?? 0 },
-                { id: 'questionbank', label: 'Question Banks', count: categoryCounts.questionbank ?? 0 },
-                { id: 'notes', label: 'Notes', count: categoryCounts.notes ?? 0 },
-                { id: 'textbook', label: 'Textbooks', count: categoryCounts.textbook ?? 0 },
-                { id: 'other', label: 'Other', count: categoryCounts.other ?? 0 },
-              ]}
+              categories={ACADEMIC_CATEGORIES.map(cat => ({
+                id: cat.value,
+                label: cat.label,
+                count: categoryCounts[cat.value.toLowerCase()] || 0
+              }))}
               priceRange={[0, 1000]}
             />
 

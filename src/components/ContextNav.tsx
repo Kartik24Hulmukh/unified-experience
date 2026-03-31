@@ -124,13 +124,13 @@ const ContextNav = memo(function ContextNav() {
 
       if (isMenuOpen) {
         if (prefersReduced) {
-          gsap.set(menuRef.current!, { clipPath: 'circle(150% at calc(100vw - 40px) 40px)' });
+          gsap.set(menuRef.current!, { autoAlpha: 1, clipPath: 'circle(150% at calc(100vw - 40px) 40px)' });
           gsap.set(menuRef.current!.querySelectorAll('.nav-item'), { opacity: 1, x: 0, clearProps: 'all' });
         } else {
           gsap.fromTo(
             menuRef.current!,
-            { clipPath: 'circle(0% at calc(100vw - 40px) 40px)' },
-            { clipPath: 'circle(150% at calc(100vw - 40px) 40px)', duration: 0.8, ease: 'power3.inOut' }
+            { autoAlpha: 0, clipPath: 'circle(0% at calc(100vw - 40px) 40px)' },
+            { autoAlpha: 1, clipPath: 'circle(150% at calc(100vw - 40px) 40px)', duration: 0.8, ease: 'power3.inOut' }
           );
 
           const menuNavItems = menuRef.current!.querySelectorAll('.nav-item');
@@ -142,10 +142,11 @@ const ContextNav = memo(function ContextNav() {
         }
       } else {
         if (prefersReduced) {
-          gsap.set(menuRef.current!, { clipPath: 'circle(0% at calc(100vw - 40px) 40px)' });
+          gsap.set(menuRef.current!, { autoAlpha: 0, clipPath: 'circle(0% at calc(100vw - 40px) 40px)' });
         } else {
           gsap.to(menuRef.current!, {
             clipPath: 'circle(0% at calc(100vw - 40px) 40px)',
+            autoAlpha: 0,
             duration: 0.6,
             ease: 'power3.inOut',
           });
@@ -216,13 +217,15 @@ const ContextNav = memo(function ContextNav() {
             className="relative z-50 tap-target font-display font-bold text-xl tracking-tight hover:opacity-70 transition-opacity shrink-0"
           >
             <span className="sr-only">BErozgar</span>
-            <div className="flex items-center gap-2">
-              <img 
-                src="/logo.png" 
-                alt="BErozgar Logo" 
-                className={`w-6 h-6 md:w-8 md:h-8 object-contain transition-opacity ${isNavDark ? 'opacity-90' : 'opacity-100'}`} 
-              />
-              <span className="hidden md:block uppercase">BErozgar</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 bg-white rounded-md md:rounded-lg overflow-hidden border border-white/10 shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+                <img 
+                  src="/logo.png" 
+                  alt="BErozgar Logo" 
+                  className={`w-full h-full object-contain transition-opacity scale-90 ${isNavDark ? 'opacity-90' : 'opacity-100'}`} 
+                />
+              </div>
+              <span className="hidden md:block uppercase tracking-widest font-bold text-sm md:text-base">BErozgar</span>
             </div>
           </Link>
 
@@ -269,7 +272,7 @@ const ContextNav = memo(function ContextNav() {
             {/* tap-target ensures minimum 48×48 px touch area (WCAG 2.5.5) */}
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className={`tap-target flex transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
+              className={`hidden sm:flex tap-target items-center justify-center transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
               style={{ minWidth: 48, minHeight: 48 }}
               aria-label="Toggle structural mode"
             >
@@ -279,7 +282,8 @@ const ContextNav = memo(function ContextNav() {
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
-                className={`tap-target flex transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
+                className={`hidden sm:flex tap-target items-center justify-center transition-all duration-300 opacity-60 hover:opacity-100 ${isNavDark ? 'text-portal-foreground bg-portal/80 backdrop-blur-md' : 'text-foreground'}`}
+                style={{ minWidth: 48, minHeight: 48 }}
                 aria-label="Logout"
               >
                 <LogOut className="w-5 h-5" />
@@ -327,8 +331,8 @@ const ContextNav = memo(function ContextNav() {
       {/* Fullscreen Menu Overlay */}
       <div
         ref={menuRef}
-        className="fixed inset-0 z-40 flex overflow-y-auto bg-portal"
-        style={{ clipPath: 'circle(0% at calc(100vw - 40px) 40px)', willChange: isMenuOpen ? 'clip-path' : 'auto', pointerEvents: isMenuOpen ? 'auto' : 'none' }}
+        className="fixed inset-0 z-40 flex overflow-y-auto bg-portal opacity-0"
+        style={{ willChange: isMenuOpen ? 'clip-path' : 'auto', pointerEvents: isMenuOpen ? 'auto' : 'none' }}
         role="dialog"
         aria-modal={isMenuOpen}
         aria-label="Navigation menu"

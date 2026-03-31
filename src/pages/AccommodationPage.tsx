@@ -55,12 +55,12 @@ const consoleLines = [
 
 /* ── Data Ticker ─────────────────────────────────────── */
 
-const DataTicker = () => {
+const DataTicker = ({ visibleItems = [] }: { visibleItems?: any[] }) => {
   const tickerRef = useRef<HTMLDivElement>(null);
   const data = [
     'ACCOMMODATION_MODULE v2.6',
     'PRIVACY_PROTOCOL: ACTIVE',
-    'LISTINGS: 105 VERIFIED',
+    `LISTINGS: ${visibleItems.length} VERIFIED`,
     'ZONES: 3 OPERATIONAL',
     'ENCRYPTION: AES-256',
     'STATUS: OPERATIONAL',
@@ -143,6 +143,14 @@ const AccommodationPage = () => {
       }
     );
   }, [searchQuery, activeCategory, priceFilter, visibleItems]);
+
+  const categoryCounts = useMemo(() => {
+    return visibleItems.reduce<Record<string, number>>((acc, item) => {
+      const cat = (item.category || '').toLowerCase();
+      if (cat) acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {});
+  }, [visibleItems]);
 
   const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
     if (filters.categories !== undefined) {
@@ -461,7 +469,7 @@ const AccommodationPage = () => {
       </section>
 
       {/* ═══════════════ DATA TICKER ═══════════════ */}
-      <DataTicker />
+      <DataTicker visibleItems={visibleItems} />
 
       {/* ═══════════════ ZONE EXPLORER ═══════════════ */}
       <section className="py-10 sm:py-16 md:py-20 px-4 sm:px-8 md:px-16 reveal-section">
@@ -677,11 +685,11 @@ const AccommodationPage = () => {
             onSearch={setSearchQuery}
             onFilterChange={handleFilterChange}
             resultCount={filteredItems.length}
-            categories={[
-              { id: 'near', label: 'Near Campus', count: 2 },
-              { id: 'city', label: 'City Center', count: 2 },
-              { id: 'outer', label: 'Outer Ring', count: 2 },
-            ]}
+            categories={ACCOMMODATION_CATEGORIES.map(cat => ({
+              id: cat.value,
+              label: cat.label,
+              count: categoryCounts[cat.value.toLowerCase()] || 0
+            }))}
             priceRange={[0, 30000]}
           />
 

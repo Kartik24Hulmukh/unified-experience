@@ -352,7 +352,7 @@ const MessPage = () => {
           </div>
 
           {/* Scroll CTA */}
-          <button onClick={scrollToBrowse} className="group absolute bottom-12 right-6 sm:bottom-8 sm:right-8 md:right-16 flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors">
+          <button onClick={scrollToBrowse} className="group hidden absolute bottom-12 right-6 sm:bottom-8 sm:right-8 md:right-16 sm:flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors">
             <span className="text-[9px] font-mono uppercase tracking-[0.4em]">Explore</span>
             <div className="w-px h-12 bg-gradient-to-b from-white/30 to-transparent group-hover:from-amber-400/50 transition-colors" />
           </button>

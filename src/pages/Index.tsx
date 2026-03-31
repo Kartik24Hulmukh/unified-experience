@@ -6,7 +6,7 @@ import { SEO } from '@/components/SEO';
 
 const Index = () => {
   return (
-    <div className="relative" style={{ backgroundColor: '#ffffff' }}>
+    <div className="relative bg-background">
       <SEO title="Home" description="Welcome to BErozgar, the ultimate campus portal connecting students with resale, housing, and campus events." />
       
       {/* Public user upgrade nudge */}

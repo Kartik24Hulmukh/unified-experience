@@ -74,6 +74,9 @@ const envSchema = z.object({
   // Email domain allowlist for signup (comma-separated; empty string = allow all domains)
   // Overrides the hardcoded default in constants.ts. Leave unset to use the default.
   ALLOWED_EMAIL_DOMAINS: z.string().optional(),
+
+  // SECURITY: grace period for refresh token rotation (to prevent 401s on concurrent tabs)
+  REFRESH_GRACE_PERIOD_MS: z.coerce.number().int().nonnegative().default(30000),
 });
 
 export type Env = z.infer<typeof envSchema>;

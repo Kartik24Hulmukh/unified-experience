@@ -46,6 +46,10 @@ export const signupSchema = z.object({
   password: passwordSchema,
 });
 
+export const resendOtpSchema = z.object({
+  email: emailSchema,
+});
+
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Password is required').max(128),
@@ -189,6 +193,7 @@ export const flagUserSchema = z.object({
    ═══════════════════════════════════════════════════ */
 
 export type SignupInput = z.infer<typeof signupSchema>;
+export type ResendOtpInput = z.infer<typeof resendOtpSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type GoogleSignInInput = z.infer<typeof googleSignInSchema>;

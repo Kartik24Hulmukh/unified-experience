@@ -174,7 +174,7 @@ const LoginPage = () => {
                                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                             <FormField control={form.control} name="email" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormControl><Input placeholder="YOU@GMAIL.COM" {...field} className="bg-white/5 border-white/5 text-white h-14 rounded-lg placeholder:text-white/40" /></FormControl>
+                                                    <FormControl><Input placeholder="YOU@MCTRGIT.AC.IN" {...field} className="bg-white/5 border-white/5 text-white h-14 rounded-lg placeholder:text-white/40" /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />

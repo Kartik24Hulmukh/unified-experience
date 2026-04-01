@@ -75,8 +75,9 @@ const envSchema = z.object({
   // Overrides the hardcoded default in constants.ts. Leave unset to use the default.
   ALLOWED_EMAIL_DOMAINS: z.string().optional(),
 
-  // SECURITY: grace period for refresh token rotation (to prevent 401s on concurrent tabs)
-  REFRESH_GRACE_PERIOD_MS: z.coerce.number().int().nonnegative().default(30000),
+  // SECURITY: short grace period for refresh-token rotation races across tabs.
+  // Keep this low (seconds, not minutes). Override to 0 only for strict test scenarios.
+  REFRESH_GRACE_PERIOD_MS: z.coerce.number().int().nonnegative().default(5000),
 });
 
 export type Env = z.infer<typeof envSchema>;

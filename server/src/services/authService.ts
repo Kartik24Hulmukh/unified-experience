@@ -407,12 +407,8 @@ export async function login(
     where: { email: input.email },
   });
 
-  if (!user || !user.password) {
+  if (!user || !user.password || !user.verified) {
     throw new UnauthorizedError('Invalid email or password');
-  }
-
-  if (!user.verified) {
-    throw new UnauthorizedError('Account not verified. Please complete signup.');
   }
 
   // ── Lockout check ────────────────────────────────
@@ -661,30 +657,16 @@ export async function refreshAccessToken(
     throw new UnauthorizedError('Refresh token expired. Please log in again.');
   }
 
-  // Revoked? Possible breach — revoke ALL tokens for this user
+  // Revoked token handling:
+  // - If this token was already rotated (has replacedByToken), treat it as a
+  //   consumed token and return 401 without escalating to global revocation.
+  // - If there is no replacement token, this is more likely explicit reuse or
+  //   manual revocation context; revoke all sessions defensively.
   if (record.revokedAt) {
-    // ── Grace Period (Network Race Condition Fix) ──
-    // If multiple tabs refresh simultaneously, the second request hits this block.
-    // If revoked < env.REFRESH_GRACE_PERIOD_MS ago, return a fresh access token.
-    const isWithinGracePeriod =
-      Date.now() - record.revokedAt.getTime() < env.REFRESH_GRACE_PERIOD_MS;
-
-    if (isWithinGracePeriod) {
-      // Just issue a new access token. The other concurrent request is rotating the cookie.
-      const accessToken = signAccessToken({
-        sub: record.user.id,
-        email: record.user.email,
-        role: record.user.role,
-      });
-      // Return the SAME old raw token so the caller can refresh the cookie with the old token.
-      // Wait, returning the old raw token will overwrite the new cookie with the old one?
-      // Setting rawOldToken as the refresh token tells the route to Set-Cookie again.
-      // Tab 1 will Set-Cookie new_token, Tab 2 will Set-Cookie old_token => BOOM, session breaks.
-      // We must tell the route NOT to set a new cookie, or we generate a placeholder.
-      return { accessToken, refreshToken: '' }; // Handled specially by the route
+    if (record.replacedByToken) {
+      throw new UnauthorizedError('Refresh token already consumed. Please log in again.');
     }
 
-    // Outside grace period -> probable token theft / reuse
     await prisma.refreshToken.updateMany({
       where: { userId: record.userId },
       data: { revokedAt: new Date() },
@@ -696,7 +678,8 @@ export async function refreshAccessToken(
   const rawNewToken = generateRefreshToken();
   const hashedNewToken = hashToken(rawNewToken);
 
-  await prisma.$transaction(async (tx) => {
+  try {
+    await prisma.$transaction(async (tx) => {
     // CRIT-03 FIX: guarded updateMany ensures only ONE concurrent caller
     // wins the revocation. If count === 0, another refresh already consumed
     // the token — treat as reuse rather than silently issuing a second token.
@@ -721,10 +704,19 @@ export async function refreshAccessToken(
         ipAddress: meta?.ipAddress,
       },
     });
-  }, {
-    maxWait: 10000,
-    timeout: 20000,
-  });
+    }, {
+      maxWait: 10000,
+      timeout: 20000,
+    });
+  } catch (err) {
+    // Concurrent refresh race: another request rotated this token between
+    // initial read and guarded revoke. Return a deterministic 401 so the
+    // client can retry once with the newly rotated cookie.
+    if (err instanceof UnauthorizedError && err.message.includes('already consumed')) {
+      throw new UnauthorizedError('Refresh token already consumed. Please log in again.');
+    }
+    throw err;
+  }
 
   const accessToken = signAccessToken({
     sub: record.user.id,
@@ -847,7 +839,8 @@ export async function getCurrentUser(userId: string) {
    Helpers
    ═══════════════════════════════════════════════════ */
 
-function sanitizeUser(user: User) {
+function sanitizeUser(user: User | null) {
+  if (!user) return null;
   const { password, failedLoginAttempts, lockedUntil, ...safe } = user;
   return {
     ...safe,

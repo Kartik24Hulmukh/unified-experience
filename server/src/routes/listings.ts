@@ -30,8 +30,8 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
       status: query.status,
       category: query.category,
       module: query.module,
-      page: safeParseInt(query.page),
       limit: safeParseInt(query.limit),
+      cursor: query.cursor,
       search: query.search,
     });
     return reply.status(200).send(apiPage(result.listings, result.pagination));

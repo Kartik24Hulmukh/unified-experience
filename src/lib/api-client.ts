@@ -112,6 +112,8 @@ export interface ApiResponse<T> {
     page?: number;
     perPage?: number;
     total?: number;
+    nextCursor?: string | null;
+    hasNextPage?: boolean;
   };
 }
 
@@ -164,19 +166,29 @@ export async function handleTokenRefresh(): Promise<string> {
       throw new ApiError('No active session', 'UNAUTHORIZED', 401);
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-    let response;
-    try {
-      response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-        credentials: 'include',  // sends httpOnly refresh cookie
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeoutId);
+    const attemptRefresh = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      try {
+        return await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+          credentials: 'include',  // sends httpOnly refresh cookie
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    let response = await attemptRefresh();
+
+    // Cross-tab race guard: another tab may have just rotated the refresh cookie.
+    // Retry once before forcing logout so concurrent refreshes don't collapse sessions.
+    if (response.status === 401) {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      response = await attemptRefresh();
     }
 
     if (!response.ok) {

@@ -91,7 +91,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
               }`}
             >
               <div className="hud-image-box w-full h-full rounded-none overflow-hidden">
-                <img src={module.preview} alt={module.title} className="w-full h-full object-cover grayscale-[0.2]" fetchpriority="high" loading="eager" />
+                <img src={module.preview} alt={module.title} className="w-full h-full object-cover grayscale-[0.2]" loading="eager" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
               </div>
             </div>

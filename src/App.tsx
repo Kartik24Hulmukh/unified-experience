@@ -41,6 +41,7 @@ const HospitalPage = lazy(() => import('./pages/HospitalPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
 const SplashTestPage = lazy(() => import('./pages/SplashTestPage'));
+const CreateListingPage = lazy(() => import('./pages/CreateListingPage'));
 import AgentsHub from './components/AgentsHub';
 
 const queryClient = new QueryClient({
@@ -212,7 +213,10 @@ const App = () => (
 
                         {/* Post-login home — MasterExperience + modules */}
                         <Route path="/home" element={<RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary>} />
-                        <Route path="/dashboard" element={<Navigate to="/home" replace />} />
+                        <Route path="/dashboard" element={<ProtectedRoute><Navigate to="/home" replace /></ProtectedRoute>} />
+                        <Route path="/about" element={<Navigate to="/home" replace />} />
+                        <Route path="/general-listings" element={<Navigate to="/home" replace />} />
+                        <Route path="/create-listing" element={<ProtectedRoute><RouteErrorBoundary name="CreateListing"><CreateListingPage /></RouteErrorBoundary></ProtectedRoute>} />
 
                         {/* Module routes — actions and viewing restricted to authenticated users to prevent data leaks */}
                         <Route path="/resale" element={<ProtectedRoute><RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary></ProtectedRoute>} />

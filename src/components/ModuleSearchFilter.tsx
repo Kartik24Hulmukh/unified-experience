@@ -99,7 +99,7 @@ const ModuleSearchFilter = ({
 
                 {/* Search Bar */}
                 <div className="relative flex h-12 min-w-0 items-center md:flex-1 md:max-w-md">
-                    <div className="search-container relative flex items-center bg-white/5 border border-white/10 overflow-hidden rounded-none h-full w-[48px]">
+                    <div className={`search-container relative flex items-center bg-white/5 border border-white/10 overflow-hidden rounded-none h-full transition-[width] duration-300 ${isSearchExpanded ? 'w-full sm:w-[320px]' : 'w-[48px]'}`}>
                         <button
                             onClick={() => setIsSearchExpanded(!isSearchExpanded)}
                             className="tap-target absolute left-0 z-10 h-12 w-12 text-white/50 transition-colors hover:text-white"
@@ -111,7 +111,7 @@ const ModuleSearchFilter = ({
                             ref={searchInputRef}
                             type="text"
                             placeholder="SEARCH PROTOCOL..."
-                            className={`w-full bg-transparent pl-12 pr-4 text-white text-xs font-bold uppercase tracking-widest outline-none transition-opacity duration-300 ${isSearchExpanded ? 'opacity-100' : 'opacity-0'}`}
+                            className={`bg-transparent text-white text-xs font-bold uppercase tracking-widest outline-none transition-all duration-300 ${isSearchExpanded ? 'w-full pl-12 pr-4 opacity-100 pointer-events-auto' : 'w-0 px-0 opacity-0 pointer-events-none'}`}
                             value={searchQuery}
                             onChange={handleSearchChange}
                         />

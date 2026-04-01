@@ -23,15 +23,14 @@ interface ListListingsParams {
   status?: string;
   category?: string;
   module?: string;
-  page?: number;
   limit?: number;
+  cursor?: string; // GAP-08: cursor for pagination
   search?: string;
 }
 
 export async function listListings(params: ListListingsParams) {
-  const page = params.page ?? PAGINATION.DEFAULT_PAGE;
   const limit = Math.min(params.limit ?? PAGINATION.DEFAULT_LIMIT, PAGINATION.MAX_LIMIT);
-  const skip = (page - 1) * limit;
+  const cursor = params.cursor;
 
   const where: Prisma.ListingWhereInput = {};
 
@@ -54,29 +53,31 @@ export async function listListings(params: ListListingsParams) {
   // IAM: Exclude PUBLIC_USER sellers from resale search results
   where.owner = { role: { not: 'PUBLIC_USER' } };
 
-  const [rawListings, total] = await prisma.$transaction([
-    prisma.listing.findMany({
-      where,
-      // CRIT-F FIX: email omitted — GET /listings is unauthenticated; exposing
-      // owner email to anonymous callers is a PII/enumeration risk.
-      include: { owner: { select: { id: true, fullName: true } } },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.listing.count({ where }),
-  ]);
+  // GAP-08 FIX: Migrate to cursor-based pagination to avoid full table scans (O(N) skip).
+  // Cursor-based is O(1) jump using the index on ID. 
+  // We fetch limit + 1 to see if a next page exists.
+  const listings = await prisma.listing.findMany({
+    where,
+    include: { owner: { select: { id: true, fullName: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: limit + 1,
+    cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
+  });
 
-  // Convert Prisma Decimal → string so JSON serialisation returns "350" not {s,e,d}
-  const listings = rawListings.map((l) => ({ ...l, price: l.price.toString() }));
+  const hasNextPage = listings.length > limit;
+  const items = hasNextPage ? listings.slice(0, limit) : listings;
+  const nextCursor = hasNextPage ? items[items.length - 1].id : null;
+
+  // Convert Prisma Decimal → string
+  const formattedItems = items.map((l) => ({ ...l, price: l.price.toString() }));
 
   return {
-    listings,
+    listings: formattedItems,
     pagination: {
-      page,
       limit,
-      total,
-      totalPages: Math.ceil(total / limit),
+      nextCursor,
+      hasNextPage,
     },
   };
 }
@@ -312,9 +313,18 @@ export async function updateListingStatus(
     const nextFsm = machine.send(event);
     const newStatus = FSM_TO_DB[nextFsm.state];
 
-    const updated = await tx.listing.update({
-      where: { id: listingId },
+    // Atomic check: prevent concurrent modifications to the same listing
+    const updatedCount = await tx.listing.updateMany({
+      where: { id: listingId, status: listing.status },
       data: { status: newStatus },
+    });
+
+    if (updatedCount.count === 0) {
+      throw new ConflictError('Listing status was modified concurrently. Please refresh and try again.');
+    }
+
+    const updated = await tx.listing.findUniqueOrThrow({
+      where: { id: listingId },
       // HIGH-2 FIX: email stripped — owner email must never travel in API responses
       include: { owner: { select: { id: true, fullName: true } } },
     });
@@ -391,8 +401,11 @@ export async function updateListing(
     throw new ForbiddenError('You do not have permission to edit this listing');
   }
 
-  // To keep FSM clean, normally editing retains the status, or forces it back to PENDING_REVIEW 
-  // if edited. For simplicity, we just update the text fields.
+  // To keep FSM clean, editing an APPROVED listing forces re-review to prevent
+  // policy bypass (e.g., user gets approved then edits title to include spam).
+  // Only PENDING_REVIEW, REJECTED, and DRAFT listings can be freely edited.
+  const needsReReview = listing.status === 'APPROVED';
+
   const updated = await prisma.listing.update({
     where: { id: listingId },
     data: {
@@ -401,6 +414,7 @@ export async function updateListing(
       category: input.category,
       module: input.module,
       price: input.price,
+      ...(needsReReview ? { status: 'PENDING_REVIEW' } : {}),
     },
     include: { owner: { select: { id: true, fullName: true } } },
   });
@@ -427,10 +441,10 @@ export async function deleteListing(listingId: string, userId: string, userRole:
   }
 
   await prisma.$transaction(async (tx) => {
-    // Cancel related requests
+    // Cancel related requests — bump version so optimistic-lock clients detect it
     await tx.request.updateMany({
       where: { listingId },
-      data: { status: 'CANCELLED' },
+      data: { status: 'CANCELLED', version: { increment: 1 } },
     });
 
     await tx.listing.delete({

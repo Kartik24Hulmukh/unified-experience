@@ -9,8 +9,14 @@ import type { FastifyInstance } from 'fastify';
 import { env } from '@/config/env';
 
 export async function registerCors(app: FastifyInstance): Promise<void> {
+  const origins = env.CORS_ORIGIN.split(',').map((o) => o.trim());
+  
+  if (origins.includes('*')) {
+    throw new Error('P0-SEC-007: Wildcard CORS origin is strictly forbidden with credentials: true. Please whitelist specific domains in CORS_ORIGIN.');
+  }
+
   await app.register(cors, {
-    origin: env.CORS_ORIGIN.split(',').map((o) => o.trim()),
+    origin: origins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

@@ -139,7 +139,6 @@ const ResalePage = () => {
             alt="Resource Resale"
             className="w-full h-full sm:h-[130%] object-cover opacity-70"
             loading="eager"
-            fetchPriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-portal/30 via-portal/50 to-portal" />
         </div>

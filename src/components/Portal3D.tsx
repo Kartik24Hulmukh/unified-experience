@@ -11,7 +11,7 @@ import * as THREE from 'three';
 const BODY_DEPTH = 0.18;
 const RIM_DEPTH = 0.22;
 
-const CLAMPED_DPR: [number, number] = [1, 2];
+const CLAMPED_DPR: [number, number] = [1, 3]; // Higher DPR for crisp high-DPI displays
 
 /* ─── WebGL Guard ─── */
 interface WebGLGuardState { hasError: boolean }
@@ -27,8 +27,28 @@ class WebGLErrorBoundary extends Component<{ fallback: ReactNode; children: Reac
 }
 
 const ShieldFallback = () => (
-  <div className="w-full h-full flex items-center justify-center">
-    <div style={{ width: 120, height: 140, background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', clipPath: 'polygon(50% 0%, 100% 25%, 100% 65%, 50% 100%, 0% 65%, 0% 25%)', opacity: 0.7 }} />
+  <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
+    <style>{`
+      @keyframes shield-pulse {
+        0% { transform: scale(0.95); opacity: 0.4; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+        100% { transform: scale(0.95); opacity: 0.4; }
+      }
+      .shield-logo-fallback {
+        animation: shield-pulse 4s ease-in-out infinite;
+        filter: drop-shadow(0 0 40px rgba(33, 150, 243, 0.3));
+      }
+    `}</style>
+    <div 
+      className="shield-logo-fallback"
+      style={{ 
+        width: 140, 
+        height: 160, 
+        background: 'linear-gradient(135deg, #1a2332 0%, #0f172a 100%)', 
+        clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+        border: '2px solid #D4A843'
+      }} 
+    />
   </div>
 );
 
@@ -173,6 +193,19 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
 ShieldLogo.displayName = 'ShieldLogo';
 
 const Portal3D = memo(({ className = '', scrollProgressRef }: { className?: string; scrollProgressRef?: { current: number } }) => {
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  if (prefersReducedMotion) {
+    return (
+      <div className={`w-full h-full ${className} flex items-center justify-center`}>
+        <ShieldFallback />
+      </div>
+    );
+  }
+
   return (
     <div className={`w-full h-full ${className}`}>
       <WebGLErrorBoundary fallback={<ShieldFallback />}>
@@ -184,10 +217,10 @@ const Portal3D = memo(({ className = '', scrollProgressRef }: { className?: stri
           resize={{ debounce: 100, scroll: false }}
         >
           <SceneCleanup />
-          <ambientLight intensity={4} />
-          <directionalLight position={[3, 4, 5]} intensity={3} />
-          <directionalLight position={[-3, -2, -5]} intensity={1.5} />
-          <pointLight position={[0, 0, 4]} intensity={2} color="#fff5e0" />
+          <ambientLight intensity={3} /> {/* Balanced ambient lighting */}
+          <directionalLight position={[3, 4, 5]} intensity={2.5} /> {/* Main key light */}
+          <directionalLight position={[-3, -2, -5]} intensity={1.2} /> {/* Fill light */}
+          <pointLight position={[0, 0, 4]} intensity={2.2} color="#fff5e0" /> {/* Rim light for glow */}
           <ShieldLogo scrollProgressRef={scrollProgressRef} />
         </Canvas>
       </WebGLErrorBoundary>

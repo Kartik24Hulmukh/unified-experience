@@ -287,7 +287,6 @@ const HospitalPage = () => {
             className="hosp-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"
-            fetchPriority="high"
           />
           <div className="absolute inset-0" style={{
             background: 'radial-gradient(ellipse at 70% 30%, rgba(16,185,129,0.06) 0%, transparent 60%)',

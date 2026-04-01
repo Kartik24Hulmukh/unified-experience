@@ -238,6 +238,19 @@ const ContextNav = memo(function ContextNav() {
 
           {/* Nav Actions */}
           <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-6">
+            {/* Create Listing Hub Access */}
+            {isAuthenticated && user?.role === 'student_verified' && (
+              <Link
+                to="/create-listing"
+                onClick={(e) => handleNavClick(e, '/create-listing')}
+                className={`tap-target flex items-center justify-center bg-[#a3ff12] text-black hover:bg-[#8ade0e] transition-colors rounded-sm px-3 py-1.5 md:px-4 md:py-2 border border-transparent shadow-[0_0_15px_rgba(163,255,18,0.2)] hover:shadow-[0_0_20px_rgba(163,255,18,0.4)]`}
+                aria-label="Create Listing"
+              >
+                <span className="hidden sm:block text-[10px] md:text-xs uppercase tracking-widest font-bold">Sell / List</span>
+                <span className="sm:hidden text-[14px] font-bold">+</span>
+              </Link>
+            )}
+
             {/* Auth Action */}
             {isAuthenticated ? (
               <Link

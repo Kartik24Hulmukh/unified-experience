@@ -306,7 +306,6 @@ const AccommodationPage = () => {
             className="accom-hero-img absolute inset-0 w-full h-full max-w-full object-cover"
             style={{ opacity: 0 }}
             loading="eager"
-            fetchPriority="high"
           />
           <div className="absolute inset-0" style={{
             background: 'radial-gradient(ellipse at 70% 30%, rgba(34,211,238,0.06) 0%, transparent 60%)',

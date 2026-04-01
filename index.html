@@ -62,7 +62,25 @@
   </head>
 
   <body style="background-color: #ffffff;">
-    <div id="root"></div>
+    <div id="root">
+      <div style="position: absolute; inset: 0; background-color: #050505; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; overflow: hidden;">
+        <div style="position: relative; width: 120px; height: 140px; margin-bottom: 24px;">
+          <!-- Branded Shield Logo Placeholder -->
+          <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #1a2332 0%, #0f172a 100%); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); filter: drop-shadow(0 0 30px rgba(33, 150, 243, 0.2));"></div>
+          <div style="position: absolute; inset: 2px; background: #050505; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); opacity: 0.8;"></div>
+          <!-- Pulse Effect -->
+          <div style="position: absolute; inset: 0; background: #D4A843; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); opacity: 0.15; animation: shield-pulse 2.5s ease-in-out infinite;"></div>
+        </div>
+        <p style="color: #ffffff; letter-spacing: 0.3em; text-transform: uppercase; font-size: 13px; font-weight: 500; font-family: 'Syne', sans-serif; margin-bottom: 8px;">Initializing Campus OS</p>
+        <div style="width: 140px; height: 2px; background: rgba(255,255,255,0.05); position: relative; border-radius: 10px; overflow: hidden;">
+          <div style="position: absolute; inset: 0; background: linear-gradient(90deg, transparent, #D4A843, transparent); width: 40%; animation: loader-slide 1.5s ease-in-out infinite;"></div>
+        </div>
+        <style>
+          @keyframes shield-pulse { 0% { transform: scale(0.9); opacity: 0.05; } 50% { transform: scale(1.05); opacity: 0.25; } 100% { transform: scale(0.9); opacity: 0.05; } }
+          @keyframes loader-slide { from { left: -50%; } to { left: 100%; } }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

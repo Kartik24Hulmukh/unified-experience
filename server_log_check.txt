@@ -1,0 +1,20 @@
+﻿      "statusCode": 404
+    }
+    [35mresponseTime[39m: 31.10590000450611
+[17:54:31.243] [32mINFO[39m (24876): [36mincoming request[39m
+    [35mreqId[39m: "req-2"
+    [35mreq[39m: {
+      "method": "GET",
+      "url": "/favicon.ico",
+      "host": "localhost:3001",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 63407
+    }
+[17:54:31.244] [32mINFO[39m (24876): [36mRoute GET:/favicon.ico not found[39m
+    [35mreqId[39m: "req-2"
+[17:54:31.245] [32mINFO[39m (24876): [36mrequest completed[39m
+    [35mreqId[39m: "req-2"
+    [35mres[39m: {
+      "statusCode": 404
+    }
+    [35mresponseTime[39m: 1.3634999990463257

@@ -84,6 +84,7 @@ const AdminPage = () => {
     const [activeTab, setActiveTab] = useState<AdminTab>('pending');
     const [searchQuery, setSearchQuery] = useState('');
     const [confirmation, setConfirmation] = useState<ConfirmationState>(null);
+    const [isConfirmationLocked, setIsConfirmationLocked] = useState(false);
     // Track which detail dialog is open (keyed by listing id) so we can close it after actions
     const [openDialogs, setOpenDialogs] = useState<Record<string, boolean>>({});
     const containerRef = useRef<HTMLDivElement>(null);
@@ -114,6 +115,13 @@ const AdminPage = () => {
     );
     const usersData = usersResponse?.data;
     const updateUserStatus = useUpdateUserStatus();
+    const isConfirmationActionPending = updateStatus.isPending || updateDisputeStatus.isPending || updateUserStatus.isPending;
+
+    useEffect(() => {
+        if (!isConfirmationActionPending) {
+            setIsConfirmationLocked(false);
+        }
+    }, [isConfirmationActionPending]);
 
     const handleUserAction = (userId: string, action: 'ban' | 'verify' | 'unban') => {
         updateUserStatus.mutate({ userId, action }, {
@@ -274,6 +282,7 @@ const AdminPage = () => {
     }, [updateDisputeStatus]);
 
     const openConfirmation = useCallback((nextState: ConfirmationState) => {
+        setIsConfirmationLocked(false);
         setConfirmation(nextState);
     }, []);
 
@@ -916,7 +925,13 @@ const AdminPage = () => {
             {/* Institutional Scanlines - z below cursor (--z-scanline: 80, --z-cursor: 90) */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[var(--z-scanline)] bg-[length:100%_2px,3px_100%]" />
 
-            <AlertDialog open={!!confirmation} onOpenChange={(open) => !open && setConfirmation(null)}>
+            <AlertDialog
+                open={!!confirmation}
+                onOpenChange={(open) => {
+                    if (!open && (isConfirmationLocked || isConfirmationActionPending)) return;
+                    if (!open) setConfirmation(null);
+                }}
+            >
                 <AlertDialogContent className="bg-[#0a0a0a] border-white/10 text-white rounded-none">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="font-display text-2xl font-bold uppercase tracking-widest">
@@ -927,17 +942,23 @@ const AdminPage = () => {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-none border-white/10 bg-transparent text-white hover:bg-white/5 hover:text-white">
+                        <AlertDialogCancel
+                            className="rounded-none border-white/10 bg-transparent text-white hover:bg-white/5 hover:text-white"
+                            disabled={isConfirmationLocked || isConfirmationActionPending}
+                        >
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
                             className={`rounded-none font-bold uppercase text-[10px] tracking-widest ${confirmation?.variant === 'destructive' ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-primary hover:bg-teal-400 text-black'}`}
+                            disabled={isConfirmationLocked || isConfirmationActionPending}
                             onClick={() => {
+                                if (isConfirmationLocked || isConfirmationActionPending) return;
+                                setIsConfirmationLocked(true);
                                 confirmation?.onConfirm();
                                 setConfirmation(null);
                             }}
                         >
-                            {confirmation?.confirmLabel}
+                            {isConfirmationActionPending ? 'Processing...' : confirmation?.confirmLabel}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

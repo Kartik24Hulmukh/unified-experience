@@ -45,7 +45,7 @@ const LoginPage = () => {
     const { promptSignIn, isLoading: isGoogleLoading, hasRealGIS } = useGoogleIdentity();
     const isMobile = useIsMobile();
     const [isLoading, setIsLoading] = useState(false);
-    const [showEmailForm, setShowEmailForm] = useState(!hasRealGIS);
+    const [showEmailForm, setShowEmailForm] = useState(true);
     const hasRedirected = useRef(false);
 
     const from = (location.state as { from?: string })?.from || "/home";
@@ -202,7 +202,7 @@ const LoginPage = () => {
                 </div>
             </div>
 
-            <div className="absolute bottom-8 left-4 sm:left-12 z-10 flex flex-col space-y-2 text-[9px] uppercase tracking-[0.5em] text-white/10 font-mono">
+            <div className="absolute bottom-8 left-4 sm:left-12 z-10 pointer-events-none flex flex-col space-y-2 text-[9px] uppercase tracking-[0.5em] text-white/10 font-mono">
                 <span>SYSTEM_STATUS: ONLINE</span>
                 <span>AUTH_PROTOCOL: HMAC_HMAC_SHA256</span>
             </div>

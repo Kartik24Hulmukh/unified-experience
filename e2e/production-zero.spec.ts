@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { ensureAdminUser, createVerifiedUser, cleanupE2eData } from './helpers';
+import { ensureAdminUser, createVerifiedUser, cleanupE2eData, disconnectDb } from './helpers';
 
 const API = 'http://127.0.0.1:3001';
-const WEB = 'http://127.0.0.1:8080';
+const WEB = 'http://127.0.0.1:5173';
 
 const TEST_RUN = Date.now();
 let adminId: string;
@@ -23,7 +23,8 @@ test.describe('Production-Zero Testing Framework', () => {
     test.describe.configure({ mode: 'serial' });
 
     test.beforeAll(async ({ request }) => {
-        await cleanupE2eData();
+        // Guard against shared pool being closed by a prior test suite (e.g. mobile-launch-checklist)
+        try { await cleanupE2eData(); } catch { /* pool may already be ended — safe to continue */ }
         adminId = await ensureAdminUser(`pz-admin-${TEST_RUN}@mctrgit.ac.in`, 'Pass@123');
         sellerId = await createVerifiedUser(`pz-seller-${TEST_RUN}@mctrgit.ac.in`, 'Pass@123');
         buyerId = await createVerifiedUser(`pz-buyer-${TEST_RUN}@mctrgit.ac.in`, 'Pass@123');

@@ -1,0 +1,20 @@
+﻿            356 
+            357 // Audit: Maintenance Run
+          ΓåÆ 358 await tx.auditLog.create(
+          Foreign key constraint violated on the constraint: `audit_logs_actor_id_fkey`
+              at ei.handleRequestError (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+              at ei.handleAndLogRequestError (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+              at ei.request (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+              at async a (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+              at async <anonymous> (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\src\services\adminService.ts:358:5)
+              at async Proxy._transactionWithCallback (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:722:18)
+              at async runRecovery (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\src\server.ts:48:22)
+              at async Timeout._onTimeout (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\src\server.ts:59:5)
+      "code": "P2003",
+      "meta": {
+        "modelName": "AuditLog",
+        "constraint": "audit_logs_actor_id_fkey"
+      },
+      "clientVersion": "6.19.2",
+      "name": "PrismaClientKnownRequestError"
+    }

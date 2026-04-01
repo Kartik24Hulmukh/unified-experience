@@ -1,0 +1,41 @@
+﻿
+Running 2 tests using 1 worker
+
+  Γ£ÿ  1 [chromium] ΓÇ║ e2e\auth-behavior.spec.ts:10:5 ΓÇ║ Authentication Flow - Behavioral Tests ΓÇ║ Phase 1 ΓÇö Signup (Email): User created only after OTP verification with correct defaults (19.4s)
+  -  2 [chromium] ΓÇ║ e2e\auth-behavior.spec.ts:60:5 ΓÇ║ Authentication Flow - Behavioral Tests ΓÇ║ Phase 3 ΓÇö Logout: Logout instantly logs out all open tabs (multi-tab sync)
+
+
+  1) [chromium] ΓÇ║ e2e\auth-behavior.spec.ts:10:5 ΓÇ║ Authentication Flow - Behavioral Tests ΓÇ║ Phase 1 ΓÇö Signup (Email): User created only after OTP verification with correct defaults 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+    [2m  - navigating to "http://127.0.0.1:8080/signup", waiting until "load"[22m
+
+
+       9 |
+      10 |     test('Phase 1 ΓÇö Signup (Email): User created only after OTP verification with correct defaults', async ({ page }) => {
+    > 11 |         await page.goto('http://127.0.0.1:8080/signup');
+         |                    ^
+      12 |         // Expand email form when CTA is present (some builds render it expanded by default).
+      13 |         const signupCta = page.getByText(/or sign up with email|use legacy mail/i).first();
+      14 |         if (await signupCta.isVisible().catch(() => false)) {
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\auth-behavior.spec.ts:11:20
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\auth-behavior-Authenticati-3cd32-ation-with-correct-defaults-chromium\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    attachment #2: video (video/webm) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\auth-behavior-Authenticati-3cd32-ation-with-correct-defaults-chromium\video.webm
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: test-results\auth-behavior-Authenticati-3cd32-ation-with-correct-defaults-chromium\error-context.md
+
+  1 failed
+    [chromium] ΓÇ║ e2e\auth-behavior.spec.ts:10:5 ΓÇ║ Authentication Flow - Behavioral Tests ΓÇ║ Phase 1 ΓÇö Signup (Email): User created only after OTP verification with correct defaults 
+  1 did not run
+
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report[39m
+[36m[39m

@@ -1,0 +1,311 @@
+﻿
+Running 92 tests using 1 worker
+
+  Γ£ô   1 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:220:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.1 ΓÇö API server is ready (health/ready) (238ms)
+  Γ£ô   2 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:227:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.2 ΓÇö Full health report (health?verbose=true) (62ms)
+  Γ£ô   3 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:235:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.3 ΓÇö Frontend serves HTML on / (108ms)
+  Γ£ô   4 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:242:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.4 ΓÇö Security headers present (17ms)
+  Γ£ô   5 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:249:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.5 ΓÇö CSRF token endpoint works (18ms)
+  Γ£ÿ   6 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:270:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.1 ΓÇö Seed admin user (0ms)
+  -   7 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:275:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.2 ΓÇö Seed verified seller
+  -   8 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:280:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.3 ΓÇö Seed verified buyer
+  -   9 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:285:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.4 ΓÇö Admin login via API
+  -  10 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:293:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.5 ΓÇö Seller login via API
+  -  11 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:300:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.6 ΓÇö Buyer login via API
+  -  12 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:307:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.7 ΓÇö Verify user roles in DB
+  Γ£ô  13 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:330:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.1 ΓÇö GET /api/listings (public) ΓåÆ 200 (119ms)
+  Γ£ô  14 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:336:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.2 ΓÇö GET /health ΓåÆ 200 (23ms)
+  Γ£ô  15 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:341:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.3 ΓÇö GET /health/ready ΓåÆ 200 (19ms)
+  Γ£ô  16 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:347:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.4 ΓÇö POST /api/listings (no auth) ΓåÆ 403 (24ms)
+  Γ£ô  17 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:352:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.5 ΓÇö GET /api/auth/me (no auth) ΓåÆ 401 (24ms)
+  Γ£ô  18 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:357:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.6 ΓÇö GET /api/profile (no auth) ΓåÆ 401 (21ms)
+  Γ£ô  19 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:362:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.7 ΓÇö GET /api/requests (no auth) ΓåÆ 401 (21ms)
+  Γ£ô  20 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:367:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.8 ΓÇö GET /api/disputes (no auth) ΓåÆ 401 (18ms)
+  Γ£ô  21 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:372:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.9 ΓÇö GET /api/admin/pending (no auth) ΓåÆ 401/403 (17ms)
+  Γ£ô  22 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:377:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.10 ΓÇö GET /api/admin/stats (no auth) ΓåÆ 401/403 (14ms)
+  Γ£ô  23 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:382:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.11 ΓÇö 404 for non-existent API route (16ms)
+  Γ£ô  24 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:395:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.1 ΓÇö Landing page (/) loads without JS errors (11.0s)
+  Γ£ô  25 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:411:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.2 ΓÇö /login page renders login form (4.0s)
+  Γ£ÿ  26 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:424:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.3 ΓÇö /signup page renders signup form (4.1s)
+  -  27 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:434:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.4 ΓÇö /home page is accessible (public module)
+  -  28 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:444:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.5 ΓÇö Protected route /profile redirects to /login for public user
+  -  29 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:452:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.6 ΓÇö Protected route /resale redirects to /login for public user
+  -  30 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:460:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.7 ΓÇö Protected route /admin redirects to /login for public user
+  -  31 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:468:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.8 ΓÇö Non-existent route shows 404 page (no crash)
+  Γ£ÿ  32 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:494:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.1 ΓÇö GET /auth/me (seller) ΓåÆ 200 with user data (134ms)
+  -  33 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:501:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.2 ΓÇö GET /auth/me (buyer) ΓåÆ 200 with user data
+  -  34 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:508:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.3 ΓÇö GET /profile (seller) ΓåÆ 200
+  -  35 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:514:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.4 ΓÇö GET /profile (buyer) ΓåÆ 200
+  -  36 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:521:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.5 ΓÇö GET /listings (student with auth) ΓåÆ 200
+  -  37 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:526:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.6 ΓÇö Seller creates listing ΓåÆ 201
+  -  38 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:535:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.7 ΓÇö GET /listings/:id (seller views own) ΓåÆ 200
+  -  39 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:542:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.8 ΓÇö Seller submits listing for review ΓåÆ 200
+  -  40 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:554:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.9 ΓÇö Student cannot access /admin/pending ΓåÆ 403
+  -  41 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:559:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.10 ΓÇö Student cannot access /admin/stats ΓåÆ 403
+  -  42 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:564:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.11 ΓÇö Student cannot access /admin/audit ΓåÆ 403
+  -  43 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:569:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.12 ΓÇö Student cannot access /admin/fraud ΓåÆ 403
+  -  44 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:575:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.13 ΓÇö GET /requests (student) ΓåÆ 200 (may be empty)
+  -  45 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:581:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.14 ΓÇö GET /listings/invalid-uuid ΓåÆ 404
+  Γ£ÿ  46 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:594:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.1 ΓÇö GET /auth/me (admin) ΓåÆ 200 with admin role (130ms)
+  -  47 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:600:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.2 ΓÇö GET /admin/pending ΓåÆ 200
+  -  48 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:609:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.3 ΓÇö Admin approves listing ΓåÆ 200
+  -  49 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:620:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.4 ΓÇö GET /admin/stats ΓåÆ 200 with metrics
+  -  50 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:627:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.5 ΓÇö GET /admin/users ΓåÆ 200
+  -  51 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:632:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.6 ΓÇö GET /admin/users/:userId (drilldown) ΓåÆ 200
+  -  52 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:637:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.7 ΓÇö GET /admin/audit ΓåÆ 200
+  -  53 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:642:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.8 ΓÇö GET /admin/fraud ΓåÆ 200
+  -  54 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:647:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.9 ΓÇö GET /admin/integrity (SUPER) ΓåÆ 200
+  -  55 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:652:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.10 ΓÇö GET /profile (admin) ΓåÆ 200
+  Γ£ÿ  56 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:665:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.1 ΓÇö Approved listing visible in public list (198ms)
+  -  57 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:674:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.2 ΓÇö Buyer views listing detail ΓåÆ 200
+  -  58 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:680:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.3 ΓÇö Buyer creates exchange request ΓåÆ 201
+  -  59 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:688:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.4 ΓÇö Seller sees incoming request ΓåÆ 200
+  -  60 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:693:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.5 ΓÇö Seller accepts request ΓåÆ ACCEPTED
+  -  61 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:704:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.6 ΓÇö Schedule meeting ΓåÆ MEETING_SCHEDULED
+  -  62 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:715:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.7 ΓÇö Confirm exchange ΓåÆ COMPLETED
+  -  63 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:726:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.8 ΓÇö Seller trust score updated
+  Γ£ÿ  64 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:740:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.1 ΓÇö Buyer raises dispute ΓåÆ DISPUTED (148ms)
+  -  65 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:751:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.2 ΓÇö Buyer files dispute record ΓåÆ 201
+  -  66 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:768:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.3 ΓÇö Admin sees disputes ΓåÆ 200
+  -  67 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:775:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.4 ΓÇö Admin resolves dispute (OPEN ΓåÆ UNDER_REVIEW ΓåÆ RESOLVED)
+  Γ£ÿ  68 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:811:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.1 ΓÇö Refresh token rotation works (190ms)
+  -  69 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:838:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.2 ΓÇö Logout revokes session
+  -  70 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:865:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.3 ΓÇö Invalid bearer token ΓåÆ 401 on protected endpoint
+  Γ£ô  71 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:878:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.1 ΓÇö Analytics events accepted ΓåÆ 202 (206ms)
+  Γ£ô  72 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:900:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.2 ΓÇö Listings pagination works (83ms)
+  Γ£ô  73 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:907:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.3 ΓÇö Listings search works (62ms)
+  Γ£ô  74 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:912:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.4 ΓÇö Listings filter by category works (48ms)
+  Γ£ÿ  75 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:925:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.1 ΓÇö Student login via browser ΓåÆ redirects to /home (14.8s)
+  -  76 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:948:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.2 ΓÇö /home page loads without console errors
+  -  77 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:967:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.3 ΓÇö /resale page loads for student
+  -  78 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:987:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.4 ΓÇö /profile page loads for student
+  -  79 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1006:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.5 ΓÇö /accommodation page loads for student
+  -  80 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1018:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.6 ΓÇö /essentials page loads for student
+  -  81 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1030:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.7 ΓÇö /academics page loads for student
+  -  82 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1042:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.8 ΓÇö /mess page loads for student
+  -  83 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1054:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.9 ΓÇö /hospital page loads for student
+  -  84 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1066:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.10 ΓÇö /jobs page loads for student
+  -  85 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1078:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.11 ΓÇö Student cannot access /admin ΓåÆ redirected to /home
+  Γ£ÿ  86 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1099:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.1 ΓÇö Admin login via browser ΓåÆ /home (18.1s)
+  -  87 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1119:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.2 ΓÇö Admin page loads for admin user
+  -  88 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1138:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.3 ΓÇö Admin can view /profile
+  -  89 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1150:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.4 ΓÇö Admin can view student profile drilldown via /profile/:userId
+  -  90 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1162:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.5 ΓÇö Admin can access /home
+  -  91 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1174:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.6 ΓÇö Admin logout flow works
+  Γ£ÿ  92 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1196:3 ΓÇ║ Phase 13: Cleanup ΓÇ║ 13.1 ΓÇö Cleanup E2E data (51ms)
+
+
+  1) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:270:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.1 ΓÇö Seed admin user 
+
+    Error: connect ECONNREFUSED 127.0.0.1:5433
+
+       at helpers.ts:204
+
+      202 |
+      203 | export async function cleanupE2eData(): Promise<void> {
+    > 204 |   const result = await pool.query(`SELECT id FROM users WHERE email LIKE 'e2e-%'`);
+          |                  ^
+      205 |
+      206 |   if (result.rows.length === 0) return;
+      207 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\node_modules\pg-pool\index.js:45:11
+        at cleanupE2eData (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\helpers.ts:204:18)
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:263:5
+
+  2) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:424:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.3 ΓÇö /signup page renders signup form 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32mtrue[39m
+    Received: [31mfalse[39m
+
+      428 |
+      429 |     const hasSignupBtn = await page.getByRole('button', { name: /REQUEST ACCESS/i }).isVisible({ timeout: 10000 });
+    > 430 |     expect(hasSignupBtn).toBe(true);
+          |                          ^
+      431 |     await ctx.close();
+      432 |   });
+      433 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:430:26
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-4-Pub-92db8-up-page-renders-signup-form-chromium\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: test-results\role-based-e2e-Phase-4-Pub-92db8-up-page-renders-signup-form-chromium\error-context.md
+
+  3) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:494:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.1 ΓÇö GET /auth/me (seller) ΓåÆ 200 with user data 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      494 |   test('5.1 ΓÇö GET /auth/me (seller) ΓåÆ 200 with user data', async ({ request }) => {
+      495 |     const res = await apiGet(request, '/api/auth/me', sellerToken);
+    > 496 |     expect(res.status).toBe(200);
+          |                        ^
+      497 |     expect(res.body.user.email).toBe(STUDENT_SELLER.email);
+      498 |     expect(res.body.trust).toBeDefined();
+      499 |   });
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:496:24
+
+  4) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:594:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.1 ΓÇö GET /auth/me (admin) ΓåÆ 200 with admin role 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      594 |   test('6.1 ΓÇö GET /auth/me (admin) ΓåÆ 200 with admin role', async ({ request }) => {
+      595 |     const res = await apiGet(request, '/api/auth/me', adminToken);
+    > 596 |     expect(res.status).toBe(200);
+          |                        ^
+      597 |     expect(res.body.user.role.toUpperCase()).toContain('ADMIN');
+      598 |   });
+      599 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:596:24
+
+  5) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:665:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.1 ΓÇö Approved listing visible in public list 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mundefined[39m
+
+      668 |     const listings = res.body.data ?? [];
+      669 |     const found = listings.find((l: { id: string }) => l.id === listingId);
+    > 670 |     expect(found).toBeTruthy();
+          |                   ^
+      671 |     expect(found.title).toBe(LISTING_DATA.title);
+      672 |   });
+      673 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:670:19
+
+  6) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:740:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.1 ΓÇö Buyer raises dispute ΓåÆ DISPUTED 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      745 |       buyerToken,
+      746 |     );
+    > 747 |     expect(res.status).toBe(200);
+          |                        ^
+      748 |     expect(res.body.data.status.toLowerCase()).toBe('disputed');
+      749 |   });
+      750 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:747:24
+
+  7) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:811:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.1 ΓÇö Refresh token rotation works 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      814 |       headers: { 'Content-Type': 'application/json' },
+      815 |     });
+    > 816 |     expect(loginRes.status()).toBe(200);
+          |                               ^
+      817 |
+      818 |     const cookies = loginRes.headers()['set-cookie'];
+      819 |     expect(cookies).toContain('refresh_token');
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:816:31
+
+  8) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:925:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.1 ΓÇö Student login via browser ΓåÆ redirects to /home 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByPlaceholder(/YOU@GMAIL\.COM|YOU@MCTRGIT\.AC\.IN/i).first()
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByPlaceholder(/YOU@GMAIL\.COM|YOU@MCTRGIT\.AC\.IN/i).first()[22m
+
+
+      938 |     // Find the email input ΓÇö placeholder may be YOU@GMAIL.COM or YOU@MCTRGIT.AC.IN
+      939 |     const emailInput = page.getByPlaceholder(/YOU@GMAIL\.COM|YOU@MCTRGIT\.AC\.IN/i).first();
+    > 940 |     await expect(emailInput).toBeVisible({ timeout: 10000 });
+          |                              ^
+      941 |     await emailInput.fill(STUDENT_BUYER.email);
+      942 |     await page.getByPlaceholder('ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó').fill(STUDENT_BUYER.password);
+      943 |     await page.getByRole('button', { name: /ENTER PORTAL/i }).click();
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:940:30
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-11-Ve-779d0-browser-ΓåÆ-redirects-to-home-chromium\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    attachment #2: video (video/webm) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-11-Ve-779d0-browser-ΓåÆ-redirects-to-home-chromium\video.webm
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: test-results\role-based-e2e-Phase-11-Ve-779d0-browser-ΓåÆ-redirects-to-home-chromium\error-context.md
+
+  9) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1099:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.1 ΓÇö Admin login via browser ΓåÆ /home 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByPlaceholder(/YOU@GMAIL\.COM|YOU@MCTRGIT\.AC\.IN/i).first()
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByPlaceholder(/YOU@GMAIL\.COM|YOU@MCTRGIT\.AC\.IN/i).first()[22m
+
+
+      1109 |
+      1110 |     const emailInput = page.getByPlaceholder(/YOU@GMAIL\.COM|YOU@MCTRGIT\.AC\.IN/i).first();
+    > 1111 |     await expect(emailInput).toBeVisible({ timeout: 10000 });
+           |                              ^
+      1112 |     await emailInput.fill(ADMIN_USER.email);
+      1113 |     await page.getByPlaceholder('ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó').fill(ADMIN_USER.password);
+      1114 |     await page.getByRole('button', { name: /ENTER PORTAL/i }).click();
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:1111:30
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-12-Ad-d0484-in-login-via-browser-ΓåÆ-home-chromium\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    attachment #2: video (video/webm) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-12-Ad-d0484-in-login-via-browser-ΓåÆ-home-chromium\video.webm
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: test-results\role-based-e2e-Phase-12-Ad-d0484-in-login-via-browser-ΓåÆ-home-chromium\error-context.md
+
+  10) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1196:3 ΓÇ║ Phase 13: Cleanup ΓÇ║ 13.1 ΓÇö Cleanup E2E data ΓöÇ
+
+    Error: connect ECONNREFUSED 127.0.0.1:5433
+
+       at helpers.ts:204
+
+      202 |
+      203 | export async function cleanupE2eData(): Promise<void> {
+    > 204 |   const result = await pool.query(`SELECT id FROM users WHERE email LIKE 'e2e-%'`);
+          |                  ^
+      205 |
+      206 |   if (result.rows.length === 0) return;
+      207 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\node_modules\pg-pool\index.js:45:11
+        at cleanupE2eData (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\helpers.ts:204:18)
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:1197:5
+
+  10 failed
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:270:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.1 ΓÇö Seed admin user 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:424:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.3 ΓÇö /signup page renders signup form 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:494:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.1 ΓÇö GET /auth/me (seller) ΓåÆ 200 with user data 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:594:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.1 ΓÇö GET /auth/me (admin) ΓåÆ 200 with admin role 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:665:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.1 ΓÇö Approved listing visible in public list 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:740:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.1 ΓÇö Buyer raises dispute ΓåÆ DISPUTED 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:811:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.1 ΓÇö Refresh token rotation works 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:925:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.1 ΓÇö Student login via browser ΓåÆ redirects to /home 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1099:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.1 ΓÇö Admin login via browser ΓåÆ /home 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1196:3 ΓÇ║ Phase 13: Cleanup ΓÇ║ 13.1 ΓÇö Cleanup E2E data ΓöÇΓöÇΓöÇ
+  60 did not run
+  22 passed (1.8m)

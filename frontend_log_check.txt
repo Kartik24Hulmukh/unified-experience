@@ -1,0 +1,5 @@
+﻿
+> vite_react_shadcn_ts@0.0.0 dev
+> vite --port 8080
+
+Terminate batch job (Y/N)? Terminate batch job (Y/N)? 

@@ -13,9 +13,16 @@ import { z } from 'zod';
    Primitives (reusable building blocks)
    ═══════════════════════════════════════════════════ */
 
-/** Trimmed non-empty string, max 500 chars by default */
+/** Trimmed non-empty string, max 500 chars by default, disallows HTML tags */
 export const safeString = (max = 500) =>
-  z.string().trim().min(1, 'Required').max(max, `Max ${max} characters`);
+  z.string()
+    .trim()
+    .min(1, 'Required')
+    .max(max, `Max ${max} characters`)
+    // Refinement to disallow HTML tags
+    .refine((val) => !/<[^>]*>?/g.test(val), {
+      message: 'HTML tags are not allowed',
+    });
 
 /** Email — trimmed, lowercased, validated format */
 export const emailSchema = z
@@ -77,9 +84,9 @@ export const googleSignInSchema = z.object({
 
 export const createListingSchema = z.object({
   title: safeString(200),
-  description: z.string().trim().max(2000, 'Max 2000 characters').optional(),
-  category: z.string().trim().max(100, 'Max 100 characters').optional(),
-  module: z.string().trim().max(100, 'Max 100 characters').optional(),
+  description: safeString(2000).optional(),
+  category: safeString(100).optional(),
+  module: safeString(100).optional(),
   price: z.number({ coerce: true }).nonnegative('Price must be non-negative').default(0),
 });
 

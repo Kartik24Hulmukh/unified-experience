@@ -17,7 +17,17 @@ import pg from 'pg';
 const DB_URL = process.env.E2E_DATABASE_URL
   ?? "postgresql://berozgar:berozgar123@127.0.0.1:5432/berozgar?schema=public";
 
-const pool = new pg.Pool({ connectionString: DB_URL });
+let pool = new pg.Pool({ connectionString: DB_URL });
+let poolEnded = false;
+
+/** Get a live pool, recreating it if a prior suite called disconnectDb(). */
+function getPool(): pg.Pool {
+  if (poolEnded) {
+    pool = new pg.Pool({ connectionString: DB_URL });
+    poolEnded = false;
+  }
+  return pool;
+}
 
 /* ═══════════════════════════════════════════════════
    Database — raw pg Pool export
@@ -26,7 +36,10 @@ const pool = new pg.Pool({ connectionString: DB_URL });
 export const db = pool;
 
 export async function disconnectDb(): Promise<void> {
-  await pool.end();
+  if (!poolEnded) {
+    await pool.end();
+    poolEnded = true;
+  }
 }
 
 /* ─── OTP ─────────────────────────────────────────── */
@@ -36,7 +49,7 @@ export async function disconnectDb(): Promise<void> {
  * This is how we "read the email" in E2E tests.
  */
 export async function getLatestOtp(email: string): Promise<string | null> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `SELECT code FROM otps WHERE email = $1 AND used_at IS NULL ORDER BY created_at DESC LIMIT 1`,
     [email],
   );
@@ -52,7 +65,7 @@ async function ensureStudentVerifiedFixture(
   email: string,
   fullName: string,
 ): Promise<void> {
-  const existing = await pool.query(
+  const existing = await getPool().query(
     `SELECT id FROM college_students WHERE official_email = $1`,
     [email],
   );
@@ -60,13 +73,13 @@ async function ensureStudentVerifiedFixture(
   const collegeStudentId = existing.rows[0]?.id ?? randomUUID();
 
   if (existing.rows.length === 0) {
-    await pool.query(
+    await getPool().query(
       `INSERT INTO college_students (id, name, official_email, created_at) VALUES ($1, $2, $3, NOW())`,
       [collegeStudentId, fullName, email],
     );
   }
 
-  await pool.query(
+  await getPool().query(
     `UPDATE users SET role = 'STUDENT_VERIFIED', college_student_id = $1, verified = true WHERE id = $2`,
     [collegeStudentId, userId],
   );
@@ -81,10 +94,10 @@ export async function ensureAdminUser(
   password: string,
   fullName = 'E2E Admin',
 ): Promise<string> {
-  const existing = await pool.query(`SELECT id FROM users WHERE email = $1`, [email]);
+  const existing = await getPool().query(`SELECT id FROM users WHERE email = $1`, [email]);
 
   if (existing.rows.length > 0) {
-    await pool.query(
+    await getPool().query(
       `UPDATE users SET role = 'ADMIN', privilege_level = 'SUPER' WHERE id = $1`,
       [existing.rows[0].id],
     );
@@ -95,7 +108,7 @@ export async function ensureAdminUser(
   const expiresAt = new Date(Date.now() + 10 * 60000).toISOString();
   const createdAt = new Date().toISOString();
 
-  await pool.query(
+  await getPool().query(
     `INSERT INTO otps (id, email, code, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)`,
     [randomUUID(), email, otp, expiresAt, createdAt],
   );
@@ -111,7 +124,7 @@ export async function ensureAdminUser(
     const retryExpires = new Date(Date.now() + 10 * 60000).toISOString();
     const retryCreated = new Date().toISOString();
 
-    await pool.query(
+    await getPool().query(
       `INSERT INTO otps (id, email, code, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)`,
       [randomUUID(), email, retryOtp, retryExpires, retryCreated],
     );
@@ -131,7 +144,7 @@ export async function ensureAdminUser(
     const retryUserId = retryBody.user?.id;
     if (!retryUserId) throw new Error('Admin user ID not returned from verify-otp retry');
 
-    await pool.query(
+    await getPool().query(
       `UPDATE users SET role = 'ADMIN', privilege_level = 'SUPER' WHERE id = $1`,
       [retryUserId],
     );
@@ -142,7 +155,7 @@ export async function ensureAdminUser(
   const userId = verifyBody.user?.id;
   if (!userId) throw new Error('Admin user ID not returned from verify-otp');
 
-  await pool.query(
+  await getPool().query(
     `UPDATE users SET role = 'ADMIN', privilege_level = 'SUPER' WHERE id = $1`,
     [userId],
   );
@@ -157,7 +170,7 @@ export async function createVerifiedUser(
   password: string,
   fullName = 'E2E User',
 ): Promise<string> {
-  const existing = await pool.query(`SELECT id FROM users WHERE email = $1`, [email]);
+  const existing = await getPool().query(`SELECT id FROM users WHERE email = $1`, [email]);
   if (existing.rows.length > 0) {
     await ensureStudentVerifiedFixture(existing.rows[0].id, email, fullName);
     return existing.rows[0].id;
@@ -181,7 +194,7 @@ export async function createVerifiedUser(
   const expiresAt = new Date(Date.now() + 10 * 60000).toISOString();
   const createdAt = new Date().toISOString();
 
-  await pool.query(
+  await getPool().query(
     `INSERT INTO otps (id, email, code, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)`,
     [randomUUID(), email, otp, expiresAt, createdAt],
   );
@@ -196,7 +209,7 @@ export async function createVerifiedUser(
   const retryExpires = new Date(Date.now() + 10 * 60000).toISOString();
   const retryCreated = new Date().toISOString();
 
-  await pool.query(
+  await getPool().query(
     `INSERT INTO otps (id, email, code, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)`,
     [randomUUID(), email, retryOtp, retryExpires, retryCreated],
   );
@@ -215,21 +228,21 @@ export async function createVerifiedUser(
 /* ─── Cleanup ─────────────────────────────────────── */
 
 export async function cleanupE2eData(): Promise<void> {
-  const result = await pool.query(`SELECT id FROM users WHERE email LIKE 'e2e-%'`);
+  const result = await getPool().query(`SELECT id FROM users WHERE email LIKE 'e2e-%'`);
 
   if (result.rows.length === 0) return;
 
   for (const { id } of result.rows) {
-    await pool.query(`DELETE FROM disputes WHERE raised_by = $1 OR against_id = $1`, [id]);
-    await pool.query(`DELETE FROM requests WHERE buyer_id = $1 OR seller_id = $1`, [id]);
-    await pool.query(`DELETE FROM audit_logs WHERE actor_id = $1`, [id]);
-    await pool.query(`DELETE FROM listings WHERE owner_id = $1`, [id]);
-    await pool.query(`DELETE FROM idempotency_keys WHERE user_id = $1`, [id]);
-    await pool.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [id]);
-    await pool.query(`DELETE FROM users WHERE id = $1`, [id]);
+    await getPool().query(`DELETE FROM disputes WHERE raised_by = $1 OR against_id = $1`, [id]);
+    await getPool().query(`DELETE FROM requests WHERE buyer_id = $1 OR seller_id = $1`, [id]);
+    await getPool().query(`DELETE FROM audit_logs WHERE actor_id = $1`, [id]);
+    await getPool().query(`DELETE FROM listings WHERE owner_id = $1`, [id]);
+    await getPool().query(`DELETE FROM idempotency_keys WHERE user_id = $1`, [id]);
+    await getPool().query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [id]);
+    await getPool().query(`DELETE FROM users WHERE id = $1`, [id]);
   }
 
-  await pool.query(`DELETE FROM otps WHERE email LIKE 'e2e-%'`);
+  await getPool().query(`DELETE FROM otps WHERE email LIKE 'e2e-%'`);
 }
 
 /* ─── User Lookup ─────────────────────────────────── */
@@ -237,7 +250,7 @@ export async function cleanupE2eData(): Promise<void> {
 export async function getUserByEmail(
   email: string,
 ): Promise<{ id: string; email: string; role: string } | null> {
-  const result = await pool.query(`SELECT id, email, role FROM users WHERE email = $1`, [email]);
+  const result = await getPool().query(`SELECT id, email, role FROM users WHERE email = $1`, [email]);
   return result.rows[0] ?? null;
 }
 
@@ -248,7 +261,7 @@ export async function getUserTrustData(
   cancelledRequests: number;
   adminFlags: number;
 } | null> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `SELECT completed_exchanges AS "completedExchanges",
             cancelled_requests  AS "cancelledRequests",
             admin_flags         AS "adminFlags"
@@ -263,7 +276,7 @@ export async function getUserTrustData(
 export async function getListingByTitle(
   title: string,
 ): Promise<{ id: string; status: string } | null> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `SELECT id, status FROM listings WHERE title LIKE $1 LIMIT 1`,
     [`%${title}%`],
   );
@@ -273,7 +286,7 @@ export async function getListingByTitle(
 export async function getRequestForListing(
   listingId: string,
 ): Promise<{ id: string; status: string } | null> {
-  const result = await pool.query(
+  const result = await getPool().query(
     `SELECT id, status FROM requests WHERE listing_id = $1 ORDER BY created_at DESC LIMIT 1`,
     [listingId],
   );

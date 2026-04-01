@@ -110,10 +110,12 @@ export function normalize(obj: unknown): unknown {
    ═══════════════════════════════════════════════════ */
 
 interface PaginationInput {
-  page: number;
+  page?: number;
   limit: number;
-  total: number;
-  totalPages: number;
+  total?: number;
+  totalPages?: number;
+  nextCursor?: string | null;
+  hasNextPage?: boolean;
 }
 
 /**
@@ -139,6 +141,8 @@ export function apiPage<T>(items: T[], pagination: PaginationInput) {
       page: pagination.page,
       perPage: pagination.limit,
       total: pagination.total,
+      nextCursor: pagination.nextCursor,
+      hasNextPage: pagination.hasNextPage,
     },
   };
 }

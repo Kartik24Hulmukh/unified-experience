@@ -72,7 +72,17 @@ export async function buildApp() {
   // ── Global Plugins ──────────────────────────────
   await registerCors(app);
   await app.register(helmet, {
-    contentSecurityPolicy: false, // SPA handles its own CSP
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https://*"],
+        connectSrc: ["'self'", "https://*.google.com", "https://*.sentry.io", "ws:", "wss:"],
+        frameSrc: ["'self'", "https://accounts.google.com"],
+      },
+    },
   });
   await app.register(cookie, {
     secret: env.JWT_SECRET, // Cookie signing secret

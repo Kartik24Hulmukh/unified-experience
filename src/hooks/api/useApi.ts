@@ -86,7 +86,7 @@ export interface ListingFilters {
   module?: string;
   status?: string;
   search?: string;
-  page?: number;
+  cursor?: string;
   perPage?: number;
   branch?: string;
   semester?: string;
@@ -273,7 +273,7 @@ export function useListings(
   if (filters.module) params.set('module', filters.module);
   if (filters.status) params.set('status', filters.status);
   if (filters.search) params.set('search', filters.search);
-  if (filters.page) params.set('page', String(filters.page));
+  if (filters.cursor) params.set('cursor', filters.cursor);
   if (filters.perPage) params.set('limit', String(filters.perPage));
   if (filters.branch) params.set('branch', filters.branch);
   if (filters.semester) params.set('semester', filters.semester);
@@ -283,11 +283,7 @@ export function useListings(
   const endpoint = `/listings${queryString ? `?${queryString}` : ''}`;
 
   return useQuery({
-    queryKey: filters.search
-      ? queryKeys.listings.search(filters.module || 'all', filters.search)
-      : filters.module
-        ? queryKeys.listings.module(filters.module)
-        : queryKeys.listings.all,
+    queryKey: ['listings', 'list', filters],
     queryFn: ({ signal }) => api.get<ApiResponse<Listing[]>>(endpoint, { signal }),
     staleTime: 2 * 60 * 1000, // Listings change more often
     ...options,
@@ -562,7 +558,7 @@ export function useRequests(
   const endpoint = `/requests${queryString ? `?${queryString}` : ''}`;
 
   return useQuery({
-    queryKey: filters?.role ? queryKeys.requests.role(filters.role) : queryKeys.requests.all,
+    queryKey: ['requests', 'list', filters || {}],
     queryFn: ({ signal }) => api.get<ApiResponse<ExchangeRequest[]>>(endpoint, { signal }),
     staleTime: 60_000,
     ...options,

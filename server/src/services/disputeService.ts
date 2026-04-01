@@ -339,8 +339,10 @@ export async function updateDisputeStatus(
       where: { id: disputeId },
       data: { status: newStatus },
       include: {
-        raisedBy: { select: { id: true, fullName: true, email: true } },
-        against: { select: { id: true, fullName: true, email: true } },
+        // SEC-PII-01: email stripped — consistent with all other API responses.
+        // Admin can drill down into the user detail if they need the email.
+        raisedBy: { select: { id: true, fullName: true } },
+        against: { select: { id: true, fullName: true } },
         request: { select: { id: true, listing: { select: { id: true, title: true } } } },
         listing: { select: { id: true, title: true } },
       },
@@ -348,10 +350,15 @@ export async function updateDisputeStatus(
 
     // If dispute is resolved and has a request, transition request to RESOLVED
     if (newStatus === 'RESOLVED' && dispute.request_id) {
-      await tx.request.update({
-        where: { id: dispute.request_id },
+      // P0-ATOM-01: Use updateMany with status assertion to prevent overwriting
+      // a request that was concurrently transitioned by the other party.
+      const resolveResult = await tx.request.updateMany({
+        where: { id: dispute.request_id, status: 'DISPUTED' },
         data: { status: 'RESOLVED', version: { increment: 1 } },
       });
+      if (resolveResult.count === 0) {
+        throw new ConflictError('Request is no longer in DISPUTED state — it may have been resolved by another admin.');
+      }
 
       // PROD-03: the original code did `adminFlags: { increment: 0 }` which is a no-op.
       // The intent was to record that this user lost a dispute, so the trust engine
@@ -376,10 +383,14 @@ export async function updateDisputeStatus(
 
     if (newStatus === 'REJECTED' && dispute.request_id) {
       // Dispute was invalid — buyer filed falsely; move request back to COMPLETED
-      await tx.request.update({
-        where: { id: dispute.request_id },
+      // P0-ATOM-01: Use updateMany with status assertion for atomicity.
+      const rejectResult = await tx.request.updateMany({
+        where: { id: dispute.request_id, status: 'DISPUTED' },
         data: { status: 'COMPLETED', version: { increment: 1 } },
       });
+      if (rejectResult.count === 0) {
+        throw new ConflictError('Request is no longer in DISPUTED state — it may have been modified by another admin action.');
+      }
       // Listing stays COMPLETED — exchange was real, no reset needed
     }
 

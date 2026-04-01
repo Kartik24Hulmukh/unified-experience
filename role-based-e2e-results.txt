@@ -1,0 +1,463 @@
+﻿
+Running 92 tests using 1 worker
+
+  Γ£ô   1 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:220:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.1 ΓÇö API server is ready (health/ready) (724ms)
+  Γ£ô   2 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:227:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.2 ΓÇö Full health report (health?verbose=true) (293ms)
+  Γ£ÿ   3 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:235:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.3 ΓÇö Frontend serves HTML on / (566ms)
+  -   4 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:242:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.4 ΓÇö Security headers present
+  -   5 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:249:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.5 ΓÇö CSRF token endpoint works
+[31mprisma:error[39m 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+error: Error validating datasource `db`: the URL must start with the protocol `file:`.
+  -->  schema.prisma:11
+   | 
+10 |   provider = "sqlite"
+11 |   url      = "file:./dev.db"
+   | 
+
+Validation Error Count: 1
+  Γ£ÿ   6 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:270:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.1 ΓÇö Seed admin user (0ms)
+  -   7 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:275:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.2 ΓÇö Seed verified seller
+  -   8 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:280:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.3 ΓÇö Seed verified buyer
+  -   9 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:285:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.4 ΓÇö Admin login via API
+  -  10 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:293:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.5 ΓÇö Seller login via API
+  -  11 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:300:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.6 ΓÇö Buyer login via API
+  -  12 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:307:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.7 ΓÇö Verify user roles in DB
+  Γ£ô  13 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:330:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.1 ΓÇö GET /api/listings (public) ΓåÆ 200 (296ms)
+  Γ£ô  14 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:336:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.2 ΓÇö GET /health ΓåÆ 200 (31ms)
+  Γ£ô  15 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:341:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.3 ΓÇö GET /health/ready ΓåÆ 200 (29ms)
+  Γ£ô  16 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:347:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.4 ΓÇö POST /api/listings (no auth) ΓåÆ 403 (45ms)
+  Γ£ô  17 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:352:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.5 ΓÇö GET /api/auth/me (no auth) ΓåÆ 401 (30ms)
+  Γ£ô  18 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:357:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.6 ΓÇö GET /api/profile (no auth) ΓåÆ 401 (30ms)
+  Γ£ô  19 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:362:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.7 ΓÇö GET /api/requests (no auth) ΓåÆ 401 (23ms)
+  Γ£ô  20 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:367:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.8 ΓÇö GET /api/disputes (no auth) ΓåÆ 401 (39ms)
+  Γ£ô  21 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:372:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.9 ΓÇö GET /api/admin/pending (no auth) ΓåÆ 401/403 (24ms)
+  Γ£ô  22 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:377:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.10 ΓÇö GET /api/admin/stats (no auth) ΓåÆ 401/403 (21ms)
+  Γ£ô  23 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:382:3 ΓÇ║ Phase 3: Public User ΓÇö API Access Control ΓÇ║ 3.11 ΓÇö 404 for non-existent API route (26ms)
+  Γ£ô  24 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:395:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.1 ΓÇö Landing page (/) loads without JS errors (7.8s)
+  Γ£ÿ  25 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:411:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.2 ΓÇö /login page renders login form (2.3s)
+  -  26 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:422:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.3 ΓÇö /signup page renders signup form
+  -  27 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:432:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.4 ΓÇö /home page is accessible (public module)
+  -  28 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:442:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.5 ΓÇö Protected route /profile redirects to /login for public user
+  -  29 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:450:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.6 ΓÇö Protected route /resale redirects to /login for public user
+  -  30 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:458:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.7 ΓÇö Protected route /admin redirects to /login for public user
+  -  31 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:466:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.8 ΓÇö Non-existent route shows 404 page (no crash)
+  Γ£ÿ  32 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:492:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.1 ΓÇö GET /auth/me (seller) ΓåÆ 200 with user data (95ms)
+  -  33 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:499:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.2 ΓÇö GET /auth/me (buyer) ΓåÆ 200 with user data
+  -  34 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:506:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.3 ΓÇö GET /profile (seller) ΓåÆ 200
+  -  35 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:512:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.4 ΓÇö GET /profile (buyer) ΓåÆ 200
+  -  36 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:519:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.5 ΓÇö GET /listings (student with auth) ΓåÆ 200
+  -  37 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:524:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.6 ΓÇö Seller creates listing ΓåÆ 201
+  -  38 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:533:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.7 ΓÇö GET /listings/:id (seller views own) ΓåÆ 200
+  -  39 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:540:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.8 ΓÇö Seller submits listing for review ΓåÆ 200
+  -  40 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:552:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.9 ΓÇö Student cannot access /admin/pending ΓåÆ 403
+  -  41 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:557:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.10 ΓÇö Student cannot access /admin/stats ΓåÆ 403
+  -  42 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:562:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.11 ΓÇö Student cannot access /admin/audit ΓåÆ 403
+  -  43 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:567:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.12 ΓÇö Student cannot access /admin/fraud ΓåÆ 403
+  -  44 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:573:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.13 ΓÇö GET /requests (student) ΓåÆ 200 (may be empty)
+  -  45 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:579:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.14 ΓÇö GET /listings/invalid-uuid ΓåÆ 404
+  Γ£ÿ  46 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:592:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.1 ΓÇö GET /auth/me (admin) ΓåÆ 200 with admin role (89ms)
+  -  47 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:598:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.2 ΓÇö GET /admin/pending ΓåÆ 200
+  -  48 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:607:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.3 ΓÇö Admin approves listing ΓåÆ 200
+  -  49 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:618:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.4 ΓÇö GET /admin/stats ΓåÆ 200 with metrics
+  -  50 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:625:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.5 ΓÇö GET /admin/users ΓåÆ 200
+  -  51 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:630:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.6 ΓÇö GET /admin/users/:userId (drilldown) ΓåÆ 200
+  -  52 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:635:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.7 ΓÇö GET /admin/audit ΓåÆ 200
+  -  53 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:640:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.8 ΓÇö GET /admin/fraud ΓåÆ 200
+  -  54 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:645:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.9 ΓÇö GET /admin/integrity (SUPER) ΓåÆ 200
+  -  55 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:650:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.10 ΓÇö GET /profile (admin) ΓåÆ 200
+  Γ£ÿ  56 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:663:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.1 ΓÇö Approved listing visible in public list (141ms)
+  -  57 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:672:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.2 ΓÇö Buyer views listing detail ΓåÆ 200
+  -  58 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:678:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.3 ΓÇö Buyer creates exchange request ΓåÆ 201
+  -  59 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:686:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.4 ΓÇö Seller sees incoming request ΓåÆ 200
+  -  60 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:691:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.5 ΓÇö Seller accepts request ΓåÆ ACCEPTED
+  -  61 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:702:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.6 ΓÇö Schedule meeting ΓåÆ MEETING_SCHEDULED
+  -  62 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:713:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.7 ΓÇö Confirm exchange ΓåÆ COMPLETED
+  -  63 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:724:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.8 ΓÇö Seller trust score updated
+  Γ£ÿ  64 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:738:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.1 ΓÇö Buyer raises dispute ΓåÆ DISPUTED (91ms)
+  -  65 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:749:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.2 ΓÇö Buyer files dispute record ΓåÆ 201
+  -  66 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:766:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.3 ΓÇö Admin sees disputes ΓåÆ 200
+  -  67 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:773:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.4 ΓÇö Admin resolves dispute (OPEN ΓåÆ UNDER_REVIEW ΓåÆ RESOLVED)
+  Γ£ÿ  68 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:809:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.1 ΓÇö Refresh token rotation works (97ms)
+  -  69 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:836:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.2 ΓÇö Logout revokes session
+  -  70 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:863:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.3 ΓÇö Invalid bearer token ΓåÆ 401 on protected endpoint
+  Γ£ô  71 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:876:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.1 ΓÇö Analytics events accepted ΓåÆ 202 (137ms)
+  Γ£ÿ  72 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:898:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.2 ΓÇö Listings pagination works (49ms)
+  -  73 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:904:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.3 ΓÇö Listings search works
+  -  74 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:909:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.4 ΓÇö Listings filter by category works
+  Γ£ÿ  75 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:922:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.1 ΓÇö Student login via browser ΓåÆ redirects to /home (7.4s)
+  -  76 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:939:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.2 ΓÇö /home page loads without console errors
+  -  77 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:958:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.3 ΓÇö /resale page loads for student
+  -  78 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:978:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.4 ΓÇö /profile page loads for student
+  -  79 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:997:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.5 ΓÇö /accommodation page loads for student
+  -  80 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1009:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.6 ΓÇö /essentials page loads for student
+  -  81 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1021:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.7 ΓÇö /academics page loads for student
+  -  82 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1033:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.8 ΓÇö /mess page loads for student
+  -  83 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1045:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.9 ΓÇö /hospital page loads for student
+  -  84 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1057:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.10 ΓÇö /jobs page loads for student
+  -  85 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1069:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.11 ΓÇö Student cannot access /admin ΓåÆ redirected to /home
+  Γ£ÿ  86 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1090:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.1 ΓÇö Admin login via browser ΓåÆ /home (7.9s)
+  -  87 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1107:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.2 ΓÇö Admin page loads for admin user
+  -  88 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1126:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.3 ΓÇö Admin can view /profile
+  -  89 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1138:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.4 ΓÇö Admin can view student profile drilldown via /profile/:userId
+  -  90 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1150:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.5 ΓÇö Admin can access /home
+  -  91 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1162:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.6 ΓÇö Admin logout flow works
+[31mprisma:error[39m 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+error: Error validating datasource `db`: the URL must start with the protocol `file:`.
+  -->  schema.prisma:11
+   | 
+10 |   provider = "sqlite"
+11 |   url      = "file:./dev.db"
+   | 
+
+Validation Error Count: 1
+  Γ£ÿ  92 [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1184:3 ΓÇ║ Phase 13: Cleanup ΓÇ║ 13.1 ΓÇö Cleanup E2E data (382ms)
+
+
+  1) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:235:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.3 ΓÇö Frontend serves HTML on / 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"<!DOCTYPE html"[39m
+    Received string:    [31m"<!doctype html>┬╖[39m
+    [31m<html lang=\"en\" class=\"light\">┬╖[39m
+    [31m  <head>[39m
+    [31m    <script type=\"module\">import { injectIntoGlobalHook } from \"/@react-refresh\";[39m
+    [31minjectIntoGlobalHook(window);[39m
+    [31mwindow.$RefreshReg$ = () => {};[39m
+    [31mwindow.$RefreshSig$ = () => (type) => type;</script>┬╖[39m
+    [31m    <script type=\"module\" src=\"/@vite/client\"></script>┬╖┬╖[39m
+    [31m    <meta charset=\"UTF-8\" />┬╖[39m
+    [31m    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />┬╖[39m
+    [31m    <meta name=\"theme-color\" content=\"#00d4aa\" />┬╖[39m
+    [31m    <!-- CSP: lock down resource origins for production -->┬╖[39m
+    [31m    <meta┬╖[39m
+    [31m      http-equiv=\"Content-Security-Policy\"┬╖[39m
+    [31m      content=\"┬╖[39m
+    [31m        default-src 'self';┬╖[39m
+    [31m        script-src  'self' 'unsafe-inline' 'wasm-unsafe-eval';┬╖[39m
+    [31m        style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;┬╖[39m
+    [31m        font-src    'self' https://fonts.gstatic.com;┬╖[39m
+    [31m        img-src     'self' data: blob:;┬╖[39m
+    [31m        connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com ws://localhost:* http://localhost:*;┬╖[39m
+    [31m        worker-src  'self' blob:;┬╖[39m
+    [31m        frame-src   'self' https://www.google.com;┬╖[39m
+    [31m        object-src  'none';┬╖[39m
+    [31m        base-uri    'self';┬╖[39m
+    [31m      \"┬╖[39m
+    [31m    />┬╖[39m
+    [31m    <link rel=\"icon\" type=\"image/png\" href=\"/logo.png\" />┬╖[39m
+    [31m    <title>BErozgar ΓÇö Campus Trust Exchange | MCTRGIT</title>┬╖┬╖┬╖[39m
+    [31m    <!-- Non-blocking font loading -->┬╖[39m
+    [31m    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />┬╖[39m
+    [31m    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />┬╖[39m
+    [31m    <link┬╖[39m
+    [31m      rel=\"stylesheet\"┬╖[39m
+    [31m      href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap\"┬╖[39m
+    [31m      media=\"print\"┬╖[39m
+    [31m      onload=\"this.media='all'\"┬╖[39m
+    [31m    />┬╖[39m
+    [31m    <noscript>┬╖[39m
+    [31m      <link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap\" />┬╖[39m
+    [31m    </noscript>┬╖┬╖┬╖[39m
+    [31m    <meta name=\"description\" content=\"BErozgar is a student-centric digital ecosystem for MCTRGIT, enabling trust-based campus exchanges, accommodation discovery, academic resource sharing, and daily living support.\" />┬╖[39m
+    [31m    <meta name=\"author\" content=\"BErozgar\" />┬╖[39m
+    [31m    <meta name=\"robots\" content=\"index, follow\" />┬╖[39m
+    [31m    <link rel=\"canonical\" href=\"https://berozgar.in/\" />┬╖┬╖┬╖[39m
+    [31m    <meta property=\"og:title\" content=\"BErozgar ΓÇö Campus Trust Exchange\" />┬╖[39m
+    [31m    <meta property=\"og:description\" content=\"A student-centric digital ecosystem crafting trust & seamless interactions for campus life at MCTRGIT.\" />┬╖[39m
+    [31m    <meta property=\"og:type\" content=\"website\" />┬╖[39m
+    [31m    <meta property=\"og:url\" content=\"https://berozgar.in/\" />┬╖[39m
+    [31m    <meta property=\"og:image\" content=\"/logo.png\" />┬╖[39m
+    [31m    <meta property=\"og:site_name\" content=\"BErozgar\" />┬╖┬╖┬╖[39m
+    [31m    <meta name=\"twitter:card\" content=\"summary_large_image\" />┬╖[39m
+    [31m    <meta name=\"twitter:site\" content=\"@Berozgar\" />┬╖[39m
+    [31m    <meta name=\"twitter:title\" content=\"BErozgar ΓÇö Campus Trust Exchange\" />┬╖[39m
+    [31m    <meta name=\"twitter:description\" content=\"Trust-based campus exchange platform for MCTRGIT students.\" />┬╖[39m
+    [31m    <meta name=\"twitter:image\" content=\"/logo.png\" />┬╖┬╖┬╖[39m
+    [31m    <!-- Ensure light theme before React loads ΓÇö inline to prevent FOUC -->┬╖[39m
+    [31m    <script>┬╖[39m
+    [31m      document.documentElement.classList.remove('dark');┬╖[39m
+    [31m      document.documentElement.classList.add('light');┬╖[39m
+    [31m    </script>┬╖[39m
+    [31m  </head>┬╖┬╖┬╖[39m
+    [31m  <body style=\"background-color: #ffffff;\">┬╖[39m
+    [31m    <div id=\"root\"></div>┬╖[39m
+    [31m    <script type=\"module\" src=\"/src/main.tsx\"></script>┬╖[39m
+    [31m  </body>┬╖[39m
+    [31m</html>┬╖[39m
+    [31m"[39m
+
+      237 |     expect(res.status()).toBe(200);
+      238 |     const html = await res.text();
+    > 239 |     expect(html).toContain('<!DOCTYPE html');
+          |                  ^
+      240 |   });
+      241 |
+      242 |   test('1.4 ΓÇö Security headers present', async ({ request }) => {
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:239:18
+
+  2) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:270:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.1 ΓÇö Seed admin user 
+
+    PrismaClientInitializationError: 
+    Invalid `prisma.$queryRaw()` invocation:
+
+
+    error: Error validating datasource `db`: the URL must start with the protocol `file:`.
+      -->  schema.prisma:11
+       | 
+    10 |   provider = "sqlite"
+    11 |   url      = "file:./dev.db"
+       | 
+
+    Validation Error Count: 1
+
+       at helpers.ts:225
+
+      223 |  */
+      224 | export async function cleanupE2eData(): Promise<void> {
+    > 225 |   const userIds = await prisma.$queryRaw<Array<{ id: string }>>`
+          |                   ^
+      226 |     SELECT id FROM users WHERE email LIKE 'e2e-%'
+      227 |   `;
+      228 |
+        at ei.handleRequestError (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:242:13)
+        at ei.handleAndLogRequestError (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+        at ei.request (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+        at a (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+        at cleanupE2eData (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\helpers.ts:225:19)
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:263:5
+
+  3) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:411:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.2 ΓÇö /login page renders login form 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32mtrue[39m
+    Received: [31mfalse[39m
+
+      416 |     // Either the login form or a CTA to show it should be visible
+      417 |     const hasButton = await page.getByRole('button').first().isVisible({ timeout: 10000 });
+    > 418 |     expect(hasButton).toBe(true);
+          |                       ^
+      419 |     await ctx.close();
+      420 |   });
+      421 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:418:23
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-4-Pub-6169d-gin-page-renders-login-form-chromium\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: test-results\role-based-e2e-Phase-4-Pub-6169d-gin-page-renders-login-form-chromium\error-context.md
+
+  4) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:492:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.1 ΓÇö GET /auth/me (seller) ΓåÆ 200 with user data 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      492 |   test('5.1 ΓÇö GET /auth/me (seller) ΓåÆ 200 with user data', async ({ request }) => {
+      493 |     const res = await apiGet(request, '/api/auth/me', sellerToken);
+    > 494 |     expect(res.status).toBe(200);
+          |                        ^
+      495 |     expect(res.body.user.email).toBe(STUDENT_SELLER.email);
+      496 |     expect(res.body.trust).toBeDefined();
+      497 |   });
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:494:24
+
+  5) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:592:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.1 ΓÇö GET /auth/me (admin) ΓåÆ 200 with admin role 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      592 |   test('6.1 ΓÇö GET /auth/me (admin) ΓåÆ 200 with admin role', async ({ request }) => {
+      593 |     const res = await apiGet(request, '/api/auth/me', adminToken);
+    > 594 |     expect(res.status).toBe(200);
+          |                        ^
+      595 |     expect(res.body.user.role.toUpperCase()).toContain('ADMIN');
+      596 |   });
+      597 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:594:24
+
+  6) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:663:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.1 ΓÇö Approved listing visible in public list 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeTruthy[2m()[22m
+
+    Received: [31mundefined[39m
+
+      666 |     const listings = res.body.data ?? [];
+      667 |     const found = listings.find((l: { id: string }) => l.id === listingId);
+    > 668 |     expect(found).toBeTruthy();
+          |                   ^
+      669 |     expect(found.title).toBe(LISTING_DATA.title);
+      670 |   });
+      671 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:668:19
+
+  7) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:738:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.1 ΓÇö Buyer raises dispute ΓåÆ DISPUTED 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      743 |       buyerToken,
+      744 |     );
+    > 745 |     expect(res.status).toBe(200);
+          |                        ^
+      746 |     expect(res.body.data.status.toLowerCase()).toBe('disputed');
+      747 |   });
+      748 |
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:745:24
+
+  8) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:809:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.1 ΓÇö Refresh token rotation works 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m200[39m
+    Received: [31m401[39m
+
+      812 |       headers: { 'Content-Type': 'application/json' },
+      813 |     });
+    > 814 |     expect(loginRes.status()).toBe(200);
+          |                               ^
+      815 |
+      816 |     const cookies = loginRes.headers()['set-cookie'];
+      817 |     expect(cookies).toContain('refresh_token');
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:814:31
+
+  9) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:898:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.2 ΓÇö Listings pagination works 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeDefined[2m()[22m
+
+    Received: [31mundefined[39m
+
+      899 |     const res = await apiGet(request, '/api/listings?page=1&limit=5');
+      900 |     expect(res.status).toBe(200);
+    > 901 |     expect(res.body.pagination).toBeDefined();
+          |                                 ^
+      902 |   });
+      903 |
+      904 |   test('10.3 ΓÇö Listings search works', async ({ request }) => {
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:901:33
+
+  10) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:922:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.1 ΓÇö Student login via browser ΓåÆ redirects to /home 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByPlaceholder('YOU@MCTRGIT.AC.IN')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByPlaceholder('YOU@MCTRGIT.AC.IN')[22m
+
+
+      929 |
+      930 |     const emailInput = page.getByPlaceholder('YOU@MCTRGIT.AC.IN');
+    > 931 |     await expect(emailInput).toBeVisible({ timeout: 5000 });
+          |                              ^
+      932 |     await emailInput.fill(STUDENT_BUYER.email);
+      933 |     await page.getByPlaceholder('ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó').fill(STUDENT_BUYER.password);
+      934 |     await page.getByRole('button', { name: /ENTER PORTAL/i }).click();
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:931:30
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-11-Ve-779d0-browser-ΓåÆ-redirects-to-home-chromium\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    attachment #2: video (video/webm) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-11-Ve-779d0-browser-ΓåÆ-redirects-to-home-chromium\video.webm
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: test-results\role-based-e2e-Phase-11-Ve-779d0-browser-ΓåÆ-redirects-to-home-chromium\error-context.md
+
+  11) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1090:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.1 ΓÇö Admin login via browser ΓåÆ /home 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByPlaceholder('YOU@MCTRGIT.AC.IN')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for getByPlaceholder('YOU@MCTRGIT.AC.IN')[22m
+
+
+      1097 |
+      1098 |     const emailInput = page.getByPlaceholder('YOU@MCTRGIT.AC.IN');
+    > 1099 |     await expect(emailInput).toBeVisible({ timeout: 5000 });
+           |                              ^
+      1100 |     await emailInput.fill(ADMIN_USER.email);
+      1101 |     await page.getByPlaceholder('ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó').fill(ADMIN_USER.password);
+      1102 |     await page.getByRole('button', { name: /ENTER PORTAL/i }).click();
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:1099:30
+
+    attachment #1: screenshot (image/png) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-12-Ad-d0484-in-login-via-browser-ΓåÆ-home-chromium\test-failed-1.png
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    attachment #2: video (video/webm) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    test-results\role-based-e2e-Phase-12-Ad-d0484-in-login-via-browser-ΓåÆ-home-chromium\video.webm
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+    Error Context: test-results\role-based-e2e-Phase-12-Ad-d0484-in-login-via-browser-ΓåÆ-home-chromium\error-context.md
+
+  12) [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1184:3 ΓÇ║ Phase 13: Cleanup ΓÇ║ 13.1 ΓÇö Cleanup E2E data ΓöÇ
+
+    PrismaClientInitializationError: 
+    Invalid `prisma.$queryRaw()` invocation:
+
+
+    error: Error validating datasource `db`: the URL must start with the protocol `file:`.
+      -->  schema.prisma:11
+       | 
+    10 |   provider = "sqlite"
+    11 |   url      = "file:./dev.db"
+       | 
+
+    Validation Error Count: 1
+
+       at helpers.ts:225
+
+      223 |  */
+      224 | export async function cleanupE2eData(): Promise<void> {
+    > 225 |   const userIds = await prisma.$queryRaw<Array<{ id: string }>>`
+          |                   ^
+      226 |     SELECT id FROM users WHERE email LIKE 'e2e-%'
+      227 |   `;
+      228 |
+        at ei.handleRequestError (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:242:13)
+        at ei.handleAndLogRequestError (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+        at ei.request (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+        at a (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\server\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+        at cleanupE2eData (C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\helpers.ts:225:19)
+        at C:\Users\SANDIP\Desktop\Unified-Experience\unified-experience\e2e\role-based-e2e.spec.ts:1185:5
+
+  12 failed
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:235:3 ΓÇ║ Phase 1: Infrastructure Health ΓÇ║ 1.3 ΓÇö Frontend serves HTML on / 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:270:3 ΓÇ║ Phase 2: User Provisioning (Signup + Seeding) ΓÇ║ 2.1 ΓÇö Seed admin user 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:411:3 ΓÇ║ Phase 4: Public User ΓÇö Browser Navigation ΓÇ║ 4.2 ΓÇö /login page renders login form 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:492:3 ΓÇ║ Phase 5: Verified Student ΓÇö API Access ΓÇ║ 5.1 ΓÇö GET /auth/me (seller) ΓåÆ 200 with user data 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:592:3 ΓÇ║ Phase 6: Admin ΓÇö API Access ΓÇ║ 6.1 ΓÇö GET /auth/me (admin) ΓåÆ 200 with admin role 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:663:3 ΓÇ║ Phase 7: Complete Exchange Lifecycle ΓÇ║ 7.1 ΓÇö Approved listing visible in public list 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:738:3 ΓÇ║ Phase 8: Dispute Lifecycle ΓÇ║ 8.1 ΓÇö Buyer raises dispute ΓåÆ DISPUTED 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:809:3 ΓÇ║ Phase 9: Auth Security ΓÇ║ 9.1 ΓÇö Refresh token rotation works 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:898:3 ΓÇ║ Phase 10: Analytics & Edge Cases ΓÇ║ 10.2 ΓÇö Listings pagination works 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:922:3 ΓÇ║ Phase 11: Verified Student ΓÇö Browser Navigation ΓÇ║ 11.1 ΓÇö Student login via browser ΓåÆ redirects to /home 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1090:3 ΓÇ║ Phase 12: Admin ΓÇö Browser Navigation ΓÇ║ 12.1 ΓÇö Admin login via browser ΓåÆ /home 
+    [chromium] ΓÇ║ e2e\role-based-e2e.spec.ts:1184:3 ΓÇ║ Phase 13: Cleanup ΓÇ║ 13.1 ΓÇö Cleanup E2E data ΓöÇΓöÇΓöÇ
+  65 did not run
+  15 passed (1.5m)

@@ -36,18 +36,16 @@ const ShieldFallback = () => (
       }
       .shield-logo-fallback {
         animation: shield-pulse 4s ease-in-out infinite;
-        filter: drop-shadow(0 0 40px rgba(33, 150, 243, 0.3));
+        filter: drop-shadow(0 0 20px rgba(212, 168, 67, 0.4));
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
     `}</style>
-    <div 
+    <img 
+      src="/logo.png" 
+      alt="Campus Trust Shield" 
       className="shield-logo-fallback"
-      style={{ 
-        width: 140, 
-        height: 160, 
-        background: 'linear-gradient(135deg, #1a2332 0%, #0f172a 100%)', 
-        clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-        border: '2px solid #D4A843'
-      }} 
     />
   </div>
 );

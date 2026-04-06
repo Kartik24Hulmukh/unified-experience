@@ -1,4 +1,4 @@
-ï»¿
+
 import { useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -10,7 +10,7 @@ const events = [
     date: 'MAR 15',
     type: 'TECHNICAL',
     title: 'TECHFEST 2026',
-    desc: 'Annual technical festival Î“Ã‡Ã¶ hackathons, competitive coding, robotics and IoT exhibitions open to all branches.',
+    desc: 'Annual technical festival GÇö hackathons, competitive coding, robotics and IoT exhibitions open to all branches.',
     tag: 'Tech Fest',
   },
   {
@@ -34,7 +34,7 @@ const events = [
     date: 'APR 18',
     type: 'ACADEMIC',
     title: 'RESEARCH EXPO',
-    desc: 'Annual research paper presentation and poster symposium Î“Ã‡Ã¶ showcase your innovations to faculty and peers.',
+    desc: 'Annual research paper presentation and poster symposium GÇö showcase your innovations to faculty and peers.',
     tag: 'Symposium',
   },
   {
@@ -62,13 +62,13 @@ const TYPE_COLORS: Record<string, string> = {
  * (avoids ScrollTrigger pin:true which conflicts with Lenis smooth scroll).
  *
  * Scroll flow:
- *   1. Section scrolls into view Î“Ã¥Ã† cards + header fade/slide in.
+ *   1. Section scrolls into view GåÆ cards + header fade/slide in.
  *   2. Sticky inner element locks at viewport top.
- *   3. User scrolls further Î“Ã¥Ã† horizontal track translates left (scrubbed).
- *   4. Sticky releases Î“Ã¥Ã† footer enters from below.
+ *   3. User scrolls further GåÆ horizontal track translates left (scrubbed).
+ *   4. Sticky releases GåÆ footer enters from below.
  */
 const CampusEventsSection = () => {
-  const containerRef = useRef<HTMLDivElement>(null); // outer Î“Ã‡Ã¶ height set dynamically
+  const containerRef = useRef<HTMLDivElement>(null); // outer GÇö height set dynamically
   const trackRef     = useRef<HTMLDivElement>(null); // horizontal flex track
 
   useLayoutEffect(() => {
@@ -76,7 +76,7 @@ const CampusEventsSection = () => {
     const track     = trackRef.current;
     if (!container || !track) return;
 
-    // Î“Ã¶Ã‡Î“Ã¶Ã‡ Height calculation Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡
+    // GöÇGöÇ Height calculation GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
     // Container height = 100vh + travelDistance so that scrolling through the
     // full container maps 1-to-1 with the full horizontal travel of the track.
     const updateHeight = () => {
@@ -99,10 +99,10 @@ const CampusEventsSection = () => {
     });
     resizeObserver.observe(document.documentElement);
 
-    // Î“Ã¶Ã‡Î“Ã¶Ã‡ GSAP animations (scoped to containerRef) Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡
+    // GöÇGöÇ GSAP animations (scoped to containerRef) GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
     const ctx = gsap.context(() => {
 
-      // 1. Header Î“Ã‡Ã¶ fade + slide up as section enters viewport
+      // 1. Header GÇö fade + slide up as section enters viewport
       gsap.fromTo(
         '.evt-header',
         { opacity: 0, y: 50 },
@@ -115,7 +115,7 @@ const CampusEventsSection = () => {
         },
       );
 
-      // 2. Cards Î“Ã‡Ã¶ staggered reveal just behind the header
+      // 2. Cards GÇö staggered reveal just behind the header
       gsap.fromTo(
         '.evt-card',
         { opacity: 0, y: 70 },
@@ -129,7 +129,7 @@ const CampusEventsSection = () => {
         },
       );
 
-      // 3. Horizontal scroll Î“Ã‡Ã¶ scrubbed, no pin (CSS sticky handles pinning)
+      // 3. Horizontal scroll GÇö scrubbed, no pin (CSS sticky handles pinning)
       gsap.to(track, {
         x: () => -(track.scrollWidth - window.innerWidth),
         ease: 'none',
@@ -155,7 +155,7 @@ const CampusEventsSection = () => {
   return (
     <div ref={containerRef} className="relative bg-portal">
 
-      {/* Subtle grid overlay Î“Ã‡Ã¶ matches homepage portal aesthetic */}
+      {/* Subtle grid overlay GÇö matches homepage portal aesthetic */}
       <div
         className="absolute inset-0 pointer-events-none z-0"
         style={{
@@ -166,7 +166,7 @@ const CampusEventsSection = () => {
         }}
       />
 
-      {/* Î“Ã¶Ã‡Î“Ã¶Ã‡ Sticky viewport Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡ */}
+      {/* GöÇGöÇ Sticky viewport GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ */}
       <div className="sticky top-0 h-[100dvh] overflow-hidden">
 
         {/* Horizontal flex track */}
@@ -176,7 +176,7 @@ const CampusEventsSection = () => {
           style={{ width: 'max-content' }}
         >
 
-          {/* Î“Ã¶Ã‡Î“Ã¶Ã‡ Section header column Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡ */}
+          {/* GöÇGöÇ Section header column GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ */}
           <div
             className="evt-header shrink-0 h-full flex flex-col justify-center px-8 sm:px-12 lg:px-20"
             style={{ width: 'clamp(280px, 38vw, 460px)' }}
@@ -196,7 +196,7 @@ const CampusEventsSection = () => {
 
             <p className="text-portal-foreground/40 font-body text-sm leading-relaxed"
                style={{ maxWidth: '240px' }}>
-              Upcoming fests, workshops &amp; institutional events at MCTRGIT Î“Ã‡Ã¶
+              Upcoming fests, workshops &amp; institutional events at MCTRGIT GÇö
               stay connected, never miss out.
             </p>
 
@@ -212,14 +212,14 @@ const CampusEventsSection = () => {
 
             <div className="mt-10 flex items-center gap-2 text-portal-foreground/15">
               <span className="font-mono text-[9px] uppercase tracking-[0.3em]">Scroll to explore</span>
-              <span className="text-sm">Î“Ã¥Ã†</span>
+              <span className="text-sm">GåÆ</span>
             </div>
           </div>
 
           {/* Vertical divider */}
           <div className="shrink-0 w-px bg-white/10 mx-8" style={{ height: '38vh' }} />
 
-          {/* Î“Ã¶Ã‡Î“Ã¶Ã‡ Event cards Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡Î“Ã¶Ã‡ */}
+          {/* GöÇGöÇ Event cards GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ */}
           {events.map((event) => {
             const color = TYPE_COLORS[event.type] ?? '#a3ff12';
             return (
@@ -268,7 +268,7 @@ const CampusEventsSection = () => {
                     className="font-mono text-[9px] uppercase tracking-[0.45em] mb-3"
                     style={{ color: `${color}70` }}
                   >
-                    {event.date} â”¬â•– 2026
+                    {event.date} -+ 2026
                   </p>
 
                   {/* Title */}
@@ -307,7 +307,7 @@ const CampusEventsSection = () => {
                       </span>
                     </div>
                     <span className="text-portal-foreground/20 font-mono text-[8px] uppercase tracking-widest group-hover:text-portal-foreground/40 transition-colors duration-300">
-                      EXPLORE Î“Ã¥Ã†
+                      EXPLORE GåÆ
                     </span>
                   </div>
 

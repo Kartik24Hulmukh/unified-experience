@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * FluidMaskCursor — WebGL Navier-Stokes fluid simulation for hover-reveal masking.
  *
@@ -87,8 +87,8 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
     const onRestored = () => { contextLost = false; initFBOs(); };
     canvas.addEventListener('webglcontextrestored', onRestored);
 
-    let halfFloat: any;
-    let supportLinearFiltering: any;
+    let halfFloat: unknown;
+    let supportLinearFiltering: unknown;
     if (isWebGL2) {
       gl.getExtension('EXT_color_buffer_float');
       supportLinearFiltering = gl.getExtension('OES_texture_float_linear');
@@ -98,15 +98,15 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
     }
 
     gl.clearColor(0.0, 0.0, 0.0, 0.0);
-    const halfFloatTexType = isWebGL2 ? (gl as any).HALF_FLOAT : halfFloat && halfFloat.HALF_FLOAT_OES;
+    const halfFloatTexType = isWebGL2 ? (gl as unknown).HALF_FLOAT : halfFloat && halfFloat.HALF_FLOAT_OES;
 
     // ... (rest of the WebGL glue code remains similar but we optimize the loop)
 
-    function getSupportedFormat(gl: WebGL2RenderingContext, intFmt: number, fmt: number, type: number): any {
+    function getSupportedFormat(gl: WebGL2RenderingContext, intFmt: number, fmt: number, type: number): unknown {
       if (!supportRenderTextureFormat(gl, intFmt, fmt, type)) {
         switch (intFmt) {
-          case (gl as any).R16F: return getSupportedFormat(gl, (gl as any).RG16F, (gl as any).RG, type);
-          case (gl as any).RG16F: return getSupportedFormat(gl, (gl as any).RGBA16F, (gl as any).RGBA, type);
+          case (gl as unknown).R16F: return getSupportedFormat(gl, (gl as unknown).RG16F, (gl as unknown).RG, type);
+          case (gl as unknown).RG16F: return getSupportedFormat(gl, (gl as unknown).RGBA16F, (gl as unknown).RGBA, type);
           default: return null;
         }
       }
@@ -121,15 +121,15 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
       gl.texImage2D(gl.TEXTURE_2D, 0, intFmt, 4, 4, 0, fmt, type, null);
       const fbo = gl.createFramebuffer();
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, (gl as any).COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, (gl as unknown).COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
       const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
       gl.deleteTexture(tex); gl.deleteFramebuffer(fbo); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       return ok;
     }
 
-    const formatRGBA = isWebGL2 ? getSupportedFormat(gl, (gl as any).RGBA16F, (gl as any).RGBA, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
-    const formatRG = isWebGL2 ? getSupportedFormat(gl, (gl as any).RG16F, (gl as any).RG, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
-    const formatR = isWebGL2 ? getSupportedFormat(gl, (gl as any).R16F, (gl as any).RED, halfFloatTexType) : getSupportedFormat(gl, (gl as any).RGBA, (gl as any).RGBA, halfFloatTexType);
+    const formatRGBA = isWebGL2 ? getSupportedFormat(gl, (gl as unknown).RGBA16F, (gl as unknown).RGBA, halfFloatTexType) : getSupportedFormat(gl, (gl as unknown).RGBA, (gl as unknown).RGBA, halfFloatTexType);
+    const formatRG = isWebGL2 ? getSupportedFormat(gl, (gl as unknown).RG16F, (gl as unknown).RG, halfFloatTexType) : getSupportedFormat(gl, (gl as unknown).RGBA, (gl as unknown).RGBA, halfFloatTexType);
+    const formatR = isWebGL2 ? getSupportedFormat(gl, (gl as unknown).R16F, (gl as unknown).RED, halfFloatTexType) : getSupportedFormat(gl, (gl as unknown).RGBA, (gl as unknown).RGBA, halfFloatTexType);
 
     function compileShader(type: number, source: string) {
       const s = gl!.createShader(type)!; gl!.shaderSource(s, source); gl!.compileShader(s); return s;
@@ -138,13 +138,13 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
       const p = gl!.createProgram()!; gl!.attachShader(p, vs); gl!.attachShader(p, fs); gl!.linkProgram(p); return p;
     }
     function getUniforms(program: WebGLProgram) {
-      const u: any = {}; const count = gl!.getProgramParameter(program, (gl as any).ACTIVE_UNIFORMS);
+      const u: unknown = {}; const count = gl!.getProgramParameter(program, (gl as unknown).ACTIVE_UNIFORMS);
       for (let i = 0; i < count; i++) { const name = gl!.getActiveUniform(program, i)!.name; u[name] = gl!.getUniformLocation(program, name); }
       return u;
     }
 
     class Program {
-      program: WebGLProgram; uniforms: any;
+      program: WebGLProgram; uniforms: unknown;
       constructor(vs: WebGLShader, fs: WebGLShader) { this.program = createProgramGL(vs, fs); this.uniforms = getUniforms(this.program); }
       bind() { gl!.useProgram(this.program); }
     }
@@ -179,19 +179,19 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(0);
 
-    function blit(target: any) {
+    function blit(target: unknown) {
       if (target == null) { gl!.viewport(0, 0, gl!.drawingBufferWidth, gl!.drawingBufferHeight); gl!.bindFramebuffer(gl!.FRAMEBUFFER, null); }
       else { gl!.viewport(0, 0, target.width, target.height); gl!.bindFramebuffer(gl!.FRAMEBUFFER, target.fbo); }
       gl!.drawElements(gl!.TRIANGLES, 6, gl!.UNSIGNED_SHORT, 0);
     }
 
-    let dye: any, velocity: any, divergenceFBO: any, curlFBO: any, pressureFBO: any;
+    let dye: unknown, velocity: unknown, divergenceFBO: unknown, curlFBO: unknown, pressureFBO: unknown;
     function createFBO(w: number, h: number, intFmt: number, fmt: number, type: number, param: number) {
       const tex = gl!.createTexture()!;
       gl!.bindTexture(gl!.TEXTURE_2D, tex); gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MIN_FILTER, param); gl!.texParameteri(gl!.TEXTURE_2D, gl!.TEXTURE_MAG_FILTER, param);
       gl!.texImage2D(gl!.TEXTURE_2D, 0, intFmt, w, h, 0, fmt, type, null);
-      const fbo = gl!.createFramebuffer()!; gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo); gl!.framebufferTexture2D(gl!.FRAMEBUFFER, (gl as any).COLOR_ATTACHMENT0, gl!.TEXTURE_2D, tex, 0);
-      return { texture: tex, fbo, width: w, height: h, texelSizeX: 1 / w, texelSizeY: 1 / h, attach(id: number) { gl!.activeTexture((gl as any).TEXTURE0 + id); gl!.bindTexture(gl!.TEXTURE_2D, tex); return id; } };
+      const fbo = gl!.createFramebuffer()!; gl!.bindFramebuffer(gl!.FRAMEBUFFER, fbo); gl!.framebufferTexture2D(gl!.FRAMEBUFFER, (gl as unknown).COLOR_ATTACHMENT0, gl!.TEXTURE_2D, tex, 0);
+      return { texture: tex, fbo, width: w, height: h, texelSizeX: 1 / w, texelSizeY: 1 / h, attach(id: number) { gl!.activeTexture((gl as unknown).TEXTURE0 + id); gl!.bindTexture(gl!.TEXTURE_2D, tex); return id; } };
     }
     function createDoubleFBO(w: number, h: number, intFmt: number, fmt: number, type: number, param: number) {
       let f1 = createFBO(w, h, intFmt, fmt, type, param); let f2 = createFBO(w, h, intFmt, fmt, type, param);
@@ -256,8 +256,8 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
       gl!.uniform1i(advProg.uniforms.uVelocity, velocity.read.attach(0)); gl!.uniform1i(advProg.uniforms.uSource, velocity.read.attach(0)); gl!.uniform1f(advProg.uniforms.dissipation, VELOCITY_DISSIPATION); blit(velocity.write); velocity.swap();
       gl!.uniform1i(advProg.uniforms.uVelocity, velocity.read.attach(0)); gl!.uniform1i(advProg.uniforms.uSource, dye.read.attach(1)); gl!.uniform1f(advProg.uniforms.dissipation, DENSITY_DISSIPATION); blit(dye.write); dye.swap();
 
-      gl!.bindFramebuffer((gl as any).FRAMEBUFFER, null);
-      gl!.clear((gl as any).COLOR_BUFFER_BIT);
+      gl!.bindFramebuffer((gl as unknown).FRAMEBUFFER, null);
+      gl!.clear((gl as unknown).COLOR_BUFFER_BIT);
       displayProg.bind();
       gl!.uniform1i(displayProg.uniforms.uTexture, dye.read.attach(0));
       blit(null);
@@ -291,12 +291,12 @@ function FluidMaskCursor({ onMaskFrame, paused = false }: FluidMaskCursorProps) 
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
       if (gl) {
-        const deleteFBO = (f: any) => {
+        const deleteFBO = (f: unknown) => {
           if (!f) return;
           if (f.texture) gl!.deleteTexture(f.texture);
           if (f.fbo) gl!.deleteFramebuffer(f.fbo);
         };
-        const deleteDoubleFBO = (f: any) => {
+        const deleteDoubleFBO = (f: unknown) => {
           if (!f) return;
           deleteFBO(f.read);
           deleteFBO(f.write);

@@ -27,7 +27,7 @@ import { toast } from "@/components/ui/use-toast";
 // file's scope, masking any future import and losing monitoring integration.
 class LoginPageErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean, errorMsg: string }> {
     constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) { super(props); this.state = { hasError: false, errorMsg: '' }; }
-    static getDerivedStateFromError(error: any) { return { hasError: true, errorMsg: error?.message || String(error) }; }
+    static getDerivedStateFromError(error: unknown) { return { hasError: true, errorMsg: error?.message || String(error) }; }
     render() { return this.state.hasError ? <div style={{position: 'absolute', top: 0, left: 0, zIndex: 9999, color: 'red', background: 'black', padding: '20px'}}>LANYARD CRASHED: {this.state.errorMsg}</div> : this.props.children; }
 }
 
@@ -74,7 +74,7 @@ const LoginPage = () => {
             // Immediately navigate here as a fallback
             const destination = loggedInUser?.role === 'admin' ? '/admin' : from;
             navigate(destination, { replace: true });
-        } catch (err: any) {
+        } catch (err: unknown) {
             hasRedirected.current = false;
             const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Invalid credentials. Please try again.");
             toast({ title: "Access Denied", description: msg, variant: "destructive" });
@@ -92,7 +92,7 @@ const LoginPage = () => {
             
             const destination = loggedInUser?.role === 'admin' ? '/admin' : from;
             navigate(destination, { replace: true });
-        } catch (err: any) {
+        } catch (err: unknown) {
             hasRedirected.current = false;
             const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not authenticate with Google.");
             toast({ title: "Google Sign-In Failed", description: msg, variant: "destructive" });

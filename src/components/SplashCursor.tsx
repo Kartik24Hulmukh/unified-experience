@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { useEffect, useRef, memo } from 'react';
 
 interface SplashCursorProps {
@@ -55,7 +55,7 @@ function SplashCursor({
 
     let isActive = true;
 
-    function PointerPrototype(this: any) {
+    function PointerPrototype(this: unknown) {
       this.id = -1;
       this.texcoordX = 0;
       this.texcoordY = 0;
@@ -86,7 +86,7 @@ function SplashCursor({
       TRANSPARENT
     };
 
-    const pointers = [new (PointerPrototype as any)()];
+    const pointers = [new (PointerPrototype as unknown)()];
 
     const context = getWebGLContext(canvas);
     if (!context) return;
@@ -129,15 +129,15 @@ function SplashCursor({
       }
       gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-      const halfFloatTexType = isWebGL2 ? (gl as any).HALF_FLOAT : halfFloat && (halfFloat as any).HALF_FLOAT_OES;
+      const halfFloatTexType = isWebGL2 ? (gl as unknown).HALF_FLOAT : halfFloat && (halfFloat as unknown).HALF_FLOAT_OES;
       let formatRGBA;
       let formatRG;
       let formatR;
 
       if (isWebGL2) {
-        formatRGBA = getSupportedFormat(gl, (gl as any).RGBA16F, gl.RGBA, halfFloatTexType);
-        formatRG = getSupportedFormat(gl, (gl as any).RG16F, (gl as any).RG, halfFloatTexType);
-        formatR = getSupportedFormat(gl, (gl as any).R16F, (gl as any).RED, halfFloatTexType);
+        formatRGBA = getSupportedFormat(gl, (gl as unknown).RGBA16F, gl.RGBA, halfFloatTexType);
+        formatRG = getSupportedFormat(gl, (gl as unknown).RG16F, (gl as unknown).RG, halfFloatTexType);
+        formatR = getSupportedFormat(gl, (gl as unknown).R16F, (gl as unknown).RED, halfFloatTexType);
       } else {
         formatRGBA = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
         formatRG = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
@@ -156,13 +156,13 @@ function SplashCursor({
       };
     }
 
-    function getSupportedFormat(gl: WebGL2RenderingContext, internalFormat: number, format: number, type: number): any {
+    function getSupportedFormat(gl: WebGL2RenderingContext, internalFormat: number, format: number, type: number): unknown {
       if (!supportRenderTextureFormat(gl, internalFormat, format, type)) {
         switch (internalFormat) {
-          case (gl as any).R16F:
-            return getSupportedFormat(gl, (gl as any).RG16F, (gl as any).RG, type);
-          case (gl as any).RG16F:
-            return getSupportedFormat(gl, (gl as any).RGBA16F, gl.RGBA, type);
+          case (gl as unknown).R16F:
+            return getSupportedFormat(gl, (gl as unknown).RG16F, (gl as unknown).RG, type);
+          case (gl as unknown).RG16F:
+            return getSupportedFormat(gl, (gl as unknown).RGBA16F, gl.RGBA, type);
           default:
             return null;
         }
@@ -198,9 +198,9 @@ function SplashCursor({
     class Material {
       vertexShader: WebGLShader;
       fragmentShaderSource: string;
-      programs: any[];
-      activeProgram: any;
-      uniforms: any;
+      programs: unknown[];
+      activeProgram: unknown;
+      uniforms: unknown;
       constructor(vertexShader: WebGLShader, fragmentShaderSource: string) {
         this.vertexShader = vertexShader;
         this.fragmentShaderSource = fragmentShaderSource;
@@ -228,7 +228,7 @@ function SplashCursor({
 
     class Program {
       program: WebGLProgram;
-      uniforms: any;
+      uniforms: unknown;
       constructor(vertexShader: WebGLShader, fragmentShader: WebGLShader) {
         this.program = createProgram(vertexShader, fragmentShader);
         this.uniforms = getUniforms(this.program);
@@ -248,7 +248,7 @@ function SplashCursor({
     }
 
     function getUniforms(program: WebGLProgram) {
-      const uniforms: any = [];
+      const uniforms: unknown = [];
       const uniformCount = gl!.getProgramParameter(program, gl!.ACTIVE_UNIFORMS);
       for (let i = 0; i < uniformCount; i++) {
         const info = gl!.getActiveUniform(program, i);
@@ -580,7 +580,7 @@ function SplashCursor({
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
       gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(0);
-      return (target: any, clear = false) => {
+      return (target: unknown, clear = false) => {
         if (target == null) {
           gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -596,7 +596,7 @@ function SplashCursor({
       };
     })();
 
-    let dye: any, velocity: any, divergence: any, curl: any, pressure: any;
+    let dye: unknown, velocity: unknown, divergence: unknown, curl: unknown, pressure: unknown;
 
     const copyProgram = new Program(baseVertexShader, copyShader);
     const clearProgram = new Program(baseVertexShader, clearShader);
@@ -703,7 +703,7 @@ function SplashCursor({
       };
     }
 
-    function resizeFBO(target: any, w: number, h: number, internalFormat: number, format: number, type: number, param: number) {
+    function resizeFBO(target: unknown, w: number, h: number, internalFormat: number, format: number, type: number, param: number) {
       const newFBO = createFBO(w, h, internalFormat, format, type, param);
       copyProgram.bind();
       gl!.uniform1i(copyProgram.uniforms.uTexture, target.attach(0));
@@ -711,7 +711,7 @@ function SplashCursor({
       return newFBO;
     }
 
-    function resizeDoubleFBO(target: any, w: number, h: number, internalFormat: number, format: number, type: number, param: number) {
+    function resizeDoubleFBO(target: unknown, w: number, h: number, internalFormat: number, format: number, type: number, param: number) {
       if (target.width === w && target.height === h) return target;
       target.read = resizeFBO(target.read, w, h, internalFormat, format, type, param);
       target.write = createFBO(w, h, internalFormat, format, type, param);
@@ -853,13 +853,13 @@ function SplashCursor({
       dye.swap();
     }
 
-    function render(target: any) {
+    function render(target: unknown) {
       gl!.blendFunc(gl!.ONE, gl!.ONE_MINUS_SRC_ALPHA);
       gl!.enable(gl!.BLEND);
       drawDisplay(target);
     }
 
-    function drawDisplay(target: any) {
+    function drawDisplay(target: unknown) {
       const width = target == null ? gl!.drawingBufferWidth : target.width;
       const height = target == null ? gl!.drawingBufferHeight : target.height;
       displayMaterial.bind();
@@ -868,13 +868,13 @@ function SplashCursor({
       blit(target);
     }
 
-    function splatPointer(pointer: any) {
+    function splatPointer(pointer: unknown) {
       const dx = pointer.deltaX * config.SPLAT_FORCE;
       const dy = pointer.deltaY * config.SPLAT_FORCE;
       splat(pointer.texcoordX, pointer.texcoordY, dx, dy, pointer.color);
     }
 
-    function clickSplat(pointer: any) {
+    function clickSplat(pointer: unknown) {
       const color = generateColor();
       color.r *= 10.0;
       color.g *= 10.0;
@@ -884,7 +884,7 @@ function SplashCursor({
       splat(pointer.texcoordX, pointer.texcoordY, dx, dy, color);
     }
 
-    function splat(x: number, y: number, dx: number, dy: number, color: any) {
+    function splat(x: number, y: number, dx: number, dy: number, color: unknown) {
       splatProgram.bind();
       gl!.uniform1i(splatProgram.uniforms.uTarget, velocity.read.attach(0));
       gl!.uniform1f(splatProgram.uniforms.aspectRatio, canvas!.width / canvas!.height);
@@ -906,7 +906,7 @@ function SplashCursor({
       return radius;
     }
 
-    function updatePointerDownData(pointer: any, id: number, posX: number, posY: number) {
+    function updatePointerDownData(pointer: unknown, id: number, posX: number, posY: number) {
       pointer.id = id;
       pointer.down = true;
       pointer.moved = false;
@@ -919,7 +919,7 @@ function SplashCursor({
       pointer.color = generateColor();
     }
 
-    function updatePointerMoveData(pointer: any, posX: number, posY: number, color: any) {
+    function updatePointerMoveData(pointer: unknown, posX: number, posY: number, color: unknown) {
       pointer.prevTexcoordX = pointer.texcoordX;
       pointer.prevTexcoordY = pointer.texcoordY;
       pointer.texcoordX = posX / canvas!.width;
@@ -930,7 +930,7 @@ function SplashCursor({
       pointer.color = color;
     }
 
-    function updatePointerUpData(pointer: any) {
+    function updatePointerUpData(pointer: unknown) {
       pointer.down = false;
     }
 
@@ -1007,7 +1007,7 @@ function SplashCursor({
       for (let i = 0; i < touches.length; i++) {
         const posX = scaleByPixelRatio(touches[i].clientX);
         const posY = scaleByPixelRatio(touches[i].clientY);
-        updatePointerDownData(pointer, (touches[i] as any).identifier, posX, posY);
+        updatePointerDownData(pointer, (touches[i] as unknown).identifier, posX, posY);
       }
     }
 
@@ -1077,12 +1077,12 @@ function SplashCursor({
 
       // WebGL resource disposal — prevents context exhaustion crashes
       if (gl) {
-        const deleteFBO = (fbo: any) => {
+        const deleteFBO = (fbo: unknown) => {
           if (!fbo) return;
           if (fbo.texture) gl.deleteTexture(fbo.texture);
           if (fbo.fbo) gl.deleteFramebuffer(fbo.fbo);
         };
-        const deleteDoubleFBO = (fbo: any) => {
+        const deleteDoubleFBO = (fbo: unknown) => {
           if (!fbo) return;
           deleteFBO(fbo.read);
           deleteFBO(fbo.write);

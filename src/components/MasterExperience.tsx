@@ -34,74 +34,75 @@ const modules: Module[] = [
 const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: { modules: Module[]; onModuleClick: (path: string) => void; }) {
   const [activeModule, setActiveModule] = useState<string | null>(null);
 
-  // MED-07 FIX: replaced per-item inline arrow functions with stable useCallback
-  // handlers that read the target module id/path from data-* attributes.
-  // Inline arrows inside .map() create new function references on every render,
-  // defeating the memo() wrapper and causing every ModuleNavPanel child to
-  // re-render whenever unrelated parent state changes.
-  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const id = (e.currentTarget as HTMLDivElement).dataset.moduleId ?? null;
-    setActiveModule((prev) => (prev === id ? prev : id));
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setActiveModule((prev) => (prev === null ? prev : null));
-  }, []);
-
-  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
-    if (path) onModuleClick(path);
-  }, [onModuleClick]);
-
-  return (
-    <div className="w-full h-full flex flex-row items-stretch">
-      <div className="w-full lg:w-[62%] h-full flex flex-col justify-center">
-        <div className="max-w-[900px] w-full px-6 sm:px-12 md:px-20 lg:px-24">
-
-          <nav className="flex flex-col gap-1 md:gap-2">
-            {modules.map((module) => (
-              <div key={module.id} data-module-id={module.id} data-module-path={module.path} className="module-item group relative cursor-pointer" role="button" tabIndex={0} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} onClick={handleClick}>
-                <div className="flex items-center gap-6 md:gap-8 py-4 md:py-6 px-4 md:px-6 group-hover:bg-white/[0.04] transition-[background-color] duration-500">
-                  <span className={`font-mono text-base md:text-lg transition-[color,opacity] duration-500 shrink-0 w-8 ${activeModule === module.id ? 'text-[#a3ff12] opacity-100' : 'text-portal-foreground/15'}`}>{module.number}</span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className={`text-3xl sm:text-4xl md:text-5xl lg:text-4xl xl:text-5xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.85] tracking-[-0.05em] translate-z-0 will-change-transform ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
-                    <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.4em] uppercase mt-2 transition-[color,opacity] duration-500 ${activeModule === module.id ? 'text-white/50' : 'text-white/5'}`}>{module.subtitle}</p>
-                  </div>
-                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>→</span>
-                </div>
-                <div className={`h-px w-full transition-[background-color] duration-500 ${activeModule === module.id ? 'bg-[#a3ff12]/30' : 'bg-white/5'}`} />
-              </div>
-            ))}
-          </nav>
-        </div>
-      </div>
-      <div className="hidden lg:flex w-[38%] h-full items-center justify-center p-6 lg:p-14">
-        <div className="relative w-full max-w-md aspect-square">
-          {modules.map((module) => (
+    const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+      const id = (e.currentTarget as HTMLDivElement).dataset.moduleId ?? null;
+      setActiveModule((prev) => (prev === id ? prev : id));
+    }, []);
+  
+    const handleMouseLeave = useCallback(() => {
+      setActiveModule((prev) => (prev === null ? prev : null));
+    }, []);
+  
+    const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+      const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
+      if (path) onModuleClick(path);
+    }, [onModuleClick]);
+  
+    return (
+      <div className="w-full h-full flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-24 overflow-y-auto">
+        <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 auto-rows-[minmax(200px,auto)] md:auto-rows-[minmax(300px,auto)]">
+          {modules.map((module, index) => (
             <div
               key={module.id}
-              // MED-D FIX: always keep image divs mounted so the browser can
-              // prefetch/decode in the background. Toggle visibility via CSS
-              // opacity + pointer-events instead of && conditional unmounting,
-              // which forced a full DOM remove/re-add on every hover.
-              className={`absolute inset-0 transition-all duration-500 ${
-                activeModule === module.id
-                  ? 'opacity-100 scale-100 pointer-events-auto'
-                  : 'opacity-0 scale-95 pointer-events-none'
+              data-module-id={module.id}
+              data-module-path={module.path}
+              className={`module-item group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-white/[0.04] hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] flex flex-col justify-between p-6 sm:p-8 ${
+                index === 0 ? 'md:col-span-2 lg:col-span-2 lg:row-span-2' : ''
+              } ${
+                index === 1 ? 'md:col-span-2 lg:col-span-2' : ''
+              } ${
+                index === 2 ? 'lg:col-span-1' : ''
+              } ${
+                index === 3 ? 'lg:col-span-1' : ''
               }`}
+              role="button"
+              tabIndex={0}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              onClick={handleClick}
             >
-              <div className="hud-image-box w-full h-full rounded-none overflow-hidden">
-                <img src={module.preview} alt={module.title} className="w-full h-full object-cover grayscale-[0.2]" loading="eager" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+              {/* Background Image Setup */}
+              <div className={`absolute inset-0 transition-opacity duration-700 ${activeModule === module.id ? 'opacity-100' : 'opacity-40 grayscale-[0.8]'}`}>
+                 <img src={module.preview} alt={module.title} className="w-full h-full object-cover scale-105 transition-transform duration-1000 group-hover:scale-100" loading="lazy" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-portal via-portal/60 to-transparent" />
+              </div>
+  
+              {/* Content Setup */}
+              <div className="relative z-10 space-y-4">
+                 <div>
+                    <span className={`font-mono text-sm md:text-base font-medium inline-block px-3 py-1 rounded-full border transition-colors duration-500 ${activeModule === module.id ? 'border-[#a3ff12]/50 text-[#a3ff12] bg-[#a3ff12]/10' : 'border-white/20 text-white/50 bg-black/30'}`}>
+                      {module.number}
+                    </span>
+                 </div>
+              </div>
+  
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-8 md:mt-0">
+                 <div>
+                    <h3 className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold uppercase transition-colors duration-500 leading-[0.9] tracking-[-0.04em] ${activeModule === module.id ? 'text-white' : 'text-white/80'}`}>
+                      {module.title}
+                    </h3>
+                    <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.3em] uppercase mt-3 transition-colors duration-500 line-clamp-2 ${activeModule === module.id ? 'text-[#a3ff12]' : 'text-white/50'}`}>
+                      {module.subtitle}
+                    </p>
+                 </div>
+                 <div className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 transition-all duration-500 group-hover:bg-[#a3ff12] group-hover:border-[#a3ff12] group-hover:text-black`}>
+                    <span className="font-mono text-lg transition-transform duration-300 group-hover:translate-x-1">→</span>
+                 </div>
               </div>
             </div>
           ))}
-          <div className={`absolute inset-0 border border-dashed border-white/10 flex items-center justify-center transition-opacity duration-300 ${activeModule ? 'opacity-0' : 'opacity-100'}`}>
-            <p className="text-white/5 font-mono text-[9px] tracking-widest uppercase italic">Awaiting Module Selection...</p>
-          </div>
         </div>
       </div>
-    </div>
   );
 });
 
@@ -237,14 +238,14 @@ const MasterExperience = () => {
           </div>
         </div>
 
-        <div ref={portalRef} className="absolute inset-0 z-30 bg-portal flex items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
-          <div ref={symbolRef} className="will-change-transform -mt-[10vh]" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
+        <div ref={portalRef} className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
+          <div ref={symbolRef} className="will-change-transform -mt-[10vh] md:mt-0" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
             {/* Portal3D is heavy ΓÇö skip on mobile to avoid GPU/WASM overhead */}
             {isHeavyMounted && <Suspense fallback={null}><Portal3D scrollProgressRef={scrollProgressRef} /></Suspense>}
           </div>
         </div>
 
-        <div ref={modulesRef} className="absolute inset-0 z-40 bg-portal opacity-0 pointer-events-none">
+        <div ref={modulesRef} className="absolute inset-0 z-30 bg-transparent opacity-0 pointer-events-none pt-[20vh] md:pt-[10vh]">
           <ModuleNavPanel modules={modules} onModuleClick={handleModuleClick} />
         </div>
       </div>

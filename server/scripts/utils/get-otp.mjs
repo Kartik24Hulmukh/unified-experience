@@ -1,0 +1,1 @@
+﻿import { PrismaClient } from '@prisma/client'; const p = new PrismaClient(); async function r() { const o = await p.otp.findFirst({where:{email:'seller@rgit.edu'}, orderBy:{createdAt:'desc'}}); console.log(o ? o.code : 'no-otp'); process.exit(0); } r();

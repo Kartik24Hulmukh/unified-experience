@@ -1,0 +1,1 @@
+const argon2 = require('argon2'); async function check() { const hash = '\$v=19$m=65536,t=3,p=4$SuNkFzakFab+CXLdImyWnA$51gYYwNnHb9wXCzCr7b3GrEnSXIOuJ/JEObTx2KRccs'; const ok = await argon2.verify(hash, 'Admin@1234'); console.log('Match?', ok); } check();

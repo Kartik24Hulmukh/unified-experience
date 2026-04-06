@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BErozgar - Analytics Routes
  *
  * POST /api/analytics/events - Ingest client telemetry events.

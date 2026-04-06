@@ -12,7 +12,7 @@ let adminCookie: string;
 let sellerCookie: string;
 let sellerToken: string;
 
-async function apiPost(request: any, path: string, data: any, token?: string) {
+async function apiPost(request: unknown, path: string, data: unknown, token?: string) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await request.post(`${API}${path}`, { data, headers });

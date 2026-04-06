@@ -499,7 +499,7 @@ const ListingDetailPage = () => {
                             disabled={updateListing.isPending}
                             onClick={() => {
                                 updateListing.mutate(
-                                    { id: listing.id, data: { ...editFormData, price: parseFloat(editFormData.price || '0') } as any },
+                                    { id: listing.id, data: { ...editFormData, price: parseFloat(editFormData.price || '0') } as unknown },
                                     {
                                         onSuccess: () => {
                                             toast({ title: 'Listing updated.', description: 'Your listing has been updated successfully.' });

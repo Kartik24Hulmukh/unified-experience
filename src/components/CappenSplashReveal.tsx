@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * CappenSplashReveal
  *
@@ -176,7 +176,7 @@ export const CappenSplashReveal: React.FC<CappenSplashRevealProps> = ({ texts })
         <FluidCanvas
           containerRef={containerRef}
           className="absolute inset-0 pointer-events-none"
-          style={{ mixBlendMode: "destination-out" as any }}
+          style={{ mixBlendMode: "destination-out" as unknown }}
         />
       </div>
     </div>

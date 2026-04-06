@@ -52,10 +52,10 @@ const ShieldFallback = () => (
   </div>
 );
 
-const disposeObject = (obj: any) => {
+const disposeObject = (obj: unknown) => {
   if (obj.geometry) obj.geometry.dispose();
   if (obj.material) {
-    if (Array.isArray(obj.material)) obj.material.forEach((m: any) => m.dispose());
+    if (Array.isArray(obj.material)) obj.material.forEach((m: unknown) => m.dispose());
     else obj.material.dispose();
   }
 };
@@ -64,7 +64,7 @@ const SceneCleanup = () => {
   const { gl, scene } = useThree();
   useLayoutEffect(() => {
     return () => {
-      scene.traverse((o) => { if ((o as any).isMesh) disposeObject(o); });
+      scene.traverse((o) => { if ((o as unknown).isMesh) disposeObject(o); });
       gl.dispose();
     };
   }, [gl, scene]);

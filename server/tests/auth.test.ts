@@ -1,5 +1,5 @@
-﻿/**
- * BErozgar â€” Auth Route Tests
+/**
+ * BErozgar — Auth Route Tests
  *
  * Tests login, signup, refresh, logout, and /me endpoints.
  * Auth service is mocked so tests run without a database.
@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
 
-// â”€â”€ Mock Prisma â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Mock Prisma ──────────────────────────────────
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $queryRaw: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
@@ -37,7 +37,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
-// â”€â”€ Mock env â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Mock env ──────────────────────────────────────
 vi.mock('@/config/env', () => ({
   env: {
     NODE_ENV: 'test',
@@ -52,7 +52,7 @@ vi.mock('@/config/env', () => ({
   },
 }));
 
-// â”€â”€ Mock authService (avoid real DB + token issuance) â”€â”€
+// ── Mock authService (avoid real DB + token issuance) ──
 vi.mock('@/services/authService', () => ({
   signup: vi.fn(),
   verifyOtp: vi.fn(),
@@ -84,7 +84,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-/* â”€â”€â”€ Login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Login ───────────────────────────────────── */
 
 describe('POST /api/auth/login', () => {
   it('returns 200 with user and access token on valid credentials', async () => {
@@ -143,7 +143,7 @@ describe('POST /api/auth/login', () => {
   });
 });
 
-/* â”€â”€â”€ Signup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Signup ──────────────────────────────────── */
 
 describe('POST /api/auth/signup', () => {
   it('returns 200 on valid signup request', async () => {
@@ -193,7 +193,7 @@ describe('POST /api/auth/signup', () => {
   });
 });
 
-/* â”€â”€â”€ Logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Logout ──────────────────────────────────── */
 
 describe('POST /api/auth/logout', () => {
   it('returns 200 and clears the cookie', async () => {
@@ -219,7 +219,7 @@ describe('POST /api/auth/logout', () => {
   });
 });
 
-/* â”€â”€â”€ Refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Refresh ─────────────────────────────────── */
 
 describe('POST /api/auth/refresh', () => {
   it('returns new tokens when valid refresh cookie is provided', async () => {
@@ -250,7 +250,7 @@ describe('POST /api/auth/refresh', () => {
   });
 });
 
-/* â”€â”€â”€ GET /me â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── GET /me ─────────────────────────────────── */
 
 describe('GET /api/auth/me', () => {
   it('returns 401 when no auth header is provided', async () => {

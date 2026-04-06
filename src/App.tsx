@@ -143,7 +143,9 @@ function AuthLogoutRedirectSyncer() {
     if (location.pathname === '/login') {
       try {
         localStorage.removeItem('berozgar_post_logout_redirect');
-      } catch {}
+      } catch {
+        // ignore
+      }
       return;
     }
 

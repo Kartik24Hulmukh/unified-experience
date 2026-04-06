@@ -1,4 +1,4 @@
-﻿/**
+/**
  * useGoogleIdentity - Google Identity Services (GIS) integration hook.
  *
  * Uses the real Google One Tap / Account Picker popup when a

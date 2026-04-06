@@ -55,7 +55,7 @@ const consoleLines = [
 
 /* ── Data Ticker ─────────────────────────────────────── */
 
-const DataTicker = ({ visibleItems = [] }: { visibleItems?: any[] }) => {
+const DataTicker = ({ visibleItems = [] }: { visibleItems?: unknown[] }) => {
   const tickerRef = useRef<HTMLDivElement>(null);
   const data = [
     'ACCOMMODATION_MODULE v2.6',

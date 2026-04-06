@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * FluidCanvas — WebGL fluid simulation canvas for hover-based reveals.
  *
@@ -31,7 +31,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
     let isActive = true;
 
     // ── Pointer prototype ──────────────────────────────────────────────
-    function pointerPrototype(this: any) {
+    function pointerPrototype(this: unknown) {
       this.id = -1;
       this.texcoordX = 0;
       this.texcoordY = 0;
@@ -69,7 +69,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
     };
     const SMOOTH_FACTOR = 0.08; // lower = more delay/smoothness (cappen-like buttery follow)
 
-    const pointers = [new (pointerPrototype as any)()];
+    const pointers = [new (pointerPrototype as unknown)()];
 
     // ── WebGL context ─────────────────────────────────────────────────
     const params: WebGLContextAttributes = {
@@ -80,13 +80,13 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       preserveDrawingBuffer: false,
     };
 
-    let gl: any = canvas.getContext('webgl2', params);
+    let gl: unknown = canvas.getContext('webgl2', params);
     const isWebGL2 = !!gl;
     if (!isWebGL2) gl = canvas.getContext('webgl', params) || canvas.getContext('experimental-webgl', params);
     if (!gl) return;
 
-    let halfFloat: any;
-    let supportLinearFiltering: any;
+    let halfFloat: unknown;
+    let supportLinearFiltering: unknown;
     if (isWebGL2) {
       gl.getExtension('EXT_color_buffer_float');
       supportLinearFiltering = gl.getExtension('OES_texture_float_linear');
@@ -99,7 +99,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
 
     const halfFloatTexType = isWebGL2 ? gl.HALF_FLOAT : halfFloat?.HALF_FLOAT_OES;
 
-    function getSupportedFormat(gl: any, internalFormat: number, format: number, type: number): any {
+    function getSupportedFormat(gl: unknown, internalFormat: number, format: number, type: number): unknown {
       if (!supportRenderTextureFormat(gl, internalFormat, format, type)) {
         switch (internalFormat) {
           case gl.R16F: return getSupportedFormat(gl, gl.RG16F, gl.RG, type);
@@ -110,7 +110,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       return { internalFormat, format };
     }
 
-    function supportRenderTextureFormat(gl: any, internalFormat: number, format: number, type: number): boolean {
+    function supportRenderTextureFormat(gl: unknown, internalFormat: number, format: number, type: number): boolean {
       const texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -124,7 +124,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       return gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
     }
 
-    let formatRGBA: any, formatRG: any, formatR: any;
+    let formatRGBA: unknown, formatRG: unknown, formatR: unknown;
     if (isWebGL2) {
       formatRGBA = getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, halfFloatTexType);
       formatRG = getSupportedFormat(gl, gl.RG16F, gl.RG, halfFloatTexType);
@@ -427,7 +427,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(0);
 
-    function blit(target: any, clear = false) {
+    function blit(target: unknown, clear = false) {
       if (target == null) {
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -443,7 +443,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
     }
 
     // ── FBO helpers ───────────────────────────────────────────────────
-    let dye: any, velocity: any, divergence: any, curl: any, pressure: any;
+    let dye: unknown, velocity: unknown, divergence: unknown, curl: unknown, pressure: unknown;
 
     const copyProgram = new Program(baseVS, copyFS);
     const clearProgram = new Program(baseVS, clearFS);
@@ -497,7 +497,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       };
     }
 
-    function resizeFBO(target: any, w: number, h: number, iF: number, f: number, t: number, param: number) {
+    function resizeFBO(target: unknown, w: number, h: number, iF: number, f: number, t: number, param: number) {
       const newFBO = createFBO(w, h, iF, f, t, param);
       copyProgram.bind();
       gl.uniform1i(copyProgram.uniforms.uTexture, target.attach(0));
@@ -505,7 +505,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       return newFBO;
     }
 
-    function resizeDoubleFBO(target: any, w: number, h: number, iF: number, f: number, t: number, param: number) {
+    function resizeDoubleFBO(target: unknown, w: number, h: number, iF: number, f: number, t: number, param: number) {
       if (target.width === w && target.height === h) return target;
       target.read = resizeFBO(target.read, w, h, iF, f, t, param);
       target.write = createFBO(w, h, iF, f, t, param);
@@ -600,7 +600,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
     }
 
     // ── Splat ─────────────────────────────────────────────────────────
-    function splat(x: number, y: number, dx: number, dy: number, color: any) {
+    function splat(x: number, y: number, dx: number, dy: number, color: unknown) {
       splatProgram.bind();
       gl.uniform1i(splatProgram.uniforms.uTarget, velocity.read.attach(0));
       gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
@@ -616,7 +616,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       dye.swap();
     }
 
-    function splatPointer(pointer: any) {
+    function splatPointer(pointer: unknown) {
       const dx = pointer.deltaX * config.SPLAT_FORCE;
       const dy = pointer.deltaY * config.SPLAT_FORCE;
       splat(pointer.texcoordX, pointer.texcoordY, dx, dy, pointer.color);
@@ -688,7 +688,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       dye.swap();
     }
 
-    function render(target: any) {
+    function render(target: unknown) {
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       gl.enable(gl.BLEND);
       displayMaterial.bind();
@@ -697,7 +697,7 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
     }
 
     // ── Pointer tracking ──────────────────────────────────────────────
-    function updatePointerMoveData(pointer: any, posX: number, posY: number, color: any) {
+    function updatePointerMoveData(pointer: unknown, posX: number, posY: number, color: unknown) {
       pointer.prevTexcoordX = pointer.texcoordX;
       pointer.prevTexcoordY = pointer.texcoordY;
       pointer.texcoordX = posX / canvas.width;
@@ -759,12 +759,12 @@ export default function FluidCanvas({ containerRef, className = '', style }: Flu
       colorUpdateTimer += dt * config.COLOR_UPDATE_SPEED;
       if (colorUpdateTimer >= 1) {
         colorUpdateTimer = wrap(colorUpdateTimer, 0, 1);
-        pointers.forEach((p: any) => { p.color = generateColor(); });
+        pointers.forEach((p: unknown) => { p.color = generateColor(); });
       }
     }
 
     function applyInputs() {
-      pointers.forEach((p: any) => {
+      pointers.forEach((p: unknown) => {
         if (p.moved) {
           p.moved = false;
           splatPointer(p);

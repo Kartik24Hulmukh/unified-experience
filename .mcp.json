@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "base-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "./.base/base-mcp/index.js"
+      ]
+    }
+  }
+}

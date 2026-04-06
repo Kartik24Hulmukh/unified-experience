@@ -1,0 +1,1 @@
+﻿import {PrismaClient} from '@prisma/client'; const prisma = new PrismaClient(); async function g() { const u = await prisma.user.findMany({select:{email:true}}); console.log(JSON.stringify(u, null, 2)); await prisma.$disconnect(); } g();

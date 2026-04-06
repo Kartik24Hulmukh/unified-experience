@@ -1,4 +1,4 @@
-ï»¿import { lazy, Suspense, memo, useEffect, useRef } from 'react';
+import { lazy, Suspense, memo, useEffect, useRef } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,7 +16,7 @@ import { handleApiError } from "@/lib/error-handler";
 import { ApiError } from "@/lib/api-client";
 import { trackPageView } from "@/lib/monitoring";
 
-// Lazy-load heavy global decorations Î“Ã‡Ã¶ not needed for first paint
+// Lazy-load heavy global decorations GÇö not needed for first paint
 const GooeyCursor = lazy(() => import('./components/GooeyCursor'));
 const ContextNav = lazy(() => import('./components/ContextNav'));
 const ScanlineOverlay = lazy(() => import('./components/ScanlineOverlay'));
@@ -53,7 +53,7 @@ const queryClient = new QueryClient({
   }),
   defaultOptions: {
     queries: {
-      // AUTH-SESSION-01: never retry 401/403 Î“Ã‡Ã¶ the api-client already
+      // AUTH-SESSION-01: never retry 401/403 GÇö the api-client already
       // handles token refresh. Retrying auth errors causes triple-logout
       // broadcasts, duplicate toasts, and cache thrashing.
       retry: (failureCount, error) => {
@@ -71,7 +71,7 @@ const queryClient = new QueryClient({
   },
 });
 
-/** Route-level error boundary wrapper Î“Ã‡Ã¶ granular recovery per page.
+/** Route-level error boundary wrapper GÇö granular recovery per page.
  *  MED-A FIX: key={pathname} forces ErrorBoundary to remount on each
  *  navigation so a caught error on one page doesn't persist to the next.
  */
@@ -100,7 +100,7 @@ const ConditionalScanline = memo(function ConditionalScanline() {
 function PageViewTracker() {
   const { pathname } = useLocation();
   // UX-3 FIX: only fire after auth hydration is complete. Without this guard,
-  // an authenticated user hitting '/' triggers: '/' view Î“Ã¥Ã† redirect to '/home' Î“Ã¥Ã†
+  // an authenticated user hitting '/' triggers: '/' view GåÆ redirect to '/home' GåÆ
   // '/home' view, polluting analytics with phantom page views before hydration.
   const { isHydrated } = useAuth();
   useEffect(() => {
@@ -110,7 +110,7 @@ function PageViewTracker() {
   return null;
 }
 
-/** H2-FIX: Clears the React Query cache on ANY authÎ“Ã¥Ã†unauth transition.
+/** H2-FIX: Clears the React Query cache on ANY authGåÆunauth transition.
  *  ContextNav only clears on explicit logout button click; this catches
  *  multi-tab logout, session expiry, and 401-triggered forced logout. */
 function AuthCacheSyncer() {
@@ -165,14 +165,14 @@ const App = () => (
                         <Route path="/login" element={<RouteErrorBoundary name="Login"><LoginPage /></RouteErrorBoundary>} />
                         <Route path="/signup" element={<RouteErrorBoundary name="Signup"><SignupPage /></RouteErrorBoundary>} />
                         <Route path="/verify" element={<RouteErrorBoundary name="Verify"><VerificationPage /></RouteErrorBoundary>} />
-                        {/* Dev-only test route Î“Ã‡Ã¶ excluded from production builds */}
+                        {/* Dev-only test route GÇö excluded from production builds */}
                         {import.meta.env.DEV && <Route path="/splash-test" element={<SplashTestPage />} />}
 
-                        {/* Post-login home Î“Ã‡Ã¶ MasterExperience + modules */}
+                        {/* Post-login home GÇö MasterExperience + modules */}
                         <Route path="/home" element={<RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary>} />
                         <Route path="/dashboard" element={<Navigate to="/home" replace />} />
 
-                        {/* Module routes Î“Ã‡Ã¶ publicly viewable, actions restricted to authenticated users */}
+                        {/* Module routes GÇö publicly viewable, actions restricted to authenticated users */}
                         <Route path="/resale" element={<RouteErrorBoundary name="Resale"><ResalePage /></RouteErrorBoundary>} />
                         <Route path="/listing/:id" element={<RouteErrorBoundary name="ListingDetail"><ListingDetailPage /></RouteErrorBoundary>} />
                         <Route path="/accommodation" element={<RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary>} />
@@ -182,13 +182,13 @@ const App = () => (
                         <Route path="/mess" element={<RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary>} />
                         <Route path="/hospital" element={<RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary>} />
 
-                        {/* Profile Î“Ã‡Ã¶ any authenticated user */}
+                        {/* Profile GÇö any authenticated user */}
                         <Route path="/profile" element={<ProtectedRoute><RouteErrorBoundary name="Profile"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />
 
-                        {/* Admin drilldown Î“Ã‡Ã¶ admin views a student profile (read-only) */}
+                        {/* Admin drilldown GÇö admin views a student profile (read-only) */}
                         <Route path="/profile/:userId" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="AdminDrilldown"><ProfilePage /></RouteErrorBoundary></ProtectedRoute>} />
 
-                        {/* Admin Î“Ã‡Ã¶ restricted to admin role */}
+                        {/* Admin GÇö restricted to admin role */}
                         <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="Admin"><AdminPage /></RouteErrorBoundary></ProtectedRoute>} />
 
                         <Route path="*" element={<NotFound />} />

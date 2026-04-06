@@ -1,0 +1,200 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "apex/carl.schema.json",
+  "title": "APEX CARL Configuration",
+  "description": "Context Augmentation & Reinforcement Layer — behavioral governance. Nested domain objects: each domain is self-contained with its own rules, decisions, and config. Replaces manifest + domain files + staging.json.",
+  "type": "object",
+  "required": ["version", "config", "domains"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "last_modified": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "config": {
+      "type": "object",
+      "description": "Global CARL configuration (previously in manifest header)",
+      "required": ["devmode", "post_compact_gate"],
+      "properties": {
+        "devmode": {
+          "type": "boolean",
+          "description": "When true, Claude appends debug section showing rules/tools/governance",
+          "default": false
+        },
+        "post_compact_gate": {
+          "type": "boolean",
+          "description": "When true, human-in-loop after context compaction. When false, autonomous continuation.",
+          "default": true
+        },
+        "global_exclude": {
+          "type": "array",
+          "description": "Phrases that skip ALL domain matching (casual/off-topic conversations)",
+          "items": { "type": "string" },
+          "default": []
+        }
+      }
+    },
+    "domains": {
+      "type": "object",
+      "description": "Domain definitions keyed by domain name. Each domain is self-contained.",
+      "additionalProperties": { "$ref": "#/$defs/domain" }
+    },
+    "staging": {
+      "type": "array",
+      "description": "Staged rule proposals from PSMM — pending review during CARL hygiene",
+      "items": { "$ref": "#/$defs/staging_entry" },
+      "default": []
+    }
+  },
+  "$defs": {
+    "domain": {
+      "type": "object",
+      "required": ["state", "always_on", "rules"],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": ["active", "inactive"],
+          "description": "Whether domain is enabled"
+        },
+        "always_on": {
+          "type": "boolean",
+          "description": "If true, loads regardless of state or recall matching",
+          "default": false
+        },
+        "recall": {
+          "type": "array",
+          "description": "Natural language phrases that trigger on-demand loading",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "exclude": {
+          "type": "array",
+          "description": "Phrases that prevent this domain from loading even if recall matches",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "rules": {
+          "type": "array",
+          "description": "Behavioral rules for this domain",
+          "items": { "$ref": "#/$defs/rule" }
+        },
+        "decisions": {
+          "type": "array",
+          "description": "Logged decisions for this domain",
+          "items": { "$ref": "#/$defs/decision" },
+          "default": []
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "required": ["id", "text"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Rule number within domain (0-indexed)"
+        },
+        "text": {
+          "type": "string",
+          "description": "The rule instruction"
+        },
+        "added": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "When rule was added"
+        },
+        "last_reviewed": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "Last review date"
+        },
+        "source": {
+          "type": ["string", "null"],
+          "description": "Origin of rule (manual, psmm, staging)",
+          "default": "manual"
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["id", "decision", "rationale", "date"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique decision ID (e.g. global-001, casegate-003)"
+        },
+        "decision": {
+          "type": "string",
+          "description": "What was decided"
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this decision was made"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "source": {
+          "type": ["string", "null"],
+          "enum": ["manual", "psmm", "session", null],
+          "default": "manual"
+        },
+        "recall": {
+          "type": "array",
+          "description": "Keywords for decision retrieval",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "archived"],
+          "default": "active"
+        }
+      }
+    },
+    "staging_entry": {
+      "type": "object",
+      "required": ["id", "proposed_domain", "rule_text", "created_at"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Staging entry ID"
+        },
+        "source_session": {
+          "type": ["string", "null"],
+          "description": "PSMM session UUID that originated this proposal"
+        },
+        "proposed_domain": {
+          "type": "string",
+          "description": "Target domain for the rule"
+        },
+        "rule_text": {
+          "type": "string",
+          "description": "Proposed rule text"
+        },
+        "rationale": {
+          "type": ["string", "null"],
+          "description": "Why this rule was proposed"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "default": "pending"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewed_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "default": null
+        }
+      }
+    }
+  }
+}

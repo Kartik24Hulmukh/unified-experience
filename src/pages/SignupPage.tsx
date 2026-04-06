@@ -68,7 +68,7 @@ const SignupPage = () => {
             // active from the /signup page-load transition, silently dropping this
             // programmatic redirect. isLoading already guards against double-submission.
             navigate("/verify", { replace: false });
-        } catch (err: any) {
+        } catch (err: unknown) {
             const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not create your account. Please try again.");
             toast({
                 title: "Registration Failed",
@@ -90,7 +90,7 @@ const SignupPage = () => {
                 title: "Welcome!",
                 description: `Signed in as ${result.email || 'your Google account'}. Your Google account has been verified.`,
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
             const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not authenticate with Google.");
             toast({
                 title: "Google Sign-In Failed",

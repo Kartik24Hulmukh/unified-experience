@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unknown-property */
+// Removed eslint-disable react/no-unknown-property
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -128,12 +128,12 @@ function PremiumIDCard() {
 // -------------------------------------------------------------
 // The Exact Physics Band Config provided
 function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false }) {
-  const band = useRef<any>();
-  const fixed = useRef<any>();
-  const j1 = useRef<any>();
-  const j2 = useRef<any>();
-  const j3 = useRef<any>();
-  const card = useRef<any>();
+  const band = useRef<unknown>();
+  const fixed = useRef<unknown>();
+  const j1 = useRef<unknown>();
+  const j2 = useRef<unknown>();
+  const j3 = useRef<unknown>();
+  const card = useRef<unknown>();
   
   const vec = new THREE.Vector3(),
     ang = new THREE.Vector3(),
@@ -142,7 +142,7 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false }) {
     
   const segmentProps = { type: 'dynamic' as const, canSleep: true, colliders: false as const, angularDamping: 4, linearDamping: 4 };
   
-  const [dragged, drag] = useState<any>(false);
+  const [dragged, drag] = useState<unknown>(false);
   const [hovered, hover] = useState(false);
 
   // Layout alignment left side anchor
@@ -189,12 +189,12 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false }) {
         );
       });
       
-      const pTop = (fixed.current as any).translation();
+      const pTop = (fixed.current as unknown).translation();
       const p1 = j1.current.lerped;
       const p2 = j2.current.lerped;
-      const p3 = (j3.current as any).translation();
-      const cardPos = (card.current as any).translation();
-      const cRot = (card.current as any).rotation();
+      const p3 = (j3.current as unknown).translation();
+      const cardPos = (card.current as unknown).translation();
+      const cRot = (card.current as unknown).rotation();
       const offset = new THREE.Vector3(0, 1.35, 0).applyQuaternion(cRot);
       const attachPos = new THREE.Vector3(cardPos.x, cardPos.y, cardPos.z).add(offset);
 
@@ -209,8 +209,8 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false }) {
       ]);
       
       const geom = new THREE.TubeGeometry(path, 64, 0.035, 8, false);
-      (band.current as any).geometry.dispose();
-      (band.current as any).geometry = geom;
+      (band.current as unknown).geometry.dispose();
+      (band.current as unknown).geometry = geom;
       
       // Smart angular velocity dampening that prevents spinning identically without locking rotations entirely!
       ang.copy(card.current.angvel());

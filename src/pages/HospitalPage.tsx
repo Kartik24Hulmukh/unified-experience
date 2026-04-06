@@ -169,7 +169,7 @@ const HospitalPage = () => {
         title: h.title,
         price: h.price,
         category: h.category,
-        institution: (h as any).institution || 'EXTERNAL',
+        institution: (h as unknown).institution || 'EXTERNAL',
       }))
     ];
     return listItems.filter(

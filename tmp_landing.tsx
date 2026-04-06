@@ -1,4 +1,4 @@
-﻿import { useEffect, useLayoutEffect, useRef, useState, lazy, Suspense } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
@@ -7,14 +7,14 @@ import { safeNavigate } from '@/lib/utils';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
 
-/* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+/* G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��
    BErozgar Landing / Splash Page
    
-   Inspired by cappen.com ΓÇö cinematic, typography-
+   Inspired by cappen.com G�� cinematic, typography-
    heavy entry with a loading sequence, oversized 
    type reveal, and a single CTA directing users 
    into the authenticated Campus OS.
-   ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
+   G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G�� */
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ const LandingPage = () => {
 
   const [loadComplete, setLoadComplete] = useState(false);
 
-  /* ΓöÇΓöÇ Auto-redirect authenticated users to /home ΓöÇΓöÇ */
+  /* G��G�� Auto-redirect authenticated users to /home G��G�� */
   useEffect(() => {
     if (isAuthenticated && !authLoading && !hasRedirected.current) {
       hasRedirected.current = true;
@@ -50,7 +50,7 @@ const LandingPage = () => {
     }
   }, [isAuthenticated, authLoading, navigate, location.pathname]);
 
-  /* ΓöÇΓöÇ Loading sequence ΓöÇΓöÇ */
+  /* G��G�� Loading sequence G��G�� */
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -58,7 +58,7 @@ const LandingPage = () => {
         onComplete: () => setLoadComplete(true),
       });
 
-      // Counter from 0 ΓåÆ 100
+      // Counter from 0 G�� 100
       tl.to(
         { val: 0 },
         {
@@ -85,14 +85,14 @@ const LandingPage = () => {
         0
       );
 
-      // Loader exit ΓÇö slide up
+      // Loader exit G�� slide up
       tl.to(loaderRef.current, {
         yPercent: -100,
         duration: 0.5,
         ease: 'power4.inOut',
       });
 
-      // Content reveal ΓÇö stagger from bottom
+      // Content reveal G�� stagger from bottom
       tl.fromTo(
         navBrandRef.current,
         { opacity: 0, y: -12 },
@@ -167,7 +167,7 @@ const LandingPage = () => {
     return () => ctx.revert();
   }, []);
 
-  /* ΓöÇΓöÇ Floating portal animation ΓöÇΓöÇ */
+  /* G��G�� Floating portal animation G��G�� */
   useEffect(() => {
     if (!loadComplete || !portalContainerRef.current) return;
 
@@ -184,7 +184,7 @@ const LandingPage = () => {
     return () => ctx.revert();
   }, [loadComplete]);
 
-  /* ΓöÇΓöÇ CTA handler ΓöÇΓöÇ */
+  /* G��G�� CTA handler G��G�� */
   const handleEnter = () => {
     if (hasRedirected.current) return; // Prevent navigation if already redirected
 
@@ -198,9 +198,9 @@ const LandingPage = () => {
 
   return (
     <div ref={containerRef} className="relative h-[100dvh] w-full overflow-hidden bg-[#050505] select-none">
-      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+      {/* G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��
           LOADER OVERLAY 
-          ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+          G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G�� */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[100] bg-[#050505] flex flex-col items-center justify-center"
@@ -231,11 +231,11 @@ const LandingPage = () => {
         </p>
       </div>
 
-      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+      {/* G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��
           MAIN CONTENT (revealed after loader)
-          ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+          G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G��G�� */}
       <div ref={contentRef} className="relative h-full w-full flex flex-col">
-        {/* ΓöÇΓöÇ Top Nav Bar ΓöÇΓöÇ */}
+        {/* G��G�� Top Nav Bar G��G�� */}
         <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 md:px-12 py-6">
           {/* Brand */}
           <div ref={navBrandRef} className="flex items-center gap-3 opacity-0">
@@ -256,9 +256,9 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* ΓöÇΓöÇ Central Typography Block ΓöÇΓöÇ */}
+        {/* G��G�� Central Typography Block G��G�� */}
         <div className="flex-1 flex flex-col items-center justify-center px-6 relative">
-          {/* Main heading ΓÇö oversized type, cappen-style */}
+          {/* Main heading G�� oversized type, cappen-style */}
           <div className="text-center space-y-0">
             <div className="overflow-hidden">
               <div ref={line1Ref} className="opacity-0">
@@ -312,7 +312,7 @@ const LandingPage = () => {
             >
               <span className="relative z-10 flex items-center gap-3 md:gap-4 transition-colors duration-500 group-hover:text-black">
                 ENTER CAMPUS OS
-                <span className="inline-block transition-transform duration-500 group-hover:translate-x-3 text-lg md:text-xl leading-none">ΓåÆ</span>
+                <span className="inline-block transition-transform duration-500 group-hover:translate-x-3 text-lg md:text-xl leading-none">G��</span>
               </span>
               {/* Fill animation on hover */}
               <div className="absolute inset-0 bg-white scale-x-0 origin-left transition-transform duration-600 group-hover:scale-x-100" />
@@ -320,7 +320,7 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* ΓöÇΓöÇ Bottom Meta ΓöÇΓöÇ */}
+        {/* G��G�� Bottom Meta G��G�� */}
         <div className="absolute bottom-0 left-0 right-0 z-20 flex items-end justify-between px-6 md:px-12 py-6">
           {/* Left */}
           <div ref={metaLeftRef} className="opacity-0">
@@ -329,7 +329,7 @@ const LandingPage = () => {
             </p>
           </div>
 
-          {/* Center ΓÇö scroll hint */}
+          {/* Center G�� scroll hint */}
           <div className="absolute left-1/2 -translate-x-1/2 bottom-6 flex flex-col items-center gap-2">
             <span className="text-white/15 text-[9px] font-mono tracking-[0.3em] uppercase">
               Click to Enter
@@ -347,7 +347,7 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* ΓöÇΓöÇ Background grid texture ΓöÇΓöÇ */}
+        {/* G��G�� Background grid texture G��G�� */}
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.03]"
           style={{
@@ -359,7 +359,7 @@ const LandingPage = () => {
           }}
         />
 
-        {/* ΓöÇΓöÇ Ambient glow ΓöÇΓöÇ */}
+        {/* G��G�� Ambient glow G��G�� */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] rounded-full pointer-events-none"
           style={{
             background: 'radial-gradient(circle, rgba(0,191,255,0.025) 0%, transparent 70%)',

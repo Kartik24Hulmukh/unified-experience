@@ -83,14 +83,14 @@ const AcademicsPage = () => {
       const matchesCategory = !activeCategory ||
         itemCategory === activeCategory.toLowerCase();
       
-      const itemBranch = ((item as any).branch || '').toLowerCase();
+      const itemBranch = ((item as unknown).branch || '').toLowerCase();
       const sb = (selectedBranch || '').toLowerCase();
       const matchesBranch = !selectedBranch ||
         itemBranch === sb ||
         itemCategory.includes(sb) ||
         item.title.toLowerCase().includes(sb);
 
-      const itemSemester = (item as any).semester?.toString() || '';
+      const itemSemester = (item as unknown).semester?.toString() || '';
       const matchesSemester = !selectedSemester || itemSemester === selectedSemester.toString();
 
       const rawPrice = item.price ? Number(item.price) : 0;

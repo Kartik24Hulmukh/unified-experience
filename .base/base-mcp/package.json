@@ -1,0 +1,10 @@
+{
+  "name": "base-mcp",
+  "version": "1.0.0",
+  "description": "BASE Surface CRUD Server - Generic operations for registered data surfaces",
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}

@@ -141,7 +141,7 @@ const MessPage = () => {
       title: s.title,
       price: s.price,
       category: s.category,
-      institution: (s as any).institution,
+      institution: (s as unknown).institution,
       image: index % 2 === 0 ? '/DabbaGo.jpeg' : '/happyGrub.jpeg',
     }));
     const listItems = [...defaultMesses, ...visibleItems.map((s) => ({

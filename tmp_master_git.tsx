@@ -1,4 +1,4 @@
-ï»¿import { useRef, useState, useCallback, lazy, Suspense, memo } from 'react';
+import { useRef, useState, useCallback, lazy, Suspense, memo } from 'react';
 import { useLayoutEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
@@ -69,7 +69,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
                       <h3 className={`text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-display font-bold uppercase transition-[color,transform,opacity] duration-500 leading-[0.8] tracking-[-0.05em] translate-z-0 will-change-transform truncate ${activeModule === module.id ? 'text-[#a3ff12] scale-[1.01] translate-x-3' : 'text-portal-foreground opacity-80'}`}>{module.title}</h3>
                     <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.4em] uppercase mt-2 transition-[color,opacity] duration-500 ${activeModule === module.id ? 'text-white/50' : 'text-white/5'}`}>{module.subtitle}</p>
                   </div>
-                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>Î“Ã¥Ã†</span>
+                  <span className={`text-[#a3ff12] font-mono text-2xl md:text-3xl transition-[opacity,transform] duration-300 shrink-0 ${activeModule === module.id ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-6'}`}>GåÆ</span>
                 </div>
                 <div className={`h-px w-full transition-[background-color] duration-500 ${activeModule === module.id ? 'bg-[#a3ff12]/30' : 'bg-white/5'}`} />
               </div>
@@ -166,7 +166,7 @@ const MasterExperience = () => {
 
         <div ref={baseLayerRef} className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
           <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-portal">
-            {/* WebGL fluid splash Î“Ã‡Ã¶ desktop only; mobile skips the heavy GPU sim */}
+            {/* WebGL fluid splash GÇö desktop only; mobile skips the heavy GPU sim */}
             {isHeavyMounted && (
               <Suspense fallback={null}>
                 <SplashCursor
@@ -206,7 +206,7 @@ const MasterExperience = () => {
 
         <div ref={portalRef} className="absolute inset-0 z-30 bg-portal flex items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
           <div ref={symbolRef} className="will-change-transform -mt-[10vh]" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
-            {/* Portal3D is heavy Î“Ã‡Ã¶ skip on mobile to avoid GPU/WASM overhead */}
+            {/* Portal3D is heavy GÇö skip on mobile to avoid GPU/WASM overhead */}
             {isHeavyMounted && <Suspense fallback={null}><Portal3D scrollProgressRef={scrollProgressRef} /></Suspense>}
           </div>
         </div>

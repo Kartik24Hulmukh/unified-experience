@@ -42,7 +42,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
 const SplashTestPage = lazy(() => import('./pages/SplashTestPage'));
 const CreateListingPage = lazy(() => import('./pages/CreateListingPage'));
-import AgentsHub from './components/AgentsHub';
+const AgentsHub = lazy(() => import('./components/AgentsHub'));
 
 const queryClient = new QueryClient({
   // M2-FIX: global QueryCache error handler catches unrecoverable 401s from

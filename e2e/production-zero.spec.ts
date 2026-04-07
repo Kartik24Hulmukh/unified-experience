@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { ensureAdminUser, createVerifiedUser, cleanupE2eData, disconnectDb } from './helpers';
 
 const API = 'http://127.0.0.1:3001';
-const WEB = 'http://127.0.0.1:5173';
+const WEB = 'http://127.0.0.1:8080';
 
 const TEST_RUN = Date.now();
 let adminId: string;

@@ -1,0 +1,9 @@
+{
+  "name": "@berozgar/shared",
+  "version": "1.0.0",
+  "description": "Shared Zod schemas and TypeScript interfaces for both Client and Server.",
+  "main": "src/index.ts",
+  "dependencies": {
+    "zod": "^3.22.4"
+  }
+}

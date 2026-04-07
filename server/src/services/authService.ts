@@ -235,7 +235,7 @@ export async function resendOtp(input: ResendOtpInput): Promise<{ message: strin
 export async function verifyOtp(
   input: VerifyOtpInput,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<{ user: ReturnType<typeof sanitizeUser>; tokens: AuthTokens }> {
+) {
   // Find the most recent unused OTP for this email
   const otpRecord = await prisma.otp.findFirst({
     where: {
@@ -402,7 +402,7 @@ const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 export async function login(
   input: LoginInput,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<{ user: ReturnType<typeof sanitizeUser>; tokens: AuthTokens }> {
+) {
   const user = await prisma.user.findUnique({
     where: { email: input.email },
   });
@@ -542,7 +542,7 @@ export async function login(
 export async function googleSignIn(
   input: GoogleSignInInput,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<{ user: ReturnType<typeof sanitizeUser>; tokens: AuthTokens }> {
+) {
   const profile = await verifyGoogleToken(input.credential);
 
   // Determine role based on college registry and admin registry.
@@ -640,7 +640,7 @@ export async function googleSignIn(
 export async function refreshAccessToken(
   rawOldToken: string,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<AuthTokens> {
+): Promise<{ tokens: AuthTokens; user: any }> {
   const hashedOldToken = hashToken(rawOldToken);
 
   const record = await prisma.refreshToken.findUnique({
@@ -725,7 +725,10 @@ export async function refreshAccessToken(
   });
 
   // Return raw token — only ever set in httpOnly cookie
-  return { accessToken, refreshToken: rawNewToken };
+  return {
+    tokens: { accessToken, refreshToken: rawNewToken },
+    user: sanitizeUser(record.user),
+  };
 }
 
 /* ═══════════════════════════════════════════════════

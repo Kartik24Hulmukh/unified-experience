@@ -34,5 +34,5 @@ export function signAccessToken(payload: Omit<AccessTokenPayload, 'iat' | 'exp'>
 export function verifyAccessToken(token: string): AccessTokenPayload {
   return jwt.verify(token, env.JWT_SECRET, {
     algorithms: ['HS256'],
-  }) as AccessTokenPayload;
+  }) as unknown as AccessTokenPayload;
 }

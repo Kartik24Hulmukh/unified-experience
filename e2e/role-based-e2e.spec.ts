@@ -1159,7 +1159,29 @@ test.describe('Phase 12: Admin — Browser Navigation', () => {
     const passInput = page.getByPlaceholder(/••••••••/i).first();
     await passInput.fill(ADMIN_USER.password);
     
-    await page.getByRole('button', { name: /ENTER PORTAL/i }).click();
+    const submitBtn = page.getByRole('button', { name: /ENTER PORTAL/i });
+    let loginStatus = 0;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const loginResponsePromise = page.waitForResponse(
+        (response) => response.url().includes('/api/auth/login') && response.request().method() === 'POST',
+        { timeout: 15000 },
+      );
+
+      await submitBtn.click();
+      const loginResponse = await loginResponsePromise;
+      loginStatus = loginResponse.status();
+
+      if (loginStatus === 200) break;
+      if (loginStatus !== 429) {
+        const body = await loginResponse.text().catch(() => '');
+        throw new Error(`Browser login failed with status ${loginStatus}. Response: ${body.slice(0, 300)}`);
+      }
+
+      // Transient per-email limiter in test environments: backoff and retry.
+      await page.waitForTimeout(2000 * (attempt + 1));
+    }
+
+    expect(loginStatus).toBe(200);
 
     // ADM-10 FIX: Admin should land on the admin dashboard or home (not remain on login).
     await expect(page).toHaveURL(/\/(admin|home)/, { timeout: 30000 });

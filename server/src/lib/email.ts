@@ -62,7 +62,7 @@ function otpHtml(otp: string, expiresMin: number): string {
 /* ─── Helpers ────────────────────────────────── */
 
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
+  let timer: NodeJS.Timeout;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error(`Email send timed out after ${ms}ms`)), ms);
   });

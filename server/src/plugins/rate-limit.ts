@@ -7,7 +7,7 @@
  */
 
 import rateLimit from '@fastify/rate-limit';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { env } from '@/config/env';
 
 /**
@@ -83,7 +83,7 @@ export async function registerRateLimit(app: FastifyInstance): Promise<void> {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW_MS,
     allowList: [],
-    keyGenerator: (request) => {
+    keyGenerator: (request: FastifyRequest) => {
       // CRIT-01 FIX: request.body is always undefined at the onRequest lifecycle stage
       // where @fastify/rate-limit's keyGenerator runs — body parsing happens later in
       // preParsing/preValidation. Email-based keying via body is impossible here.
@@ -94,7 +94,7 @@ export async function registerRateLimit(app: FastifyInstance): Promise<void> {
       // Authenticated routes: keyed by userId (survives IP change / VPN)
       return request.userId ?? request.ip;
     },
-    errorResponseBuilder: (_request, context) => ({
+    errorResponseBuilder: (_request: FastifyRequest, context: any) => ({
       statusCode: 429,
       error: 'Too many requests',
       code: 'RATE_LIMIT_EXCEEDED',

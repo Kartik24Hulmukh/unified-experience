@@ -32,7 +32,7 @@ async function main(): Promise<void> {
   // ── Scheduled Stale Recovery Job ────────────────
   // Runs every 30 min: expires stuck SENT requests, revokes expired tokens,
   // cleans expired idempotency keys. Also runs once at startup.
-  let recoveryTimer: ReturnType<typeof setInterval> | null = null;
+  let recoveryTimer: NodeJS.Timeout | null = null;
 
   // PROD-02: concurrency guard — if a recovery run takes longer than the
   // interval (e.g. under heavy DB load), overlapping runs would race on

@@ -27,7 +27,7 @@ export async function authenticate(
     '/profile/link-college-email'
   ];
 
-  if (request.routerPath && !safePaths.some((p) => request.routerPath.endsWith(p))) {
+  if (request.routeOptions?.url && !safePaths.some((p) => request.routeOptions!.url!.endsWith(p))) {
     const user = await prisma.user.findUnique({
       where: { id: request.userId },
       select: { isRestricted: true },

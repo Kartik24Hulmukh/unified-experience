@@ -136,7 +136,7 @@ export async function getAllUsers(options: { page?: number; limit?: number; sear
   const limit = Math.min(options.limit ?? 50, 100);
   const skip = (page - 1) * limit;
 
-  const where: unknown = options.search ? {
+  const where: any = options.search ? {
     OR: [
       { fullName: { contains: options.search } },
       { email: { contains: options.search } }

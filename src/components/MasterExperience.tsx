@@ -240,8 +240,7 @@ const MasterExperience = () => {
 
         <div ref={portalRef} className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
           <div ref={symbolRef} className="will-change-transform -mt-[10vh] md:mt-0" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
-            {/* Portal3D is heavy ΓÇö skip on mobile to avoid GPU/WASM overhead */}
-            {isHeavyMounted && <Suspense fallback={null}><Portal3D scrollProgressRef={scrollProgressRef} /></Suspense>}
+            {/* Logo/Shield completely removed from homepage (Explore section) */}
           </div>
         </div>
 

@@ -191,19 +191,6 @@ const ShieldLogo = memo(({ scrollProgressRef }: { scrollProgressRef?: { current:
 ShieldLogo.displayName = 'ShieldLogo';
 
 const Portal3D = memo(({ className = '', scrollProgressRef }: { className?: string; scrollProgressRef?: { current: number } }) => {
-  const prefersReducedMotion = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }, []);
-
-  if (prefersReducedMotion) {
-    return (
-      <div className={`w-full h-full ${className} flex items-center justify-center`}>
-        <ShieldFallback />
-      </div>
-    );
-  }
-
   return (
     <div className={`w-full h-full ${className}`}>
       <WebGLErrorBoundary fallback={<ShieldFallback />}>

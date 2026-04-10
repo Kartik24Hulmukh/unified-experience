@@ -15,7 +15,6 @@ import { FullPageLoader } from "./components/FallbackUI";
 import { handleApiError } from "@/lib/error-handler";
 import { ApiError } from "@/lib/api-client";
 import { trackPageView } from "@/lib/monitoring";
-import { LazyMotion, domAnimation } from 'framer-motion';
 import { HelmetProvider } from 'react-helmet-async';
 
 // Lazy-load heavy global decorations — not needed for first paint
@@ -201,7 +200,7 @@ const App = () => (
                 <main id="main-content">
                   <PageTransition>
                     <ErrorBoundary boundary="LazyRoutes">
-                      <Suspense fallback={<FullPageLoader />}>
+                      <Suspense fallback={<div className="flex h-[50vh] w-full items-center justify-center"><div className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /></div>}>
                         <Routes>
                         {/* Landing Page (Cinematic Splash) */}
                         <Route path="/" element={<RouteErrorBoundary name="Landing"><LandingPage /></RouteErrorBoundary>} />

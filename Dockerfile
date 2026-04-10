@@ -7,6 +7,8 @@ RUN npm ci
 
 COPY . .
 # We must build the Vite site using production mode
+# Make sure .env.production is available for Vite
+COPY .env.production .env.production
 ENV NODE_ENV=production
 RUN npm run build
 

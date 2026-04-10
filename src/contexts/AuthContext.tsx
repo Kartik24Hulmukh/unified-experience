@@ -188,8 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         // LOW-01 FIX: explicit aggressive timeout for hydration to prevent blank UI hangs on cold starts/dropped connections
-        // Increased from 5s to 15s to allow for local dev cold starts
-        const HYDRATION_TIMEOUT = 30000;
+        // Reduced from 30s to 10s to fail fast
+        const HYDRATION_TIMEOUT = 10000;
 
         // Step 1: If no in-memory access token, try to refresh first
         if (!sessionManager.getAccessToken()) {

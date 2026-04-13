@@ -21,30 +21,46 @@ async function safeScreenshot(page, path) {
 
 async function loginAs(page, contextStr, credentials) {
   console.log(`[${contextStr}] Navigating to login...`);
-  
-  await page.goto(`${TARGET_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForTimeout(1000);
 
-  const inputs = await page.locator('input').all();
-  if (inputs.length >= 2) {
-    await inputs[0].fill(credentials.email);
-    await page.waitForTimeout(300);
-    await inputs[1].fill(credentials.password);
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await page.goto(`${TARGET_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForTimeout(700);
 
-    const enterBtn = page.getByRole('button', { name: /ENTER PORTAL/i });
-    if (await enterBtn.isVisible()) {
-      await enterBtn.click();
-      console.log(`[${contextStr}] Clicked login button.`);
-    } else {
-      console.log(`[${contextStr}] ENTER PORTAL button not found! Fallback to pressing Enter.`);
-      await page.keyboard.press('Enter');
+      const useLegacy = page.getByRole('button', { name: /USE LEGACY MAIL/i });
+      if (await useLegacy.isVisible().catch(() => false)) {
+        await useLegacy.click();
+      }
+
+      const emailField = page.locator('input[type="email"], input[name="email"], [placeholder*="MCTRGIT"], [placeholder*="Email"]').first();
+      const passwordField = page.locator('input[type="password"], input[name="password"], [placeholder*="••••"]').first();
+
+      await emailField.waitFor({ state: 'visible', timeout: 12000 });
+      await passwordField.waitFor({ state: 'visible', timeout: 12000 });
+
+      await emailField.fill(credentials.email);
+      await passwordField.fill(credentials.password);
+
+      const enterBtn = page.getByRole('button', { name: /ENTER PORTAL|Login|Sign In/i }).first();
+      if (await enterBtn.isVisible().catch(() => false)) {
+        await enterBtn.click({ timeout: 12000 });
+        console.log(`[${contextStr}] Clicked login button.`);
+      } else {
+        await passwordField.press('Enter');
+      }
+
+      await page.waitForURL(/\/home|\/admin|\/resale|\/profile|\/login/, { timeout: 30000 });
+      await page.waitForTimeout(1200);
+      return;
+    } catch (err) {
+      lastError = err;
+      console.warn(`[${contextStr}] Login attempt ${attempt} failed, retrying...`);
+      await page.waitForTimeout(1000);
     }
-  } else {
-    console.error(`[${contextStr}] Login inputs not found properly!`);
   }
-  
-  // Wait to login and ensure loading screen / state resolves
-  await page.waitForTimeout(1500);
+
+  throw lastError || new Error(`[${contextStr}] Login failed after retries`);
 }
 
 async function verifyPageNavigationAndScreenshot(page, role, pathName, expectedTitleSubstring) {

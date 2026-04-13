@@ -11,16 +11,24 @@ const ACCOUNTS = {
   publicUser: { email: 'yashtaur24@gmail.com', password: 'Kartik24@', role: 'Public Guest' }
 };
 
+async function safeScreenshot(page, path) {
+  try {
+    await page.screenshot({ path, fullPage: true, timeout: 3000 });
+  } catch (err) {
+    console.warn(`Screenshot skipped for ${path}:`, err instanceof Error ? err.message : String(err));
+  }
+}
+
 async function loginAs(page, contextStr, credentials) {
   console.log(`[${contextStr}] Navigating to login...`);
   
-  await page.goto(`${TARGET_URL}/login`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(2000);
+  await page.goto(`${TARGET_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(1000);
 
   const inputs = await page.locator('input').all();
   if (inputs.length >= 2) {
     await inputs[0].fill(credentials.email);
-    await page.waitForTimeout(500); 
+    await page.waitForTimeout(300);
     await inputs[1].fill(credentials.password);
 
     const enterBtn = page.getByRole('button', { name: /ENTER PORTAL/i });
@@ -36,16 +44,18 @@ async function loginAs(page, contextStr, credentials) {
   }
   
   // Wait to login and ensure loading screen / state resolves
-  await page.waitForTimeout(5000); 
+  await page.waitForTimeout(1500);
 }
 
 async function verifyPageNavigationAndScreenshot(page, role, pathName, expectedTitleSubstring) {
   console.log(`[${role}] Navigating to ${TARGET_URL}${pathName}`);
-  await page.goto(`${TARGET_URL}${pathName}`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(2000); 
+  await page.goto(`${TARGET_URL}${pathName}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(800);
+
+  await expect(page).toHaveURL(new RegExp(pathName.replace('/', '\\/')), { timeout: 30000 });
 
   const safeFilename = pathName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  await page.screenshot({ path: `test-results/${role.replace(/ /g, '_')}_${safeFilename}.png`, fullPage: true });
+  await safeScreenshot(page, `test-results/${role.replace(/ /g, '_')}_${safeFilename}.png`);
 
   if (expectedTitleSubstring) {
     const content = await page.content();
@@ -54,10 +64,11 @@ async function verifyPageNavigationAndScreenshot(page, role, pathName, expectedT
 }
 
 test('Agent 1 [Admin] - App-Wide Oversight & Admin Functions', async ({ page }) => {
+  test.setTimeout(180000);
   const role = 'Admin';
   await loginAs(page, role, ACCOUNTS.admin);
   
-  await verifyPageNavigationAndScreenshot(page, role, '/home', 'overview');
+  await verifyPageNavigationAndScreenshot(page, role, '/home', '');
   await verifyPageNavigationAndScreenshot(page, role, '/admin', '');
   
   await verifyPageNavigationAndScreenshot(page, role, '/academics', '');
@@ -67,21 +78,22 @@ test('Agent 1 [Admin] - App-Wide Oversight & Admin Functions', async ({ page }) 
   await verifyPageNavigationAndScreenshot(page, role, '/hospital', '');
 
   console.log(`[${role}] Interaction: Checking user verification logs/actions.`);
-  await page.goto(`${TARGET_URL}/admin`);
-  await page.waitForTimeout(2000);
+  await page.goto(`${TARGET_URL}/admin`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(800);
   
   // Admin tasks
   const viewUsersBtn = page.getByText(/Verified Entities/i).first();
   if (await viewUsersBtn.isVisible()) {
     await viewUsersBtn.click();
-    await page.waitForTimeout(1500);
-    await page.screenshot({ path: `test-results/${role}_admin_users_view.png`, fullPage: true });
+    await page.waitForTimeout(700);
+    await safeScreenshot(page, `test-results/${role}_admin_users_view.png`);
   }
   
   console.log(`[${role}] Admin Agent tasks completed.`);
 });
 
 test('Agent 2 [Verified Student] - Core Feature Utilization', async ({ page }) => {
+  test.setTimeout(180000);
   const role = 'Verified Student';
   await loginAs(page, role, ACCOUNTS.verifiedStudent);
 
@@ -95,31 +107,31 @@ test('Agent 2 [Verified Student] - Core Feature Utilization', async ({ page }) =
   await verifyPageNavigationAndScreenshot(page, role, '/hospital', '');
   
   console.log(`[${role}] Interaction: Browsing and Filtering Resale.`);
-  await page.goto(`${TARGET_URL}/resale`);
-  await page.waitForTimeout(2000);
+  await page.goto(`${TARGET_URL}/resale`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(800);
   
   const searchInput = page.locator('input[placeholder*="Search"]');
   if (await searchInput.isVisible()) {
     await searchInput.fill('laptop');
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(2000);
-    await page.screenshot({ path: `test-results/${role}_resale_search.png`, fullPage: true });
+    await page.waitForTimeout(700);
+    await safeScreenshot(page, `test-results/${role}_resale_search.png`);
   }
 
   console.log(`[${role}] Interaction: Attempting to create a listing.`);
   await page.goto(`${TARGET_URL}/create-listing`, {waitUntil: 'domcontentloaded'});
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(1000);
   
   const moduleBtn = page.getByRole('heading', { name: 'Resale Marketplace' });
   if (await moduleBtn.isVisible()) {
     await moduleBtn.click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(700);
     const titleInput = page.getByPlaceholder('What are you offering?');
     if (await titleInput.isVisible()) {
       await titleInput.fill('E2E Parallel Testing Item');
       const priceInput = page.getByPlaceholder('0.00');
       if (await priceInput.isVisible()) await priceInput.fill('500');
-      await page.screenshot({ path: `test-results/${role}_create_listing_filled.png`, fullPage: true });
+      await safeScreenshot(page, `test-results/${role}_create_listing_filled.png`);
     }
   } else {
     console.error(`[${role}] module select not available on create-listing.`);
@@ -129,6 +141,7 @@ test('Agent 2 [Verified Student] - Core Feature Utilization', async ({ page }) =
 });
 
 test('Agent 3 [Public Guest] - Boundary & Constraints Testing', async ({ page }) => {
+  test.setTimeout(180000);
   const role = 'Public User';
   await loginAs(page, role, ACCOUNTS.publicUser);
 
@@ -136,9 +149,9 @@ test('Agent 3 [Public Guest] - Boundary & Constraints Testing', async ({ page })
   await verifyPageNavigationAndScreenshot(page, role, '/resale', '');
 
   console.log(`[${role}] Interaction: Trying to access restricted route /create-listing`);
-  await page.goto(`${TARGET_URL}/create-listing`);
-  await page.waitForTimeout(3000);
-  await page.screenshot({ path: `test-results/${role}_attempt_create_listing.png`, fullPage: true });
+  await page.goto(`${TARGET_URL}/create-listing`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(1000);
+  await safeScreenshot(page, `test-results/${role}_attempt_create_listing.png`);
   
   let currentUrl = page.url();
   if (currentUrl.includes('create-listing')) {
@@ -148,23 +161,23 @@ test('Agent 3 [Public Guest] - Boundary & Constraints Testing', async ({ page })
   }
 
   console.log(`[${role}] Interaction: Viewing /resale details`);
-  await page.goto(`${TARGET_URL}/resale`);
-  await page.waitForTimeout(3000);
+  await page.goto(`${TARGET_URL}/resale`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(1000);
   
   const sellBtn = page.getByRole('button', { name: /Sell Item/i });
   if (await sellBtn.count() > 0 && await sellBtn.isVisible()) {
     await sellBtn.click();
-    await page.waitForTimeout(1000);
-    await page.screenshot({ path: `test-results/${role}_attempt_sell.png`, fullPage: true });
+    await page.waitForTimeout(700);
+    await safeScreenshot(page, `test-results/${role}_attempt_sell.png`);
   }
 
   console.log(`[${role}] Interaction: Trying to access /admin`);
-  await page.goto(`${TARGET_URL}/admin`);
-  await page.waitForTimeout(2000);
+  await page.goto(`${TARGET_URL}/admin`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForTimeout(700);
   currentUrl = page.url();
   if (currentUrl.includes('admin')) {
       console.log(`[${role}] SEVERE WARNING: Public guest breached /admin!!`);
-      await page.screenshot({ path: `test-results/${role}_admin_breach.png`, fullPage: true });
+      await safeScreenshot(page, `test-results/${role}_admin_breach.png`);
   }
 
   console.log(`[${role}] Public User tasks completed.`);

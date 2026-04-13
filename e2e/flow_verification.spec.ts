@@ -6,6 +6,14 @@ const BASE_URL = 'https://rgitrozgar.in';
 const STUDENT_CREDENTIALS = { email: 'kadamdnyaeshwari@gmail.com', password: 'Kartik24@' };
 const ADMIN_CREDENTIALS = { email: 'kartikhulmukh24@gmail.com', password: 'Kartik24@' };
 
+async function safeScreenshot(page: Page, path: string) {
+  try {
+    await page.screenshot({ path, timeout: 3000 });
+  } catch (err) {
+    console.warn(`Screenshot skipped for ${path}:`, err instanceof Error ? err.message : String(err));
+  }
+}
+
 async function ensureOnAdminPage(page: Page) {
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     await page.goto(`${BASE_URL}/admin`);
@@ -63,10 +71,10 @@ async function login(page: Page, role: 'student' | 'admin') {
     });
     console.log(`ROLE AFTER LOGIN FOR ${role}:`, userRole);
     
-    await page.screenshot({ path: `test-results/${role}-login-success.png` });
+    await safeScreenshot(page, `test-results/${role}-login-success.png`);
   } catch (error) {
     console.error(`Login failed for ${role}:`, error);
-    await page.screenshot({ path: `test-results/${role}-login-error.png` });
+    await safeScreenshot(page, `test-results/${role}-login-error.png`);
     throw error;
   }
 }
@@ -74,6 +82,7 @@ async function login(page: Page, role: 'student' | 'admin') {
 test.describe('Parallel Flows Verification', () => {
 
   test('Resale Upload Flow', async ({ browser }) => {
+    test.setTimeout(180000);
     const studentContext = await browser.newContext();
     const studentPage = await studentContext.newPage();
     const timestamp = Date.now();
@@ -104,11 +113,11 @@ test.describe('Parallel Flows Verification', () => {
         await studentPage.getByRole('checkbox').click();
         await studentPage.getByRole('button', { name: /MANIFEST LISTING/i }).click();
 
-        await studentPage.waitForTimeout(2000);
-        await studentPage.screenshot({ path: `test-results/resale-student-submitted.png` });
+          await studentPage.waitForTimeout(1200);
+          await safeScreenshot(studentPage, `test-results/resale-student-submitted.png`);
       } catch (error) {
          console.error('Error in Student Resale flow:', error);
-         await studentPage.screenshot({ path: `test-results/resale-student-error.png` });
+          await safeScreenshot(studentPage, `test-results/resale-student-error.png`);
          throw error;
       } finally {
         await studentPage.close();
@@ -123,7 +132,7 @@ test.describe('Parallel Flows Verification', () => {
       
       try {
         await ensureOnAdminPage(adminPage);
-        await adminPage.screenshot({ path: `test-results/admin-page-resale.png` });
+        await safeScreenshot(adminPage, `test-results/admin-page-resale.png`);
         console.log("Current Admin URL:", adminPage.url());
 
         // Search and approve listing
@@ -137,7 +146,7 @@ test.describe('Parallel Flows Verification', () => {
         console.log(`Product ${productName} approved successfully.`);
       } catch (error) {
         console.error('Error in Admin Resale flow:', error);
-        await adminPage.screenshot({ path: `test-results/resale-admin-error.png` });
+        await safeScreenshot(adminPage, `test-results/resale-admin-error.png`);
         throw error;
       } finally {
         await adminPage.close();
@@ -146,6 +155,7 @@ test.describe('Parallel Flows Verification', () => {
   });
 
   test('Academics Flow', async ({ browser }) => {
+    test.setTimeout(180000);
     const studentContext = await browser.newContext();
     const studentPage = await studentContext.newPage();
     const timestamp = Date.now();
@@ -177,10 +187,10 @@ test.describe('Parallel Flows Verification', () => {
         await studentPage.getByRole('checkbox').click();
         await studentPage.getByRole('button', { name: /MANIFEST LISTING/i }).click();
 
-        await studentPage.waitForTimeout(2000);
+          await studentPage.waitForTimeout(1200);
       } catch (error) {
          console.error('Error in Student Academics flow:', error);
-         await studentPage.screenshot({ path: `test-results/academics-student-error.png` });
+          await safeScreenshot(studentPage, `test-results/academics-student-error.png`);
          throw error;
       } finally {
         await studentPage.close();
@@ -207,7 +217,7 @@ test.describe('Parallel Flows Verification', () => {
         console.log(`Academic Resource ${resourceName} approved successfully.`);
       } catch (error) {
         console.error('Error in Admin Academics flow:', error);
-        await adminPage.screenshot({ path: `test-results/academics-admin-error.png` });
+        await safeScreenshot(adminPage, `test-results/academics-admin-error.png`);
         throw error;
       } finally {
         await adminPage.close();

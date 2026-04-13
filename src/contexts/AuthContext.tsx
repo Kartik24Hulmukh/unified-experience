@@ -107,6 +107,32 @@ interface AuthMeResponse {
   restriction: RestrictionResult;
 }
 
+type LegacyAuthMeResponse = {
+  user: {
+    user: User;
+    trust: TrustData;
+    restriction: RestrictionResult;
+  };
+};
+
+function parseAuthMeResponse(payload: AuthMeResponse | LegacyAuthMeResponse): AuthMeResponse {
+  const maybeLegacy = payload as LegacyAuthMeResponse;
+  if (maybeLegacy?.user?.user && maybeLegacy?.user?.trust && maybeLegacy?.user?.restriction) {
+    return {
+      user: maybeLegacy.user.user,
+      trust: maybeLegacy.user.trust,
+      restriction: maybeLegacy.user.restriction,
+    };
+  }
+
+  const maybeCurrent = payload as AuthMeResponse;
+  return {
+    user: maybeCurrent.user,
+    trust: maybeCurrent.trust,
+    restriction: maybeCurrent.restriction,
+  };
+}
+
 function normalizeUserRole(role: string | undefined): UserRole {
   const lower = role?.toLowerCase();
   if (lower === 'admin') return 'admin';
@@ -231,9 +257,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
         console.log('[AuthContext] Calling /auth/me...');
-        const response = await api.get<AuthMeResponse>('/auth/me', { 
+        const rawResponse = await api.get<AuthMeResponse | LegacyAuthMeResponse>('/auth/me', {
           timeout: HYDRATION_TIMEOUT 
         });
+        const response = parseAuthMeResponse(rawResponse);
         console.log('[AuthContext] /auth/me succeeded.');
         const user = normalizeUser(response.user);
         const { trust, restriction } = response;
@@ -310,7 +337,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         handleTokenRefresh().then(() => {
           // M3-FIX: after proactive refresh success, re-fetch trust/restriction
           // so admin-applied restrictions take effect without a full page reload.
-          api.get<AuthMeResponse>('/auth/me').then((me) => {
+          api.get<AuthMeResponse | LegacyAuthMeResponse>('/auth/me').then((rawMe) => {
+            const me = parseAuthMeResponse(rawMe);
             const user = normalizeUser(me.user);
             sessionManager.setUser(user);
             setStateIfMounted((prev) => ({
@@ -372,7 +400,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let trust: TrustData | null = null;
       let restriction: RestrictionResult | null = null;
       try {
-        const me = await api.get<AuthMeResponse>('/auth/me');
+        const rawMe = await api.get<AuthMeResponse | LegacyAuthMeResponse>('/auth/me');
+        const me = parseAuthMeResponse(rawMe);
         trust = me.trust;
         restriction = me.restriction;
       } catch {
@@ -531,7 +560,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let trust: TrustData | null = null;
       let restriction: RestrictionResult | null = null;
       try {
-        const me = await api.get<AuthMeResponse>('/auth/me');
+        const rawMe = await api.get<AuthMeResponse | LegacyAuthMeResponse>('/auth/me');
+        const me = parseAuthMeResponse(rawMe);
         trust = me.trust;
         restriction = me.restriction;
       } catch {

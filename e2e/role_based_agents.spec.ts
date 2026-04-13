@@ -1,84 +1,171 @@
 import { test, expect } from '@playwright/test';
 
-// Run tests in parallel to simulate simultaneous agent usage
+// Run agents in parallel
 test.describe.configure({ mode: 'parallel' });
 
 const TARGET_URL = process.env.BASE_URL || 'https://rgitrozgar.in';
 
 const ACCOUNTS = {
-  admin: { email: 'kartikhulmukh24@gmail.com', password: 'Kartik24@' },
-  verifiedStudent: { email: 'kadamdnyaeshwari@gmail.com', password: 'Kartik24@' },
-  publicUser: { email: 'yashtaur24@gmail.com', password: 'Kartik24@' }
+  admin: { email: 'kartikhulmukh24@gmail.com', password: 'Kartik24@', role: 'Main Admin' },
+  verifiedStudent: { email: 'kadamdnyaeshwari@gmail.com', password: 'Kartik24@', role: 'Verified RGIT Student' },
+  publicUser: { email: 'yashtaur24@gmail.com', password: 'Kartik24@', role: 'Public Guest' }
 };
 
-// Helper function to handle aggressive login flow
-async function loginAs(page, role, credentials) {
-  console.log(`[${role}] Navigating to ${TARGET_URL}...`);
-  await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+async function loginAs(page, contextStr, credentials) {
+  console.log(`[${contextStr}] Navigating to login...`);
   
-  // Wait to see if we are stuck on "Loading..."
-  try {
-    await page.waitForSelector('text=Loading', { state: 'hidden', timeout: 15000 });
-  } catch (e) {
-    console.warn(`[${role}] Warning: "Loading..." screen persisted for a long time. The site might be blocked by API timeouts.`);
-  }
-
-  // Attempt to find login button or navigate to /login explicitly
-  console.log(`[${role}] Navigating to login...`);
   await page.goto(`${TARGET_URL}/login`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(2000);
 
-  // Wait for login form to appear
-  try {
-    await page.fill('input[type="email"], input[name="email"], [placeholder*="Email"]', credentials.email);
-    await page.fill('input[type="password"], input[name="password"], [placeholder*="Password"]', credentials.password);
-    await page.click('button[type="submit"], button:has-text("Login"), button:has-text("Sign in")');
-    console.log(`[${role}] Submitted login credentials.`);
-    
-    // Wait for redirect to dashboard or home
-    await page.waitForNavigation({ timeout: 10000 }).catch(() => console.log(`[${role}] No explicit navigation observed post-login.`));
-  } catch (e) {
-    console.error(`[${role}] Login form interaction failed. The app might be locked or unrendered.`);
+  const inputs = await page.locator('input').all();
+  if (inputs.length >= 2) {
+    await inputs[0].fill(credentials.email);
+    await page.waitForTimeout(500); 
+    await inputs[1].fill(credentials.password);
+
+    const enterBtn = page.getByRole('button', { name: /ENTER PORTAL/i });
+    if (await enterBtn.isVisible()) {
+      await enterBtn.click();
+      console.log(`[${contextStr}] Clicked login button.`);
+    } else {
+      console.log(`[${contextStr}] ENTER PORTAL button not found! Fallback to pressing Enter.`);
+      await page.keyboard.press('Enter');
+    }
+  } else {
+    console.error(`[${contextStr}] Login inputs not found properly!`);
+  }
+  
+  // Wait to login and ensure loading screen / state resolves
+  await page.waitForTimeout(5000); 
+}
+
+async function verifyPageNavigationAndScreenshot(page, role, pathName, expectedTitleSubstring) {
+  console.log(`[${role}] Navigating to ${TARGET_URL}${pathName}`);
+  await page.goto(`${TARGET_URL}${pathName}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(2000); 
+
+  const safeFilename = pathName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  await page.screenshot({ path: `test-results/${role.replace(/ /g, '_')}_${safeFilename}.png`, fullPage: true });
+
+  if (expectedTitleSubstring) {
+    const content = await page.content();
+    expect.soft(content.toLowerCase()).toContain(expectedTitleSubstring.toLowerCase());
   }
 }
 
-// 1. ADMIN AGENT TEST
-test('Agent 1 [Admin] - Aggressive System Testing', async ({ page }) => {
-  await loginAs(page, 'Admin', ACCOUNTS.admin);
+test('Agent 1 [Admin] - App-Wide Oversight & Admin Functions', async ({ page }) => {
+  const role = 'Admin';
+  await loginAs(page, role, ACCOUNTS.admin);
   
-  console.log('[Admin] Testing admin dashboard access...');
-  await page.goto(`${TARGET_URL}/admin`, { timeout: 10000 }).catch(() => {});
+  await verifyPageNavigationAndScreenshot(page, role, '/home', 'overview');
+  await verifyPageNavigationAndScreenshot(page, role, '/admin', '');
   
-  // Looking for approval buttons, settings, user management
-  const adminElements = await page.locator('text=Approve, text=Manage, text=Settings').count();
-  console.log(`[Admin] Found ${adminElements} admin-specific action buttons.`);
+  await verifyPageNavigationAndScreenshot(page, role, '/academics', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/accommodation', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/jobs', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/mess', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/hospital', '');
+
+  console.log(`[${role}] Interaction: Checking user verification logs/actions.`);
+  await page.goto(`${TARGET_URL}/admin`);
+  await page.waitForTimeout(2000);
   
-  // Try taking a snapshot of the final state
-  await page.screenshot({ path: 'test-results/admin-flow.png' });
+  // Admin tasks
+  const viewUsersBtn = page.getByText(/Verified Entities/i).first();
+  if (await viewUsersBtn.isVisible()) {
+    await viewUsersBtn.click();
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: `test-results/${role}_admin_users_view.png`, fullPage: true });
+  }
+  
+  console.log(`[${role}] Admin Agent tasks completed.`);
 });
 
-// 2. VERIFIED STUDENT AGENT TEST
-test('Agent 2 [Verified Student] - Feature Testing', async ({ page }) => {
-  await loginAs(page, 'Verified Student', ACCOUNTS.verifiedStudent);
+test('Agent 2 [Verified Student] - Core Feature Utilization', async ({ page }) => {
+  const role = 'Verified Student';
+  await loginAs(page, role, ACCOUNTS.verifiedStudent);
+
+  await verifyPageNavigationAndScreenshot(page, role, '/home', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/profile', '');
   
-  console.log('[Verified Student] Testing student dashboard and features...');
-  await page.goto(`${TARGET_URL}/dashboard`, { timeout: 10000 }).catch(() => {});
-  await page.goto(`${TARGET_URL}/jobs`, { timeout: 10000 }).catch(() => {});
-  await page.goto(`${TARGET_URL}/community`, { timeout: 10000 }).catch(() => {});
+  await verifyPageNavigationAndScreenshot(page, role, '/academics', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/accommodation', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/jobs', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/mess', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/hospital', '');
   
-  // Try taking a snapshot of the final state
-  await page.screenshot({ path: 'test-results/student-flow.png' });
+  console.log(`[${role}] Interaction: Browsing and Filtering Resale.`);
+  await page.goto(`${TARGET_URL}/resale`);
+  await page.waitForTimeout(2000);
+  
+  const searchInput = page.locator('input[placeholder*="Search"]');
+  if (await searchInput.isVisible()) {
+    await searchInput.fill('laptop');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: `test-results/${role}_resale_search.png`, fullPage: true });
+  }
+
+  console.log(`[${role}] Interaction: Attempting to create a listing.`);
+  await page.goto(`${TARGET_URL}/create-listing`, {waitUntil: 'domcontentloaded'});
+  await page.waitForTimeout(3000);
+  
+  const moduleBtn = page.getByRole('heading', { name: 'Resale Marketplace' });
+  if (await moduleBtn.isVisible()) {
+    await moduleBtn.click();
+    await page.waitForTimeout(1000);
+    const titleInput = page.getByPlaceholder('What are you offering?');
+    if (await titleInput.isVisible()) {
+      await titleInput.fill('E2E Parallel Testing Item');
+      const priceInput = page.getByPlaceholder('0.00');
+      if (await priceInput.isVisible()) await priceInput.fill('500');
+      await page.screenshot({ path: `test-results/${role}_create_listing_filled.png`, fullPage: true });
+    }
+  } else {
+    console.error(`[${role}] module select not available on create-listing.`);
+  }
+  
+  console.log(`[${role}] Verified Student tasks completed.`);
 });
 
-// 3. PUBLIC USER AGENT TEST
-test('Agent 3 [Public User] - Onboarding & Basic Access Testing', async ({ page }) => {
-  await loginAs(page, 'Public User', ACCOUNTS.publicUser);
+test('Agent 3 [Public Guest] - Boundary & Constraints Testing', async ({ page }) => {
+  const role = 'Public User';
+  await loginAs(page, role, ACCOUNTS.publicUser);
+
+  await verifyPageNavigationAndScreenshot(page, role, '/home', '');
+  await verifyPageNavigationAndScreenshot(page, role, '/resale', '');
+
+  console.log(`[${role}] Interaction: Trying to access restricted route /create-listing`);
+  await page.goto(`${TARGET_URL}/create-listing`);
+  await page.waitForTimeout(3000);
+  await page.screenshot({ path: `test-results/${role}_attempt_create_listing.png`, fullPage: true });
   
-  console.log('[Public User] Testing limited access boundaries...');
-  await page.goto(`${TARGET_URL}/profile`, { timeout: 10000 }).catch(() => {});
+  let currentUrl = page.url();
+  if (currentUrl.includes('create-listing')) {
+     console.log(`[${role}] SEVERE WARNING: Public user reached /create-listing. The "Access: Public User" bug is confirmed!`);
+  } else {
+     console.log(`[${role}] Redirected appropriately from /create-listing.`);
+  }
+
+  console.log(`[${role}] Interaction: Viewing /resale details`);
+  await page.goto(`${TARGET_URL}/resale`);
+  await page.waitForTimeout(3000);
   
-  // They shouldn't be able to access verified things
-  await page.goto(`${TARGET_URL}/premium-content`, { timeout: 5000 }).catch(() => {});
-  
-  // Try taking a snapshot of the final state
-  await page.screenshot({ path: 'test-results/public-flow.png' });
+  const sellBtn = page.getByRole('button', { name: /Sell Item/i });
+  if (await sellBtn.count() > 0 && await sellBtn.isVisible()) {
+    await sellBtn.click();
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `test-results/${role}_attempt_sell.png`, fullPage: true });
+  }
+
+  console.log(`[${role}] Interaction: Trying to access /admin`);
+  await page.goto(`${TARGET_URL}/admin`);
+  await page.waitForTimeout(2000);
+  currentUrl = page.url();
+  if (currentUrl.includes('admin')) {
+      console.log(`[${role}] SEVERE WARNING: Public guest breached /admin!!`);
+      await page.screenshot({ path: `test-results/${role}_admin_breach.png`, fullPage: true });
+  }
+
+  console.log(`[${role}] Public User tasks completed.`);
 });

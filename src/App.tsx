@@ -16,6 +16,7 @@ import { handleApiError } from "@/lib/error-handler";
 import { ApiError } from "@/lib/api-client";
 import { trackPageView } from "@/lib/monitoring";
 import { HelmetProvider } from 'react-helmet-async';
+import LoadingScreen from "@/components/LoadingScreen";
 
 // Lazy-load heavy global decorations — not needed for first paint
 const GooeyCursor = lazy(() => import('./components/GooeyCursor'));
@@ -200,7 +201,7 @@ const App = () => (
                 <main id="main-content">
                   <PageTransition>
                     <ErrorBoundary boundary="LazyRoutes">
-                      <Suspense fallback={<div className="flex h-[50vh] w-full items-center justify-center"><div className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" /></div>}>
+                      <Suspense fallback={<LoadingScreen />}>
                         <Routes>
                         {/* Landing Page (Cinematic Splash) */}
                         <Route path="/" element={<RouteErrorBoundary name="Landing"><LandingPage /></RouteErrorBoundary>} />

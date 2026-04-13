@@ -147,12 +147,31 @@ const LOGOUT_REDIRECT_KEY = 'berozgar_post_logout_redirect';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(getInitialState);
   const hydrationRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const tokenRefreshInFlightRef = useRef(false);
+  const hydrationRunIdRef = useRef(0);
   // CRIT-04 FIX: hold the pending signup password in memory only.
   // It is set in signup() and cleared in verifyOtp() / logout().
   const pendingPasswordRef = useRef<string | null>(null);
   // Auto-clear after OTP_EXPIRES_MINUTES (10 min) so the password doesn't
   // stay in memory indefinitely if the user abandons the flow.
   const pendingPasswordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setStateIfMounted = useCallback((next: AuthState | ((prev: AuthState) => AuthState)) => {
+    if (isMountedRef.current) {
+      setState(next as never);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (pendingPasswordTimerRef.current) {
+        clearTimeout(pendingPasswordTimerRef.current);
+        pendingPasswordTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Initialize session manager (multi-tab sync, token refresh)
   useEffect(() => {
@@ -168,6 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrationRef.current) return;
     hydrationRef.current = true;
+    const runId = ++hydrationRunIdRef.current;
+    let cancelled = false;
 
     console.log('[AuthContext] Starting hydration...');
     const storedUser = sessionManager.getUser();
@@ -175,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!storedUser) {
       console.log('[AuthContext] No stored user, marked hydrated.');
-      setState({ ...INITIAL_STATE, isHydrated: true });
+      setStateIfMounted({ ...INITIAL_STATE, isHydrated: true });
       return;
     }
 
@@ -203,7 +224,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             sessionManager.clearSession();
             clearCsrfToken();
             clearMonitoringUser();
-            setState({ ...INITIAL_STATE, isHydrated: true });
+            if (!cancelled && runId === hydrationRunIdRef.current) {
+              setStateIfMounted({ ...INITIAL_STATE, isHydrated: true });
+            }
             return;
           }
         }
@@ -219,23 +242,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionManager.setUser(user);
         identifyUser({ id: user.id, email: user.email, role: user.role });
 
-        setState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          isHydrated: true,
-          trust,
-          restriction,
-        });
+        if (!cancelled && runId === hydrationRunIdRef.current) {
+          setStateIfMounted({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            isHydrated: true,
+            trust,
+            restriction,
+          });
+        }
       } catch (err) {
         // Session invalid — clear everything
         sessionManager.clearSession();
         clearCsrfToken();
         clearMonitoringUser();
-        setState({ ...INITIAL_STATE, isHydrated: true });
+        if (!cancelled && runId === hydrationRunIdRef.current) {
+          setStateIfMounted({ ...INITIAL_STATE, isHydrated: true });
+        }
       }
     })();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setStateIfMounted]);
 
   // Listen for session events (multi-tab sync, token refresh, etc.)
   useEffect(() => {
@@ -246,7 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {
           // Best effort
         }
-        setState((prev) => ({
+        setStateIfMounted((prev) => ({
           ...prev,
           user: user,
           isAuthenticated: !!user,
@@ -263,11 +294,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch {
           // Best effort
         }
-        setState({
+        setStateIfMounted({
           ...INITIAL_STATE,
           isHydrated: true,
         });
       } else if (event === 'token-refresh') {
+        if (tokenRefreshInFlightRef.current) return;
+        tokenRefreshInFlightRef.current = true;
         // AUTH-SESSION-02: proactively refresh the access token before expiry.
         // SessionManager emits this event ~60s before the JWT expires.
         // CRIT-03 FIX: route through handleTokenRefresh() so this proactive call
@@ -280,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           api.get<AuthMeResponse>('/auth/me').then((me) => {
             const user = normalizeUser(me.user);
             sessionManager.setUser(user);
-            setState((prev) => ({
+            setStateIfMounted((prev) => ({
               ...prev,
               user,
               trust: me.trust,
@@ -291,7 +324,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // handleTokenRefresh() has already called clearSession() — just sync React state
           clearCsrfToken();
           clearMonitoringUser();
-          setState({ ...INITIAL_STATE, isHydrated: true });
+          setStateIfMounted({ ...INITIAL_STATE, isHydrated: true });
           // MED-SESSION FIX: notify the user that their session expired so they
           // aren't silently logged out while actively using the app.
           toast({
@@ -299,15 +332,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             description: 'Your session has expired. Please log in again to continue.',
             variant: 'destructive',
           });
+        }).finally(() => {
+          tokenRefreshInFlightRef.current = false;
         });
       }
     });
 
     return unsubscribe;
-  }, []);
+  }, [setStateIfMounted]);
 
 
   const login = useCallback(async (email: string, password: string) => {
+    // Invalidate any in-flight hydration response so it cannot overwrite
+    // the fresh login state with stale server/session data.
+    hydrationRunIdRef.current += 1;
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
@@ -379,6 +417,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const verifyOtp = useCallback(async (otp: string) => {
+    // Invalidate any in-flight hydration response before OTP completion sets auth state.
+    hydrationRunIdRef.current += 1;
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
@@ -435,6 +475,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Invalidate any in-flight hydration response before clearing auth state.
+    hydrationRunIdRef.current += 1;
     // Fire-and-forget server logout.
     // BUG-01 FIX: send the Bearer token so the server audit log records the
     // actor. Do NOT use skipAuth:true — with it no Authorization header was
@@ -461,6 +503,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const googleSignIn = useCallback(async (credential: string) => {
+    // Invalidate any in-flight hydration response so Google login state is authoritative.
+    hydrationRunIdRef.current += 1;
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {

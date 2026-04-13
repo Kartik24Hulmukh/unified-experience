@@ -19,6 +19,9 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const location = useLocation();
   const [hydrationTimeout, setHydrationTimeout] = useState(false);
 
+  const normalizedUserRole = (user?.role ?? '').toString().trim().toLowerCase() as UserRole | '';
+  const normalizedAllowedRoles = allowedRoles?.map((role) => role.trim().toLowerCase() as UserRole);
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (!isHydrated) {
@@ -65,7 +68,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   // UX-02 FIX: Wrong-role users get an immediate synchronous <Navigate> instead of
   // rendering a spinner and waiting for a useEffect to fire post-paint. The previous
   // pattern showed a spinner for 1-2 frames before navigation, causing a visible flash.
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (normalizedAllowedRoles && user && !normalizedAllowedRoles.includes(normalizedUserRole as UserRole)) {
     return <Navigate to="/home" replace />;
   }
 

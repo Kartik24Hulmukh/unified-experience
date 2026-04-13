@@ -48,13 +48,15 @@ const LoginPage = () => {
     const [showEmailForm, setShowEmailForm] = useState(true);
     const hasRedirected = useRef(false);
 
+    const isAdminRole = (role: unknown) => String(role ?? '').trim().toLowerCase() === 'admin';
+
     const from = (location.state as { from?: string })?.from || "/home";
 
     useEffect(() => {
         if (isAuthenticated && !authLoading && user) {
             if (!hasRedirected.current) {
                 hasRedirected.current = true;
-                const destination = user.role === 'admin' ? '/admin' : from;
+                const destination = isAdminRole(user.role) ? '/admin' : from;
                 navigate(destination, { replace: true });
             }
         }
@@ -72,7 +74,7 @@ const LoginPage = () => {
             toast({ title: "Access Granted", description: "Welcome to the BErozgar Trust Exchange." });
             
             // Immediately navigate here as a fallback
-            const destination = loggedInUser?.role === 'admin' ? '/admin' : from;
+            const destination = isAdminRole(loggedInUser?.role) ? '/admin' : from;
             navigate(destination, { replace: true });
         } catch (err: unknown) {
             hasRedirected.current = false;
@@ -90,7 +92,7 @@ const LoginPage = () => {
             const loggedInUser = await googleSignIn(result.credential);
             toast({ title: "Google Sign-In Successful", description: `Signed in as ${result.email || 'your Google account'}` });
             
-            const destination = loggedInUser?.role === 'admin' ? '/admin' : from;
+            const destination = isAdminRole(loggedInUser?.role) ? '/admin' : from;
             navigate(destination, { replace: true });
         } catch (err: unknown) {
             hasRedirected.current = false;
@@ -108,7 +110,7 @@ const LoginPage = () => {
             {!isMobile && (
               <div className="absolute inset-0 z-0 opacity-50">
                   <LoginPageErrorBoundary fallback={<div className="hidden" />}>
-                      <Suspense fallback={null}>
+                      <Suspense fallback={<div className="absolute inset-0 m-auto w-[400px] h-[500px] rounded-[40px] border border-primary/20 bg-primary/5 animate-pulse shadow-2xl backdrop-blur-sm" />}>
                           <Lanyard position={[0, 0, 25]} gravity={[0, -40, 0]} fov={22} transparent />
                       </Suspense>
                   </LoginPageErrorBoundary>

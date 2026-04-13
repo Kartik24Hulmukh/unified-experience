@@ -282,7 +282,7 @@ const LandingPage = () => {
                 ref={portalContainerRef}
                 className="relative w-[clamp(60px,8vw,120px)] h-[clamp(60px,8vw,120px)] shrink-0 opacity-0 flex items-center justify-center pointer-events-none"
               >
-                <Suspense fallback={<div className="w-4/5 h-4/5 border-2 border-white/20 rotate-45 animate-pulse" />}>
+                <Suspense fallback={<div className="absolute inset-0 m-auto w-4/5 h-4/5 border border-primary/20 bg-primary/10 rounded-full rotate-45 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_40px_rgba(0,188,212,0.1)]" />}>
                   <Portal3D className="w-full h-full pointer-events-none" />
                 </Suspense>
               </div>

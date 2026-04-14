@@ -164,7 +164,7 @@ const FooterSection = () => {
           {MODULES.map((mod) => (
             <span
               key={mod}
-              className="ftr-module font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] text-portal-foreground/60 hover:text-[#a3ff12] transition-colors duration-300 cursor-pointer"
+              className="ftr-module font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] text-portal-foreground/60"
             >
               {mod}
             </span>
@@ -204,9 +204,9 @@ const FooterSection = () => {
             </p>
 
             <div className="ftr-bottom-text flex gap-8 order-2 lg:order-3">
-               <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em] hover:text-[#a3ff12] cursor-pointer transition-colors">Privacy</span>
-               <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em] hover:text-[#a3ff12] cursor-pointer transition-colors">Security</span>
-               <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em] hover:text-[#a3ff12] cursor-pointer transition-colors">Governance</span>
+              <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em]">Privacy</span>
+              <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em]">Security</span>
+              <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em]">Governance</span>
             </div>
           </div>
         </div>

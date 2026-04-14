@@ -79,9 +79,9 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
         // Setup: Tab 2 (Secondary)
         const page2 = await context.newPage();
         await page2.setViewportSize({ width: 1280, height: 720 });
-        await page2.goto('http://127.0.0.1:5173/home', { waitUntil: 'domcontentloaded' });
-        // Because of the hydration fix in AuthContext, Tab 2 should successfully call /auth/refresh and remain on /home
-        await expect(page2).toHaveURL(/\/home/, { timeout: 20000 });
+        await page2.goto('http://127.0.0.1:5173/profile', { waitUntil: 'domcontentloaded' });
+        // Because of the hydration fix in AuthContext, Tab 2 should successfully call /auth/refresh and remain on the protected route.
+        await expect(page2).toHaveURL(/\/profile/, { timeout: 20000 });
 
         // Action: Logout in Tab 1 — use the desktop logout button with force:true
         // The button has `hidden sm:flex` which can confuse Playwright's actionability checks

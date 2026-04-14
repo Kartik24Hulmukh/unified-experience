@@ -28,7 +28,7 @@ import { toast } from "@/components/ui/use-toast";
 class LoginPageErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean, errorMsg: string }> {
     constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) { super(props); this.state = { hasError: false, errorMsg: '' }; }
     static getDerivedStateFromError(error: unknown) { return { hasError: true, errorMsg: error?.message || String(error) }; }
-    render() { return this.state.hasError ? <div style={{position: 'absolute', top: 0, left: 0, zIndex: 9999, color: 'red', background: 'black', padding: '20px'}}>LANYARD CRASHED: {this.state.errorMsg}</div> : this.props.children; }
+    render() { return this.state.hasError ? this.props.fallback : this.props.children; }
 }
 
 const Lanyard = lazy(() => import("@/components/Lanyard"));
@@ -49,18 +49,26 @@ const LoginPage = () => {
     const hasRedirected = useRef(false);
 
     const isAdminRole = (role: unknown) => String(role ?? '').trim().toLowerCase() === 'admin';
+    const requestedDestination = typeof (location.state as { from?: unknown } | null)?.from === 'string'
+        ? (location.state as { from?: string }).from!
+        : '/home';
 
-    const from = (location.state as { from?: string })?.from || "/home";
+    const getPostLoginDestination = (role: unknown) => {
+        if (requestedDestination && requestedDestination !== '/home') {
+            return requestedDestination;
+        }
+        return isAdminRole(role) ? '/admin' : '/home';
+    };
 
     useEffect(() => {
         if (isAuthenticated && !authLoading && user) {
             if (!hasRedirected.current) {
                 hasRedirected.current = true;
-                const destination = isAdminRole(user.role) ? '/admin' : from;
+                const destination = getPostLoginDestination(user.role);
                 navigate(destination, { replace: true });
             }
         }
-    }, [isAuthenticated, authLoading, navigate, from, user]);
+    }, [isAuthenticated, authLoading, navigate, requestedDestination, user]);
 
     const form = useForm<z.infer<typeof loginSchema>>({
         resolver: zodResolver(loginSchema),
@@ -74,7 +82,7 @@ const LoginPage = () => {
             toast({ title: "Access Granted", description: "Welcome to the BErozgar Trust Exchange." });
             
             // Immediately navigate here as a fallback
-            const destination = isAdminRole(loggedInUser?.role) ? '/admin' : from;
+            const destination = getPostLoginDestination(loggedInUser?.role);
             navigate(destination, { replace: true });
         } catch (err: unknown) {
             hasRedirected.current = false;
@@ -92,7 +100,7 @@ const LoginPage = () => {
             const loggedInUser = await googleSignIn(result.credential);
             toast({ title: "Google Sign-In Successful", description: `Signed in as ${result.email || 'your Google account'}` });
             
-            const destination = isAdminRole(loggedInUser?.role) ? '/admin' : from;
+            const destination = getPostLoginDestination(loggedInUser?.role);
             navigate(destination, { replace: true });
         } catch (err: unknown) {
             hasRedirected.current = false;

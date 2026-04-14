@@ -346,8 +346,10 @@ const ContextNav = memo(function ContextNav() {
         ref={menuRef}
         className="fixed inset-0 z-40 flex overflow-y-auto bg-portal opacity-0"
         style={{ willChange: isMenuOpen ? 'clip-path' : 'auto', pointerEvents: isMenuOpen ? 'auto' : 'none' }}
-        role="dialog"
-        aria-modal={isMenuOpen}
+        role={isMenuOpen ? 'dialog' : undefined}
+        aria-modal={isMenuOpen ? true : undefined}
+        aria-hidden={!isMenuOpen}
+        tabIndex={-1}
         aria-label="Navigation menu"
       >
         <div className="mx-auto min-h-full w-full max-w-4xl px-4 pt-[calc(env(safe-area-inset-top)_+_5rem)] pb-[calc(env(safe-area-inset-bottom)_+_2rem)] sm:px-8 md:px-16 md:pt-28">

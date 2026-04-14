@@ -162,7 +162,7 @@ function AuthLogoutRedirectSyncer() {
 
     navigate('/login', {
       replace: true,
-      state: { from: location.pathname },
+      state: { from: `${location.pathname}${location.search}${location.hash}` },
     });
   }, [isAuthenticated, isHydrated, location.pathname, navigate]);
 

@@ -18,6 +18,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { isAuthenticated, isLoading, isHydrated, user } = useAuth();
   const location = useLocation();
   const [hydrationTimeout, setHydrationTimeout] = useState(false);
+  const requestedPath = `${location.pathname}${location.search}${location.hash}`;
 
   const normalizedUserRole = (user?.role ?? '').toString().trim().toLowerCase() as UserRole | '';
   const normalizedAllowedRoles = allowedRoles?.map((role) => role.trim().toLowerCase() as UserRole);
@@ -62,7 +63,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 
   // Not logged in → redirect to login, remember where they wanted to go
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/login" state={{ from: requestedPath }} replace />;
   }
 
   // UX-02 FIX: Wrong-role users get an immediate synchronous <Navigate> instead of

@@ -128,9 +128,9 @@ const ResalePage = () => {
   return (
     <>
       <SEO title="Campus Resale" description="Buy and sell engineering books, calculators, and lab equipment on campus." />
-      <div ref={mainRef} className="min-h-[100dvh] bg-portal">
+      <div ref={mainRef} className="min-h-[100dvh] bg-portal pt-[var(--nav-height)]">
       {/* Hero Section - Full bleed with diagonal split */}
-      <section ref={heroRef} className="relative h-[100dvh] overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[calc(100dvh-var(--nav-height))] overflow-hidden">
         {/* Background Image with Parallax */}
         <div className="absolute inset-0 z-0">
           <img
@@ -301,6 +301,7 @@ const ResalePage = () => {
                   ? 'bg-portal text-portal-foreground border border-portal-foreground hover:bg-portal-foreground hover:text-portal'
                   : 'bg-portal-foreground/10 text-portal/30 border border-portal-foreground/10'
                 }`}
+              aria-label="Sell item"
             >
               <span className="relative z-10 flex items-center">
                 Sell Item <Plus className="ml-2 w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />

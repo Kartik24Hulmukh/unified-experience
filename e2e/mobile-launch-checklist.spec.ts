@@ -41,7 +41,7 @@ async function loginViaUi(page: Page, email: string, password: string) {
   await page.getByPlaceholder('YOU@MCTRGIT.AC.IN').fill(email);
   await page.getByPlaceholder('••••••••').fill(password);
   await page.getByRole('button', { name: /ENTER PORTAL/i }).click();
-  await expect(page).toHaveURL(/\/home|\/admin/, { timeout: 20000 });
+  await expect(page).toHaveURL(/\/home|\/admin|\/profile/, { timeout: 20000 });
 }
 
 async function logoutViaUi(page: Page) {

@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (!isHydrated) {
-      timer = setTimeout(() => setHydrationTimeout(true), 10000);
+      timer = setTimeout(() => setHydrationTimeout(true), 20000);
     }
     return () => {
       if (timer) clearTimeout(timer);
@@ -37,7 +37,9 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   // Previously, isLoading was also checked, so a background token refresh
   // (which briefly sets isLoading=true) would flash a full-page spinner on
   // every protected page. Post-hydration loading states should not block the UI.
-  if (!isHydrated) {
+  // If we already have a locally restored authenticated session, avoid blocking
+  // protected screens behind a full-page spinner while background hydration runs.
+  if (!isHydrated && !isAuthenticated) {
     if (hydrationTimeout) {
       return (
         <div className="flex flex-col items-center justify-center p-8 text-center bg-background min-h-[50vh]">

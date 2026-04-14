@@ -23,6 +23,7 @@ export async function authenticate(
   // We exclude safe paths that users need access to even when restricted.
   const safePaths = [
     '/profile',
+    '/auth/me',
     '/auth/logout',
     '/profile/link-college-email'
   ];

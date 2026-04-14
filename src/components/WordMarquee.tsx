@@ -16,7 +16,7 @@ interface WordMarqueeProps {
  */
 const WordMarquee = ({
   words,
-  duration = 25,
+  duration = 45,
   accentBgClass = 'bg-white/20',
 }: WordMarqueeProps) => {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -24,6 +24,11 @@ const WordMarquee = ({
   useEffect(() => {
     if (!trackRef.current) return;
     const ctx = gsap.context(() => {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReducedMotion) {
+        gsap.set(trackRef.current!, { xPercent: 0 });
+        return;
+      }
       // Triple the track and animate to -33.33% for truly seamless looping
       gsap.to(trackRef.current!, {
         xPercent: -33.333,

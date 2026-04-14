@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import { sessionManager } from '@/lib/session';
-import api, { handleTokenRefresh } from '@/lib/api-client';
+import api, { ApiError, handleTokenRefresh } from '@/lib/api-client';
 import { setCsrfToken, clearCsrfToken } from '@/lib/api-client';
 import { identifyUser, clearUser as clearMonitoringUser } from '@/lib/monitoring';
 import { toast } from '@/components/ui/use-toast';
@@ -165,7 +165,16 @@ const INITIAL_STATE: AuthState = {
 };
 
 const getInitialState = (): AuthState => {
-  return { ...INITIAL_STATE };
+  const storedUser = sessionManager.getUser();
+  if (!storedUser) {
+    return { ...INITIAL_STATE };
+  }
+
+  return {
+    ...INITIAL_STATE,
+    user: storedUser,
+    isAuthenticated: true,
+  };
 };
 
 const LOGOUT_REDIRECT_KEY = 'berozgar_post_logout_redirect';
@@ -280,12 +289,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         }
       } catch (err) {
-        // Session invalid — clear everything
-        sessionManager.clearSession();
-        clearCsrfToken();
-        clearMonitoringUser();
+        const isAuthFailure = err instanceof ApiError && (err.code === 'UNAUTHORIZED' || err.code === 'FORBIDDEN');
+
+        if (isAuthFailure) {
+          // Session invalid — clear everything
+          sessionManager.clearSession();
+          clearCsrfToken();
+          clearMonitoringUser();
+          if (!cancelled && runId === hydrationRunIdRef.current) {
+            setStateIfMounted({ ...INITIAL_STATE, isHydrated: true });
+          }
+          return;
+        }
+
+        // Non-auth failures (timeout/network/5xx): preserve local session so
+        // protected screens don't collapse into a false logout state.
+        const fallbackUser = sessionManager.getUser();
         if (!cancelled && runId === hydrationRunIdRef.current) {
-          setStateIfMounted({ ...INITIAL_STATE, isHydrated: true });
+          if (fallbackUser) {
+            setStateIfMounted({
+              user: fallbackUser,
+              isAuthenticated: true,
+              isLoading: false,
+              isHydrated: true,
+              trust: null,
+              restriction: null,
+            });
+          } else {
+            setStateIfMounted({ ...INITIAL_STATE, isHydrated: true });
+          }
         }
       }
     })();

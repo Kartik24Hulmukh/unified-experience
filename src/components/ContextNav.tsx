@@ -311,7 +311,7 @@ const ContextNav = memo(function ContextNav() {
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="relative z-50 tap-target flex items-center gap-3 group"
-              aria-label="Toggle menu"
+              aria-label="Navigation menu"
               aria-expanded={isMenuOpen}
             >
               <span className={`hidden sm:block text-xs uppercase tracking-widest transition-opacity ${isMenuOpen ? 'opacity-0' : 'opacity-60'} font-body`}>
@@ -344,7 +344,7 @@ const ContextNav = memo(function ContextNav() {
       {/* Fullscreen Menu Overlay */}
       <div
         ref={menuRef}
-        className="fixed inset-0 z-40 flex overflow-y-auto bg-portal opacity-0"
+        className="fixed inset-0 z-[70] flex overflow-y-auto bg-portal opacity-0"
         style={{ willChange: isMenuOpen ? 'clip-path' : 'auto', pointerEvents: isMenuOpen ? 'auto' : 'none' }}
         role={isMenuOpen ? 'dialog' : undefined}
         aria-modal={isMenuOpen ? true : undefined}

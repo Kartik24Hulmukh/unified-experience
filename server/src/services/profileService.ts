@@ -98,7 +98,7 @@ export async function getProfile(userId: string) {
         academicListings: 0,
         systemUptimePercent: 100,
       },
-      privilegeLevel: user.privilegeLevel?.toLowerCase() ?? 'standard',
+      privilegeLevel: user.privilegeLevel ?? 'STANDARD',
     };
   }
 

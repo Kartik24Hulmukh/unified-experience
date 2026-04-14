@@ -139,10 +139,10 @@ const EssentialsPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
+    <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative pt-[var(--nav-height)]">
 
       {/* ═══════════════ HERO ═══════════════ */}
-      <section ref={heroRef} className="relative min-h-[100dvh] flex items-end overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[calc(100dvh-var(--nav-height))] flex items-end overflow-hidden">
         {/* Background — essentials-tiffin.jpg at low opacity */}
         <div className="absolute inset-0 z-0">
           <img
@@ -237,7 +237,7 @@ const EssentialsPage = () => {
       </section>
 
       {/* ═══════════════ WORD MARQUEE ═══════════════ */}
-      <WordMarquee words={scrollingWords} duration={30} accentBgClass="bg-violet-400/20" />
+      <WordMarquee words={scrollingWords} duration={55} accentBgClass="bg-violet-400/20" />
 
       {/* ═══════════════ MODULES OVERVIEW ═══════════════ */}
       <section className="py-16 sm:py-24 md:py-40 px-4 sm:px-8 md:px-16 ess-reveal">

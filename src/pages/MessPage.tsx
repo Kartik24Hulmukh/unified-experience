@@ -251,11 +251,11 @@ const MessPage = () => {
   return (
     <>
       <SEO title="Mess & Tiffin Services" description="Discover verified mess services, tiffin providers, and campus canteens. Student-reviewed, hygiene-checked, and priced for your budget." />
-      <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative">
+      <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative pt-[var(--nav-height)]">
         <ScanlineOverlay />
 
       {/* ═══════════════ HERO ═══════════════ */}
-      <section ref={heroRef} className="relative min-h-[100dvh] flex items-end overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[calc(100dvh-var(--nav-height))] flex items-end overflow-hidden">
         {/* Background image + overlay */}
         <div className="absolute inset-0 z-0">
           <img

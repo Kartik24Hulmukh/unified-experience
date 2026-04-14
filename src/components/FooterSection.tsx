@@ -30,6 +30,7 @@ const FooterSection = () => {
         '.ftr-eyebrow',
         {
           opacity: 0, y: 20, duration: 0.8, ease: 'power3.out',
+          immediateRender: false,
           scrollTrigger: { trigger: section, start: 'top 95%' },
         }
       );
@@ -39,6 +40,7 @@ const FooterSection = () => {
         '.ftr-heading',
         {
           opacity: 0, y: 50, duration: 1, ease: 'power3.out',
+          immediateRender: false,
           scrollTrigger: { trigger: section, start: 'top 90%' },
         },
       );
@@ -48,6 +50,7 @@ const FooterSection = () => {
         '.ftr-desc',
         {
           opacity: 0, y: 30, duration: 0.9, ease: 'power2.out',
+          immediateRender: false,
           scrollTrigger: { trigger: section, start: 'top 85%' },
         },
       );
@@ -57,6 +60,7 @@ const FooterSection = () => {
         '.ftr-stat',
         {
           opacity: 0, y: 25, stagger: 0.1, duration: 0.7, ease: 'power2.out',
+          immediateRender: false,
           scrollTrigger: { trigger: '.ftr-stats', start: 'top 95%' },
         },
       );
@@ -66,6 +70,7 @@ const FooterSection = () => {
         '.ftr-module',
         {
           opacity: 0, y: 15, stagger: 0.05, duration: 0.5, ease: 'power2.out',
+          immediateRender: false,
           scrollTrigger: { trigger: '.ftr-modules', start: 'top 95%' },
         },
       );
@@ -75,6 +80,7 @@ const FooterSection = () => {
         '.ftr-principle',
         {
           opacity: 0, x: -15, stagger: 0.1, duration: 0.6, ease: 'power2.out',
+          immediateRender: false,
           scrollTrigger: { trigger: '.ftr-principles', start: 'top 95%' },
         },
       );
@@ -93,9 +99,12 @@ const FooterSection = () => {
         '.ftr-bottom-text',
         {
           opacity: 0, y: 10, stagger: 0.1, duration: 0.6, ease: 'power2.out',
+          immediateRender: false,
           scrollTrigger: { trigger: '.ftr-bottom', start: 'top bottom' },
         },
       );
+
+      requestAnimationFrame(() => ScrollTrigger.refresh());
 
     }, sectionRef);
 
@@ -139,7 +148,7 @@ const FooterSection = () => {
         </h2>
 
         {/* ── Description ────────────────────────────────────────────────────── */}
-        <p className="ftr-desc text-portal-foreground/40 font-body text-base leading-relaxed text-center max-w-xl mx-auto mb-20">
+        <p className="ftr-desc text-portal-foreground/60 font-body text-base leading-relaxed text-center max-w-xl mx-auto mb-20">
           BErozgar transforms informal student practices into a structured,
           trusted platform for academic exchange, accommodation discovery,
           and daily living support.

@@ -47,6 +47,13 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
       const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
       if (path) onModuleClick(path);
     }, [onModuleClick]);
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
+      if (path) onModuleClick(path);
+    }, [onModuleClick]);
   
     return (
       <div className="w-full h-full flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-24 overflow-y-auto">
@@ -70,6 +77,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
               onClick={handleClick}
+              onKeyDown={handleKeyDown}
             >
               {/* Background Image Setup */}
               <div className={`absolute inset-0 transition-opacity duration-700 ${activeModule === module.id ? 'opacity-100' : 'opacity-40 grayscale-[0.8]'}`}>

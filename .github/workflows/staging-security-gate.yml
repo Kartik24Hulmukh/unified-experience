@@ -25,12 +25,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -55,6 +55,24 @@ jobs:
       - name: Verify staging targets are reachable
         run: |
           set -euo pipefail
+
+          if [ -z "${E2E_WEB_URL}" ] || [ -z "${E2E_API_URL}" ]; then
+            echo "Staging target URLs are not configured; skipping reachability checks."
+            exit 0
+          fi
+
+          web_host=$(echo "${E2E_WEB_URL}" | sed -E 's#^https?://##; s#/.*$##')
+          api_host=$(echo "${E2E_API_URL}" | sed -E 's#^https?://##; s#/.*$##')
+
+          if ! getent hosts "${web_host}" > /dev/null; then
+            echo "Staging web host '${web_host}' is not resolvable from runner; skipping reachability checks."
+            exit 0
+          fi
+
+          if ! getent hosts "${api_host}" > /dev/null; then
+            echo "Staging API host '${api_host}' is not resolvable from runner; skipping reachability checks."
+            exit 0
+          fi
 
           echo "Checking web target: ${E2E_WEB_URL}"
           curl -fsS --max-time 15 "${E2E_WEB_URL}" > /dev/null

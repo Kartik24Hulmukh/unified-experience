@@ -1,10 +1,22 @@
 import { test, expect, Page } from '@playwright/test';
+import { createVerifiedUser, ensureAdminUser, cleanupE2eData, disconnectDb } from './helpers';
 
 test.describe.configure({ mode: 'parallel' });
 
-const BASE_URL = 'https://rgitrozgar.in';
-const STUDENT_CREDENTIALS = { email: 'kadamdnyaeshwari@gmail.com', password: 'Kartik24@' };
-const ADMIN_CREDENTIALS = { email: 'kartikhulmukh24@gmail.com', password: 'Kartik24@' };
+const BASE_URL = (process.env.E2E_WEB_URL ?? process.env.BASE_URL ?? 'http://127.0.0.1:8080').replace(/\/$/, '');
+const TEST_RUN = Date.now();
+const STUDENT_CREDENTIALS = { email: `e2e-flow-student-${TEST_RUN}@mctrgit.ac.in`, password: 'FlowPass@123' };
+const ADMIN_CREDENTIALS = { email: `e2e-flow-admin-${TEST_RUN}@mctrgit.ac.in`, password: 'FlowPass@123' };
+
+test.beforeAll(async () => {
+  await createVerifiedUser(STUDENT_CREDENTIALS.email, STUDENT_CREDENTIALS.password, 'E2E Flow Student');
+  await ensureAdminUser(ADMIN_CREDENTIALS.email, ADMIN_CREDENTIALS.password, 'E2E Flow Admin');
+});
+
+test.afterAll(async () => {
+  await cleanupE2eData();
+  await disconnectDb();
+});
 
 async function safeScreenshot(page: Page, path: string) {
   try {
@@ -49,17 +61,32 @@ async function login(page: Page, role: 'student' | 'admin') {
   try {
     await page.goto(`${BASE_URL}/login`);
     await page.waitForLoadState('networkidle');
+
+    const legacyToggle = page.getByRole('button', { name: /USE LEGACY MAIL/i });
+    if (await legacyToggle.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await legacyToggle.click();
+    }
     
     // Fill credentials
-    const emailInput = page.locator('input[type="email"], input[name="email"], [placeholder*="Email"]');
+    const emailInput = page.locator('input[type="email"], input[name="email"], input[autocomplete="email"], [placeholder*="mctrgit" i], [placeholder*="email" i]');
     await emailInput.first().fill(credentials.email);
     
-    const passwordInput = page.locator('input[type="password"], input[name="password"], [placeholder*="Password"]');
+    const passwordInput = page.locator('input[type="password"], input[name="password"], input[autocomplete="current-password"]');
     await passwordInput.first().fill(credentials.password);
     
     const loginButton = page.locator('button[type="submit"], button:has-text("Login"), button:has-text("Sign In"), button:has-text("ENTER PORTAL")');
+    const loginResponsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/auth/login') && response.request().method() === 'POST',
+      { timeout: 15000 },
+    );
     await loginButton.first().click();
+    const loginResponse = await loginResponsePromise;
+    if (loginResponse.status() !== 200) {
+      const body = await loginResponse.text().catch(() => '');
+      throw new Error(`Login failed for ${role} with status ${loginResponse.status()}: ${body.slice(0, 250)}`);
+    }
     
+    await page.waitForURL(/\/(home|admin|profile)(\/|$)/, { timeout: 20000 });
     await page.waitForLoadState('networkidle');
     const userRole = await page.evaluate(() => {
       try {

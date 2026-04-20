@@ -13,7 +13,7 @@
  * They are set exclusively in httpOnly, Secure, SameSite=Strict cookies.
  */
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
 import { validate } from '@/middleware/validate';
 import {
@@ -24,6 +24,16 @@ import {
   googleSignInSchema,
 } from '@/shared/validation';
 import * as authController from '@/controllers/authController';
+
+function methodNotAllowed(allowedMethods: string[]) {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    const message = `Method ${request.method} not allowed. Allowed: ${allowedMethods.join(', ')}`;
+    return reply
+      .code(405)
+      .header('Allow', allowedMethods.join(', '))
+      .send({ statusCode: 405, error: 'Method Not Allowed', message });
+  };
+}
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   /** POST /signup — initiate registration, send OTP */
@@ -53,6 +63,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     { preValidation: validate(loginSchema) },
     authController.login
   );
+  app.get('/login', methodNotAllowed(['POST']));
 
   /** POST /google — Google OAuth sign-in */
   app.post(

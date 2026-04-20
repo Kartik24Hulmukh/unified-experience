@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const BASE_URL = (process.env.E2E_WEB_URL ?? process.env.BASE_URL ?? 'http://127.0.0.1:8080').replace(/\/$/, '');
+
 // Run tests in this describe block in parallel.
 test.describe.configure({ mode: 'parallel' });
 
@@ -7,7 +9,7 @@ test.describe('E2E Sync Workflow: Seller, Buyer, Admin', () => {
 
   test('Seller Agent: Creates a new listing', async ({ page }) => {
     // 1. Navigate to create listing
-    await page.goto('https://rgitrozgar.in/create-listing');
+    await page.goto(`${BASE_URL}/create-listing`);
     await page.screenshot({ path: 'test-results/seller-01-navigation.png', fullPage: true });
 
     // 2. Fill Title
@@ -59,7 +61,7 @@ test.describe('E2E Sync Workflow: Seller, Buyer, Admin', () => {
 
   test('Buyer Agent: Browses resale, filters, and contacts seller', async ({ page }) => {
     // 1. Navigate to resale
-    await page.goto('https://rgitrozgar.in/resale');
+    await page.goto(`${BASE_URL}/resale`);
     await page.screenshot({ path: 'test-results/buyer-01-resale-home.png', fullPage: true });
 
     // 2. Filter functionality
@@ -102,11 +104,11 @@ test.describe('E2E Sync Workflow: Seller, Buyer, Admin', () => {
 
   test('Admin Agent: Oversees platform services', async ({ page }) => {
     // 1. Check Admin Dashboard
-    await page.goto('https://rgitrozgar.in/admin');
+    await page.goto(`${BASE_URL}/admin`);
     await page.screenshot({ path: 'test-results/admin-01-dashboard.png', fullPage: true });
 
     // 2. Check Hospitals
-    await page.goto('https://rgitrozgar.in/hospital');
+    await page.goto(`${BASE_URL}/hospital`);
     await page.waitForLoadState('domcontentloaded');
     const hospitalHeader = page.getByRole('heading', { name: /hospital/i }).first();
     if (await hospitalHeader.isVisible()) {
@@ -116,7 +118,7 @@ test.describe('E2E Sync Workflow: Seller, Buyer, Admin', () => {
     }
 
     // 3. Check Mess
-    await page.goto('https://rgitrozgar.in/mess');
+    await page.goto(`${BASE_URL}/mess`);
     await page.waitForLoadState('domcontentloaded');
     const messHeader = page.getByRole('heading', { name: /mess/i }).first();
     if (await messHeader.isVisible()) {
@@ -126,7 +128,7 @@ test.describe('E2E Sync Workflow: Seller, Buyer, Admin', () => {
     }
 
     // 4. Check Jobs
-    await page.goto('https://rgitrozgar.in/jobs');
+    await page.goto(`${BASE_URL}/jobs`);
     await page.waitForLoadState('domcontentloaded');
     const jobsHeader = page.getByRole('heading', { name: /job|career/i }).first();
     if (await jobsHeader.isVisible()) {

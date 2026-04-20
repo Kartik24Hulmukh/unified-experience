@@ -171,6 +171,14 @@ export async function buildApp() {
     return reply.status(serialized.statusCode).send(serialized.body);
   });
 
+  app.setNotFoundHandler(async (_request, reply) => {
+    return reply.status(404).send({
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'Resource not found',
+    });
+  });
+
   // ── Routes ──────────────────────────────────────
   // ── Routes ──────────────────────────────────────
   // Health checks (no prefix, no auth)

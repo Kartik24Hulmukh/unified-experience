@@ -164,7 +164,7 @@ function AuthLogoutRedirectSyncer() {
       replace: true,
       state: { from: `${location.pathname}${location.search}${location.hash}` },
     });
-  }, [isAuthenticated, isHydrated, location.pathname, navigate]);
+  }, [isAuthenticated, isHydrated, location.hash, location.pathname, location.search, navigate]);
 
   return null;
 }
@@ -209,7 +209,10 @@ const App = () => (
                         
                         <Route path="/login" element={<RouteErrorBoundary name="Login"><LoginPage /></RouteErrorBoundary>} />
                         <Route path="/signup" element={<RouteErrorBoundary name="Signup"><SignupPage /></RouteErrorBoundary>} />
+                        <Route path="/register" element={<Navigate to="/signup" replace />} />
                         <Route path="/verify" element={<RouteErrorBoundary name="Verify"><VerificationPage /></RouteErrorBoundary>} />
+                        <Route path="/verify-email" element={<Navigate to="/verify" replace />} />
+                        <Route path="/otp-verification" element={<Navigate to="/verify" replace />} />
                         {/* Dev-only test route — excluded from production builds */}
                         {import.meta.env.DEV && <Route path="/splash-test" element={<SplashTestPage />} />}
 
@@ -239,6 +242,11 @@ const App = () => (
 
                         {/* Admin — restricted to admin role */}
                         <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="Admin"><AdminPage /></RouteErrorBoundary></ProtectedRoute>} />
+                        <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
+                        <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
+                        <Route path="/admin/jobs" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
+                        <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
+                        <Route path="/admin/companies" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
 
                         <Route path="*" element={<NotFound />} />
                       </Routes>

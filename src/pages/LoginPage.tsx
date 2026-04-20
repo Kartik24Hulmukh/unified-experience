@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
+import { APP_VERSION } from "@/lib/app-meta";
 
 // UX-1 FIX: renamed from ErrorBoundary to LoginPageErrorBoundary.
 // The original name shadowed the global @/components/ErrorBoundary in this
@@ -53,12 +54,12 @@ const LoginPage = () => {
         ? (location.state as { from?: string }).from!
         : '/home';
 
-    const getPostLoginDestination = (role: unknown) => {
+    const getPostLoginDestination = useCallback((role: unknown) => {
         if (requestedDestination && requestedDestination !== '/home') {
             return requestedDestination;
         }
         return isAdminRole(role) ? '/admin' : '/home';
-    };
+    }, [requestedDestination]);
 
     useEffect(() => {
         if (isAuthenticated && !authLoading && user) {
@@ -68,7 +69,7 @@ const LoginPage = () => {
                 navigate(destination, { replace: true });
             }
         }
-    }, [isAuthenticated, authLoading, navigate, requestedDestination, user]);
+    }, [authLoading, getPostLoginDestination, isAuthenticated, navigate, user]);
 
     const form = useForm<z.infer<typeof loginSchema>>({
         resolver: zodResolver(loginSchema),
@@ -110,9 +111,9 @@ const LoginPage = () => {
     }
 
     return (
-        <div className="fixed inset-0 z-50 bg-[#020205] overflow-hidden">
-            {/* Ambient Background Gradient for Lanyard Visibility */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 50%, #00BCD4 0%, transparent 70%)' }} />
+        <div className="fixed inset-0 z-50 overflow-hidden bg-[hsl(var(--color-bg))] text-[hsl(var(--color-text))]">
+            {/* Subtle atmosphere without introducing a separate teal page identity */}
+            <div className="absolute inset-0 pointer-events-none opacity-25" style={{ background: 'var(--gradient-auth)' }} />
 
             {/* ── 3D Lanyard Campus ID ── desktop only; Rapier physics is too heavy on mobile ── */}
             {!isMobile && (
@@ -155,7 +156,8 @@ const LoginPage = () => {
                                 type="button"
                                 onClick={handleGoogleClick}
                                 disabled={isGoogleLoading || isLoading}
-                                className="group w-full h-16 mb-6 bg-white hover:bg-gray-100 text-gray-900 font-black text-sm rounded-xl flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                                variant="secondary"
+                                className="group mb-6 flex h-16 w-full items-center justify-center gap-3 rounded-xl bg-white font-black text-sm text-gray-900 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all duration-300 hover:bg-gray-100 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                             >
                                 <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -184,17 +186,19 @@ const LoginPage = () => {
                                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                             <FormField control={form.control} name="email" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormControl><Input placeholder="YOU@MCTRGIT.AC.IN" {...field} className="bg-white/5 border-white/5 text-white h-14 rounded-lg placeholder:text-white/40" /></FormControl>
+                                                    <FormLabel className="text-white/60 text-xs uppercase tracking-widest">Campus Email</FormLabel>
+                                                    <FormControl><Input id="email" data-testid="email-input" autoComplete="email" placeholder="your.name@mctrgit.ac.in" {...field} className="bg-white/5 border-white/5 text-white h-14 rounded-lg placeholder:text-white/30" /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
                                             <FormField control={form.control} name="password" render={({ field }) => (
                                                 <FormItem>
-                                                    <FormControl><Input type="password" placeholder="••••••••" {...field} className="bg-white/5 border-white/5 text-white h-14 rounded-lg placeholder:text-white/40" /></FormControl>
+                                                    <FormLabel className="text-white/60 text-xs uppercase tracking-widest">Password</FormLabel>
+                                                    <FormControl><Input id="password" data-testid="password-input" autoComplete="current-password" type="password" placeholder="Enter your password" {...field} className="bg-white/5 border-white/5 text-white h-14 rounded-lg placeholder:text-white/30" /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
-                                            <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-teal-400 text-black font-black h-16 rounded-xl" style={{ minHeight: 48, minWidth: 48 }}>
+                                            <Button data-testid="login-submit" type="submit" variant="primary" disabled={isLoading} className="h-16 w-full rounded-xl border-white/25 font-black text-white hover:border-white hover:bg-white hover:text-black" style={{ minHeight: 48, minWidth: 48 }}>
                                                 {isLoading ? "AUTHORIZING..." : "ENTER PORTAL"}
                                             </Button>
                                         </form>
@@ -204,7 +208,7 @@ const LoginPage = () => {
                             )}
 
                             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">
-                                <Link to="/signup" className="tap-target px-2 hover:text-primary transition-colors">Request Account</Link>
+                                <Link to="/signup" className="tap-target px-2 hover:text-[hsl(var(--color-accent-primary))] transition-colors">Request Account</Link>
                                 <Link to="/" className="tap-target px-2 hover:text-white transition-colors">Cancel Access</Link>
                             </div>
                         </div>
@@ -212,10 +216,14 @@ const LoginPage = () => {
                 </div>
             </div>
 
-            <div className="absolute bottom-8 left-4 sm:left-12 z-10 pointer-events-none flex flex-col space-y-2 text-[9px] uppercase tracking-[0.5em] text-white/10 font-mono">
+            <div className="absolute bottom-8 left-4 z-10 pointer-events-none flex flex-col space-y-2 text-[9px] uppercase tracking-[0.5em] text-white/10 font-mono sm:left-12">
                 <span>SYSTEM_STATUS: ONLINE</span>
-                <span>AUTH_PROTOCOL: HMAC_HMAC_SHA256</span>
+                <span>AUTH_PROTOCOL: HMAC_SHA256</span>
             </div>
+
+            <footer className="absolute bottom-4 right-4 z-10 text-[9px] font-mono uppercase tracking-[0.3em] text-white/25 sm:right-12">
+                {APP_VERSION} // Campus OS
+            </footer>
         </div>
     );
 };

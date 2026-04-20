@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
 import { useAuth } from '@/contexts/AuthContext';
 import { safeNavigate } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { APP_VERSION } from '@/lib/app-meta';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
 
@@ -243,10 +245,22 @@ const LandingPage = () => {
 
           {/* Status indicator */}
           <div ref={navStatusRef} className="flex items-center gap-3 opacity-0">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="h-2 w-2 animate-pulse rounded-full bg-[hsl(var(--color-status-online))]" />
             <span className="text-white/40 text-[10px] uppercase tracking-[0.3em] font-body hidden md:block">
               System Online
             </span>
+          </div>
+
+          <div className="pointer-events-auto hidden md:block">
+            {isAuthenticated ? (
+              <Button variant="primary" size="sm" onClick={() => safeNavigate(navigate, location.pathname, '/home')}>
+                OPEN HOME
+              </Button>
+            ) : (
+              <Button variant="primary" size="sm" onClick={() => safeNavigate(navigate, location.pathname, '/login')}>
+                LOGIN
+              </Button>
+            )}
           </div>
         </div>
 
@@ -298,17 +312,19 @@ const LandingPage = () => {
 
           {/* CTA Button */}
           <div ref={ctaRef} className="mt-10 md:mt-14 opacity-0">
-            <button
+            <Button
               onClick={handleEnter}
-              className="group relative px-8 md:px-12 py-4 md:py-5 border-2 border-white/20 uppercase font-display text-xs md:text-sm tracking-[0.3em] md:tracking-[0.4em] text-white/80 transition-all duration-600 hover:border-white/60 hover:tracking-[0.6em] cursor-pointer overflow-hidden z-30"
+              variant="primary"
+              size="lg"
+              className="group relative z-30 overflow-hidden px-8 py-4 font-display text-xs tracking-[0.3em] text-white/80 transition-all duration-500 hover:tracking-[0.45em] md:px-12 md:py-5 md:text-sm md:tracking-[0.4em]"
             >
-              <span className="relative z-10 flex items-center gap-3 md:gap-4 transition-colors duration-500 group-hover:text-black">
+              <span className="relative z-10 flex items-center gap-3 transition-colors duration-500 group-hover:text-black md:gap-4">
                 ENTER CAMPUS OS
                 <span className="inline-block transition-transform duration-500 group-hover:translate-x-3 text-lg md:text-xl leading-none">→</span>
               </span>
               {/* Fill animation on hover */}
               <div className="absolute inset-0 bg-white scale-x-0 origin-left transition-transform duration-600 group-hover:scale-x-100" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -334,7 +350,7 @@ const LandingPage = () => {
           {/* Right */}
           <div ref={metaRightRef} className="opacity-0 text-right pointer-events-auto">
             <p className="text-white/15 text-[9px] font-mono tracking-[0.3em] uppercase">
-              v0.1.0 // Campus OS
+              {APP_VERSION} // Campus OS
             </p>
           </div>
         </div>

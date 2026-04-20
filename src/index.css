@@ -42,6 +42,18 @@ html.lenis body {
   :root {
     --context-nav-height: 4.75rem;
 
+    /* Audit token layer (UI-02, UI-07, UI-09) */
+    --color-bg: 0 0% 0%;
+    --color-text: 0 0% 100%;
+    --color-accent-primary: 195 100% 50%;
+    --color-accent-secondary: 78 100% 54%;
+    --color-status-online: 145 72% 44%;
+    --gradient-auth: linear-gradient(180deg, hsl(0 0% 2%) 0%, hsl(0 0% 0%) 100%);
+
+    --text-hero: clamp(2.5rem, 15vw, 11rem);
+    --text-h1: clamp(2rem, 8vw, 5.5rem);
+    --text-h2: clamp(1.5rem, 5vw, 3.2rem);
+
     /* Core White Room Foundation */
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
@@ -207,6 +219,37 @@ html.lenis body {
     letter-spacing: -0.02em;
   }
 
+  h1 {
+    font-size: var(--text-h1);
+  }
+
+  h2 {
+    font-size: var(--text-h2);
+  }
+
+  a,
+  button {
+    transition: color 0.25s var(--transition-smooth), background-color 0.25s var(--transition-smooth), border-color 0.25s var(--transition-smooth), transform 0.25s var(--transition-smooth);
+  }
+
+  a:hover,
+  button:hover {
+    transform: translateY(-1px);
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  [role='button']:focus-visible {
+    outline: 2px solid hsl(var(--color-accent-primary));
+    outline-offset: 2px;
+  }
+
+  a:active,
+  button:active,
+  [role='button']:active {
+    transform: translateY(0);
+  }
+
   /* Hide cursor on touch devices */
   @media (pointer: coarse) {
     .gooey-cursor {
@@ -220,7 +263,7 @@ html.lenis body {
   /* Hero text styles - massive display */
   .text-hero-massive {
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 15vw, 11rem);
+    font-size: var(--text-hero);
     font-weight: 800;
     line-height: 0.9;
     letter-spacing: -0.04em;

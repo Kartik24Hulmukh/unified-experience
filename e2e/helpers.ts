@@ -58,7 +58,30 @@ export async function getLatestOtp(email: string): Promise<string | null> {
 
 /* ─── Admin Seeding ───────────────────────────────── */
 
-const API_BASE = 'http://127.0.0.1:3001';
+const API_BASE = (
+  process.env.E2E_API_URL
+  ?? process.env.E2E_WEB_URL
+  ?? 'http://127.0.0.1:3001'
+).replace(/\/$/, '');
+const API_TIMEOUT_MS = Number(process.env.E2E_API_TIMEOUT_MS ?? 7000);
+
+async function postJson(path: string, body: unknown): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    return await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`API request failed at ${API_BASE}${path}: ${message}`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function ensureStudentVerifiedFixture(
   userId: string,
@@ -113,11 +136,7 @@ export async function ensureAdminUser(
     [randomUUID(), email, otp, expiresAt, createdAt],
   );
 
-  const verifyRes = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, fullName, password, otp }),
-  });
+  const verifyRes = await postJson('/api/auth/verify-otp', { email, fullName, password, otp });
 
   if (!verifyRes.ok) {
     const retryOtp = `${Math.floor(100000 + Math.random() * 900000)}`;
@@ -129,11 +148,7 @@ export async function ensureAdminUser(
       [randomUUID(), email, retryOtp, retryExpires, retryCreated],
     );
 
-    const retryRes = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, fullName, password, otp: retryOtp }),
-    });
+    const retryRes = await postJson('/api/auth/verify-otp', { email, fullName, password, otp: retryOtp });
 
     if (!retryRes.ok) {
       const body = await retryRes.text();
@@ -177,11 +192,7 @@ export async function createVerifiedUser(
   }
 
   const verifyWithOtp = async (otpCode: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, fullName, password, otp: otpCode }),
-    });
+    const res = await postJson('/api/auth/verify-otp', { email, fullName, password, otp: otpCode });
     if (!res.ok) {
       const body = await res.text();
       return { ok: false as const, status: res.status, body };
@@ -269,6 +280,32 @@ export async function getUserTrustData(
     [userId],
   );
   return result.rows[0] ?? null;
+}
+
+export async function updateUserRole(
+  userId: string,
+  role: 'PUBLIC_USER' | 'STUDENT_VERIFIED' | 'ADMIN',
+  verified: boolean,
+): Promise<void> {
+  if (role === 'PUBLIC_USER') {
+    await getPool().query(
+      `UPDATE users
+       SET role = $1,
+           verified = $2,
+           college_student_id = NULL
+       WHERE id = $3`,
+      [role, verified, userId],
+    );
+    return;
+  }
+
+  await getPool().query(
+    `UPDATE users
+     SET role = $1,
+         verified = $2
+     WHERE id = $3`,
+    [role, verified, userId],
+  );
 }
 
 /* ─── Listing/Request Lookup ──────────────────────── */

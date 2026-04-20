@@ -11,6 +11,12 @@
 
 import { defineConfig, devices } from '@playwright/test';
 
+const E2E_WEB_BASE_URL = (
+  process.env.E2E_BASE_URL ??
+  process.env.E2E_WEB_URL ??
+  'http://127.0.0.1:8080'
+).replace(/\/$/, '');
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false, // sequential — tests depend on each other (signup → login → listing → …)
@@ -22,7 +28,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   use: {
-    baseURL: process.env.E2E_WEB_URL ?? 'http://127.0.0.1:8080',
+    baseURL: E2E_WEB_BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

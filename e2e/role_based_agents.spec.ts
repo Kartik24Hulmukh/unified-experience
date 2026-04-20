@@ -1,15 +1,25 @@
 import { test, expect } from '@playwright/test';
+import { ensureAdminUser, createVerifiedUser, updateUserRole } from './helpers';
 
 // Run agents in parallel
 test.describe.configure({ mode: 'parallel' });
 
-const TARGET_URL = process.env.BASE_URL || 'https://rgitrozgar.in';
+const TARGET_URL = process.env.BASE_URL || 'http://127.0.0.1:8080';
+const TEST_RUN = Date.now();
+const E2E_PASSWORD = 'AgentPass@123';
 
 const ACCOUNTS = {
-  admin: { email: 'kartikhulmukh24@gmail.com', password: 'Kartik24@', role: 'Main Admin' },
-  verifiedStudent: { email: 'kadamdnyaeshwari@gmail.com', password: 'Kartik24@', role: 'Verified RGIT Student' },
-  publicUser: { email: 'yashtaur24@gmail.com', password: 'Kartik24@', role: 'Public Guest' }
+  admin: { email: `e2e-agents-admin-${TEST_RUN}@mctrgit.ac.in`, password: E2E_PASSWORD, role: 'Main Admin' },
+  verifiedStudent: { email: `e2e-agents-student-${TEST_RUN}@mctrgit.ac.in`, password: E2E_PASSWORD, role: 'Verified RGIT Student' },
+  publicUser: { email: `e2e-agents-public-${TEST_RUN}@mctrgit.ac.in`, password: E2E_PASSWORD, role: 'Public Guest' }
 };
+
+test.beforeAll(async () => {
+  await ensureAdminUser(ACCOUNTS.admin.email, ACCOUNTS.admin.password, 'E2E Agent Admin');
+  await createVerifiedUser(ACCOUNTS.verifiedStudent.email, ACCOUNTS.verifiedStudent.password, 'E2E Agent Verified Student');
+  const publicUserId = await createVerifiedUser(ACCOUNTS.publicUser.email, ACCOUNTS.publicUser.password, 'E2E Agent Public User');
+  await updateUserRole(publicUserId, 'PUBLIC_USER', true);
+});
 
 async function safeScreenshot(page, path) {
   try {
@@ -43,6 +53,10 @@ async function loginAs(page, contextStr, credentials) {
       await passwordField.fill(credentials.password);
 
       const enterBtn = page.getByRole('button', { name: /ENTER PORTAL|Login|Sign In/i }).first();
+      const loginResponsePromise = page.waitForResponse(
+        (response) => response.url().includes('/api/auth/login') && response.request().method() === 'POST',
+        { timeout: 15000 },
+      );
       if (await enterBtn.isVisible().catch(() => false)) {
         await enterBtn.click({ timeout: 12000 });
         console.log(`[${contextStr}] Clicked login button.`);
@@ -50,8 +64,24 @@ async function loginAs(page, contextStr, credentials) {
         await passwordField.press('Enter');
       }
 
-      await page.waitForURL(/\/home|\/admin|\/resale|\/profile|\/login/, { timeout: 30000 });
+      const loginResponse = await loginResponsePromise;
+      const loginStatus = loginResponse.status();
+      if (loginStatus === 429) {
+        throw new Error(`[${contextStr}] Login rate-limited (429)`);
+      }
+      if (loginStatus !== 200) {
+        const body = await loginResponse.text().catch(() => '');
+        throw new Error(`[${contextStr}] Login failed with status ${loginStatus}. Response: ${body.slice(0, 250)}`);
+      }
+
+      await page.waitForURL(/\/(home|admin|resale|profile)(\/|$)/, { timeout: 30000 });
       await page.waitForTimeout(1200);
+
+      const pathname = new URL(page.url()).pathname;
+      if (pathname === '/login') {
+        throw new Error(`[${contextStr}] Stayed on /login after successful auth response`);
+      }
+
       return;
     } catch (err) {
       lastError = err;
@@ -67,6 +97,19 @@ async function verifyPageNavigationAndScreenshot(page, role, pathName, expectedT
   console.log(`[${role}] Navigating to ${TARGET_URL}${pathName}`);
   await page.goto(`${TARGET_URL}${pathName}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(800);
+
+  if (new URL(page.url()).pathname === '/login') {
+    const credentials = role === 'Admin'
+      ? ACCOUNTS.admin
+      : role === 'Verified Student'
+        ? ACCOUNTS.verifiedStudent
+        : ACCOUNTS.publicUser;
+
+    console.warn(`[${role}] Landed on /login while opening ${pathName}; re-authenticating once.`);
+    await loginAs(page, role, credentials);
+    await page.goto(`${TARGET_URL}${pathName}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForTimeout(800);
+  }
 
   await expect(page).toHaveURL(new RegExp(pathName.replace('/', '\\/')), { timeout: 30000 });
 

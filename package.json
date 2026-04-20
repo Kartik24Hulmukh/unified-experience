@@ -15,6 +15,12 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "npx playwright test",
+    "test:e2e:security-chain": "npx playwright test e2e/security-auth-chain.spec.ts",
+    "test:e2e:security-chain:staging": "npx playwright test e2e/security-auth-chain.staging.spec.ts",
+    "ci:staging-gate:dispatch": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dispatch-staging-security-gate.ps1 -Action dispatch",
+    "ci:staging-gate:latest": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dispatch-staging-security-gate.ps1 -Action latest",
+    "ci:staging-gate:dispatch:dry": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dispatch-staging-security-gate.ps1 -Action dispatch -DryRun",
+    "ci:staging-gate:latest:dry": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/dispatch-staging-security-gate.ps1 -Action latest -DryRun",
     "test:e2e:mobile": "npx playwright test e2e/mobile-launch-checklist.spec.ts",
     "test:e2e:headed": "npx playwright test --headed",
     "test:e2e:ui": "npx playwright test --ui"

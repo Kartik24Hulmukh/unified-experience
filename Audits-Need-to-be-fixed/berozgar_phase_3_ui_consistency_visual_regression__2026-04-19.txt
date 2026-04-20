@@ -1,0 +1,1378 @@
+BErozgar Phase 3 — UI Consistency & Visual
+Regression Audit Report
+BErozgar UI/Visual Regression Audit Report
+rgitrozgar.in — Campus Trust Exchange | MCTRGIT
+April 19, 2026
+Site Version: V0.1.0 | Audit Date: April 19, 2026 | Pages Tested: 4 | Total Issues: 12 | Patterns 
+Tested: 4 of 8
+2Must fix pre-launch
+Critical Issues
+4Fix this sprintHigh 
+Issues
+4Next sprintMedium 
+Issues
+4Requires follow-up
+Untested Patterns
+1. Executive Summary
+Audit Scope & Methodology
+This audit covers the publicly accessible frontend of rgitrozgar.in (BErozgar — Campus Trust 
+Exchange), a campus-facing digital platform built for MCTRGIT. The audit was conducted using a 
+Browser Navigate Agent performing live site traversal across all discoverable routes. Testing 
+encompassed visual regression across navigation patterns, UI consistency across page types, 
+responsive design risk assessment, cross-page state synchronization, and authentication flow 
+validation. The audit was constrained to 30 agent iterations, limiting coverage of interactive states, 
+responsive breakpoints, and certain navigation patterns.
+Overall Assessment
+BErozgar has a strong visual identity on individual pages — each page is well-crafted in isolation 
+— but the site currently operates as four disconnected design systems rather than one cohesive 
+product. The 404 page catastrophically breaks the dark theme with a white background, the login 
+page uses a teal gradient that exists nowhere else, primary CTA buttons have entirely different 
+visual treatments across pages, and navigation presence is unpredictable. At V0.1.0, this is 
+expected, but none of these issues are acceptable for a production launch. The foundation is solid; 
+the design system unification work is the critical path to launch readiness.
+Top 3 Must-Fix Items Before Launch
+1. Fix 404 page dark theme — apply background: #000000 and color: #FFFFFF to the 404 
+page root; this is a one-line CSS fix with maximum visual impact
+Built with Spine AI on 2026-04-19 1
+
+2. Standardize primary button style — choose one CTA pattern (recommend outlined white 
+border on dark backgrounds) and apply it consistently to all pages including /login
+3. Define and enforce navigation presence rules — document when the full nav bar appears vs. 
+is hidden, and ensure the 404 page inherits the same header as /home
+2. Audit Methodology
+Tools & Approach
+Table 1 — Audit Tools and Methodology
+Dimension Detail
+Audit Tool Browser Navigate Agent — live site traversal via 
+automated browser sessions
+Site Under Test https://rgitrozgar.in/ (production URL, V0.1.0)
+Testing Type Visual regression, navigation regression, UI 
+consistency, responsive risk assessment
+Iteration Budget 30 agent iterations (hard constraint)
+Viewport Tested Desktop default (approx. 1280px width)
+Authentication Unauthenticated public routes only; protected 
+routes tested for redirect behavior
+Browser Single browser session — cross-browser testing 
+not performed
+Accessibility Not tested — recommended as follow-up audit
+Pages Tested
+Table 2 — Discovered Routes and Test Coverage
+Route Page Type Auth Required Status Notes
+/ Landing / Splash No Tested Marketing hero 
+page, entry point
+/login Authentication No Tested Login form with 
+email + password
+/home Content Hub No (public) Tested Full nav, event 
+cards, multiple 
+sections
+Built with Spine AI on 2026-04-19 2
+
+/register Registration No Tested Returns 404 — 
+page not 
+implemented
+/dashboard User Dashboard Yes Redirect only Redirects to /login 
+— content not 
+tested
+/jobs Job Listings Yes Redirect only Redirects to /login 
+— content not 
+tested
+/about About Page No Redirect only Redirects to 
+/home — no 
+dedicated page
+Test Patterns: Attempted vs. Completed
+Table 3 — Navigation Pattern Test Coverage
+Pattern Status Outcome
+Landing rightarrow Login 
+rightarrow Landing
+Completed Pass — no layout drift
+Landing rightarrow Login 
+rightarrow Home (via /about 
+redirect)
+Completed Pass — expected page change
+Home rightarrow Login 
+rightarrow Home
+Completed Pass — identical reload
+404 Page Navigation Completed Pass — menu overlay functional
+Browser Back Button Not Tested Requires follow-up
+Page Refresh Mid-Session Not Tested Requires follow-up
+Rapid Tab Switching (5+ 
+switches)
+Not Tested Requires follow-up
+Reopen Session After Close Not Tested Requires follow-up
+4 of 8 navigation patterns were not tested due to the 30-iteration constraint. The untested patterns 
+— browser back button, page refresh, rapid tab switching, and session reopen — represent the 
+highest risk for state management bugs in React SPAs. A dedicated follow-up session is strongly 
+recommended.
+3. Homepage Drift Regression Analysis
+Homepage drift regression tests verify that navigating away from and returning to a page does not 
+Built with Spine AI on 2026-04-19 3
+
+produce stale UI, layout shifts, or incorrect component state. Four of eight planned patterns were executed. All tested patterns 
+passed with no drift detected. The four untested patterns represent unquantified risk and must be completed before launch.
+Table 4 — Homepage Drift Regression Results (All 8 Patterns)
+# Pattern Navigation Path Result Severity
+P1 Landing rightarrow 
+Login rightarrow 
+Landing
+/ rightarrow /login 
+rightarrow /
+PASS — Identical 
+layout on return, 
+no drift, no 
+re-render issues
+None
+P2 Landing rightarrow 
+Login rightarrow 
+Home
+/ rightarrow /login 
+rightarrow /about 
+rightarrow /home
+PASS — Different 
+page loads as 
+expected; no stale 
+state
+None
+P3 Home rightarrow 
+Login rightarrow 
+Home
+/home rightarrow 
+/login rightarrow 
+/home
+PASS — /home 
+reloads identically; 
+no missing data or 
+wrong state
+None
+P4 404 Page 
+Navigation
+/register 
+rightarrow MENU 
+open
+PASS — Menu 
+overlay appears 
+correctly; 
+navigation items 
+accessible
+None
+P5 Browser Back 
+Button
+Forward nav 
+rightarrow browser 
+leftarrow back
+NOT TESTED — 
+Requires follow-up 
+audit
+Untested
+P6 Page Refresh 
+Mid-Session
+F5 / Cmd+R on 
+/dashboard or /jobs
+NOT TESTED — 
+Requires follow-up 
+audit
+Untested
+P7 Rapid Tab 
+Switching
+/jobs leftrightarrow 
+/dashboard 
+leftrightarrow / 
+leftrightarrow 
+/profile (5+ times)
+NOT TESTED — 
+Requires follow-up 
+audit
+Untested
+P8 Reopen Session 
+After Close
+Close browser tab 
+rightarrow reopen 
+app URL
+NOT TESTED — 
+Requires follow-up 
+audit
+Untested
+Key Findings
+• All 4 tested patterns passed with zero layout drift — a strong signal that React component 
+state is being managed correctly for basic navigation
+Built with Spine AI on 2026-04-19 4
+
+• No stale UI, missing data, or wrong state observed on any tested route
+• Loading states ('LOADING' text) are present during page transitions — good UX signal
+• Deep link entry works correctly: /home loads without auth, /dashboard and /jobs redirect to 
+/login as expected
+• Auth redirect behavior is consistent across all protected routes
+• The multi-step path (Home rightarrow Page A rightarrow Page B rightarrow Page C 
+rightarrow Home) is rated Medium risk — breadcrumb/back stack integrity needs verification
+• The 4 untested patterns (P5–P8) are the highest-risk category for React SPA state bugs — 
+browser back button and page refresh are notorious sources of stale state in client-side 
+routing
+4. UI Consistency Audit
+4.1 Color System Analysis
+The site currently has no unified color system. Each page was designed independently, resulting in 
+four distinct color treatments that share no formal token system. The following table documents the 
+color fragmentation across all tested pages.
+Table 5 — Color System Fragmentation Across Pages
+Page Background Primary Text Accent Color Button Style Consistency
+/ (Landing) #000000 solid 
+black
+#FFFFFF 
+white + gray
+Green dot 
+(system online)
+Outlined white 
+border
+—
+/home White hero + 
+black sections
+Black on white 
+/ white on black
+Lime/yellow-gr
+een highlights
+Minimal 
+text-based
+Differs
+/login Dark teal 
+gradient
+#FFFFFF / 
+cyan
+Bright cyan 
+(#00D9FF 
+approx.)
+Filled cyan 
+background
+Differs
+/register (404) WHITE 
+(#FFFFFF)
+Black 
+(inverted)
+Cyan link only Standard link Critical break
+CRITICAL: The 404 page uses a white background (#FFFFFF) while every other page uses a dark 
+theme. This is the most visually jarring inconsistency in the entire site and will be immediately 
+noticed by users who encounter a broken route. Fix: Set background-color: #000000; color: 
+#FFFFFF on the 404 page root element.
+4.2 Typography Audit
+Table 6 — Typography Inconsistencies by Page and Element
+Built with Spine AI on 2026-04-19 5
+
+Element Landing (/) Home (/home) Login (/login) Issue
+Hero/H1 Heading Massive, bold 
+geometric 
+sans-serif
+Smaller section 
+headers
+Card title only No consistent H1 
+scale
+Body Text Weight Light weight Regular weight Regular weight Inconsistent 
+weight on landing
+Footer Font Family Monospace 
+(version numbers)
+Sans-serif (links + 
+columns)
+No footer present Mixed font 
+families in footer
+Navigation Items None visible Standard 
+sans-serif
+Numbered (00, 
+01, etc.) on 404
+Numbered nav 
+only on 404 menu
+System Status 
+Text
+N/A N/A Monospace 
+(SYSTEM_STATU
+S:)
+Monospace used 
+inconsistently
+4.3 Navigation Pattern Inconsistencies
+Three entirely different navigation patterns were discovered across the four tested pages. This is 
+the most disorienting UX issue for users — the presence, absence, and structure of navigation 
+changes unpredictably as users move through the site.
+Table 7 — Three Navigation Patterns Discovered
+Pattern Pages Nav Elements Present Severity
+Pattern A: Minimal / No 
+Nav
+/ (Landing), /login Logo + 'SYSTEM 
+ONLINE' indicator only 
+(Landing); No nav at all 
+(Login)
+High
+Pattern B: Full 
+Navigation
+/home Logo + WELCOME text 
++ LOGIN button + 
+MENU button + theme 
+toggle + notification icon
+— (baseline)
+Pattern C: Full Nav + 
+Wrong Background
+/register (404) Same elements as 
+Pattern B but rendered 
+on white background 
+instead of dark
+Critical
+Additionally, the menu overlay (accessible via the MENU button) reveals navigation items with 
+numeric prefixes (00 HOME, 01 ACADEMICS, 02 ACCOMMODATION, 03 ESSENTIALS, 04 
+RESALE). These numbered items are only visible inside the menu overlay and do not appear in 
+any other navigation context, creating a hidden navigation system that users may never discover.
+Built with Spine AI on 2026-04-19 6
+
+4.4 Button / CTA Inconsistency Analysis
+Table 8 — Primary CTA Button Style Comparison
+Location Button Text Style Backgroun
+d
+Border Text Color Verdict
+/ (Landing) ENTER 
+CAMPUS 
+OS 
+rightarrow
+Outlined Transparent White border White —
+/login ENTER 
+PORTAL
+Filled Bright cyan 
+(~#00D9FF)
+None Dark/black Inconsistent
+/home 
+header
+LOGIN Minimal/text Transparent Minimal White Inconsistent
+/home 
+header
+MENU Minimal/text Transparent Minimal White Inconsistent
+Recommendation: Define a single primary button component with variants. Suggested approach: 
+use the outlined white border style as the primary CTA on dark backgrounds (consistent with the 
+landing page aesthetic), and reserve the filled cyan style as a secondary/accent variant only. 
+Implement as a React Button component accepting a variant prop: variant='primary' | 'secondary' | 
+'ghost'.
+4.5 Header & Footer Inconsistency Analysis
+Table 9 — Header and Footer Presence by Page
+Page Header Present Header Content Footer Present Footer Content
+/ (Landing) Minimal Logo + SYSTEM 
+ONLINE indicator
+Minimal fixed MCTRGIT // 2026 
++ V0.1.0 // 
+CAMPUS OS
+/home Full Logo + 
+WELCOME + 
+LOGIN + MENU + 
+theme toggle + 
+notification
+Full multi-column Links, sections, 
+structured content
+/login None No navigation bar None Only status text: 
+SYSTEM_STATUS
+: ONLINE
+/register (404) Full (broken) Same as /home 
+but white 
+background
+Unknown Not observed
+Built with Spine AI on 2026-04-19 7
+
+4.6 Forms, Cards & Modals
+• Forms: Only one form exists (/login) — dark background input fields with light borders, 
+placeholder text in light gray (YOU@MCTRGIT.AC.IN). No cross-page comparison possible. 
+Error states, focus states, and validation behavior were not tested.
+• Event Cards (/home): 5 event cards observed (TECHFEST 2026, RANGMANCH, 
+SPORTANZA, RESEARCH EXPO, AI/ML SUMMIT). All cards follow a consistent pattern: 
+number label, category, date, title, description, status badge, 'EXPLORE rightarrow' link. This 
+is a positive finding — card consistency is strong.
+• Menu Modal: Full-screen black overlay with numbered navigation items (00–04). Appears on 
+/home and /register (404). Close behavior was not tested. The numbered item style (00, 01, 
+etc.) is unique to this modal and does not appear in any other navigation context.
+• Data Tables: No data tables were visible on any tested page — no cross-page table styling 
+comparison is possible.
+5. Responsive Design Audit
+Responsive testing was limited to visual inspection at the default desktop viewport (approximately 
+1280px). All findings at 375px, 390px, 768px, and 1920px are inferred from desktop layout analysis 
+and represent risk assessments rather than confirmed bugs. Only the 1280px breakpoint was 
+directly tested. A dedicated responsive testing session is required before launch.
+Breakpoint Risk Matrix
+Table 10 — Responsive Design Risk Matrix (All Breakpoints times All Pages)
+Breakpoin
+t
+Device Page Key Risk Overflow 
+Risk
+Layout 
+Break 
+Risk
+Severity Status
+375px iPhone SE / Hero 
+headline 
+overflow; 
+CTA 
+buttons 
+stack 
+awkwardly
+; 
+hamburger 
+menu 
+untested
+Yes (likely) Yes (likely) Critical Inferred
+Built with Spine AI on 2026-04-19 8
+
+375px iPhone SE /home Event 
+card grid 
+collapses 
+to 1-col; 
+card 
+padding 
+excessive; 
+search 
+bar 
+overflow
+Yes (likely) Yes (likely) High Inferred
+375px iPhone SE /login Form 
+fields too 
+wide; 
+padding 
+not 
+adjusted 
+for small 
+screen
+Possible Possible Medium Inferred
+375px iPhone SE /404 404 
+graphic 
+oversized; 
+error text 
+may not 
+wrap 
+correctly
+Yes (likely) Possible Medium Inferred
+390px iPhone 14 / Hero text 
+scaling 
+risk; nav 
+items 
+crowd; 
+hero 
+image 
+aspect 
+ratio 
+distorts
+Possible Possible High Inferred
+390px iPhone 14 /home Card grid 
+renders 
+1-column; 
+filter/sort 
+controls 
+wrap 
+unexpecte
+dly
+Possible Yes (likely) High Inferred
+Built with Spine AI on 2026-04-19 9
+
+390px iPhone 14 /login Button 
+width may 
+not be 
+full-width 
+as 
+expected 
+on mobile
+No Possible Medium Inferred
+390px iPhone 14 /404 Graphic 
+scaling 
+risk; 
+back-to-ho
+me button 
+may be 
+undersized
+Possible Possible Medium Inferred
+768px iPad / Hero 
+layout 
+switches 
+breakpoint 
+awkwardly
+; 
+two-colum
+n layout 
+may not 
+trigger
+Possible Yes (likely) High Inferred
+768px iPad /home Card grid 
+shows 2 
+cols but 
+uneven 
+heights; 
+sidebar 
+may 
+collapse
+No Possible Medium Inferred
+768px iPad /login Form 
+centered 
+but 
+max-width 
+makes it 
+appear 
+too 
+narrow on 
+tablet
+No No Low Inferred
+Built with Spine AI on 2026-04-19 10
+
+768px iPad /404 Layout 
+likely 
+acceptable
+; minor 
+spacing 
+inconsiste
+ncies 
+possible
+No No Low Inferred
+1280px Desktop / Hero 
+section 
+renders 
+correctly; 
+navbar 
+aligned; 
+CTA 
+buttons 
+properly 
+spaced
+No No Low Tested
+1280px Desktop /home Event 
+cards in 
+multi-colu
+mn grid; 
+inconsiste
+nt card 
+heights 
+due to 
+content 
+length
+No Yes 
+(minor)
+Medium Tested
+1280px Desktop /login Form 
+centered 
+with 
+appropriat
+e width; 
+labels and 
+inputs 
+aligned
+No No Low Tested
+1280px Desktop /404 Renders 
+with 
+illustration 
+and error 
+message; 
+'Go Back' 
+button 
+present
+No No Low Tested
+Built with Spine AI on 2026-04-19 11
+
+1920px Large 
+Desktop
+/ Hero 
+content 
+too 
+narrow; 
+excessive 
+whitespac
+e; 
+max-width 
+container 
+may not 
+be set
+No Possible Medium Inferred
+1920px Large 
+Desktop
+/home Card grid 
+stretches 
+to too 
+many 
+columns; 
+cards too 
+wide; 
+readability 
+suffers
+No Possible Medium Inferred
+1920px Large 
+Desktop
+/login Form too 
+narrow 
+relative to 
+viewport; 
+large 
+empty 
+side 
+margins
+No No Low Inferred
+1920px Large 
+Desktop
+/404 Page 
+looks 
+sparse; 
+illustration 
+may not 
+scale up 
+to fill 
+space
+No No Low Inferred
+Priority Responsive Fixes
+1. Hero headline overflow at 375px — Apply clamp() for fluid typography: font-size: 
+clamp(2rem, 8vw, 6rem) on the hero H1 to prevent overflow at small viewports
+2. Event card grid on /home — Ensure CSS Grid uses auto-fill with minmax: 
+grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) to gracefully collapse to 
+1-column on mobile
+3. Max-width container for 1920px — Add max-width: 1440px; margin: 0 auto to the main 
+Built with Spine AI on 2026-04-19 12
+
+content wrapper to prevent excessive whitespace on ultra-wide screens
+4. Login form responsive width — Use width: min(400px, 90vw) on the login card to ensure it 
+scales appropriately from 375px to 1920px without appearing too narrow or too wide
+5. Hamburger menu at 375px — Verify the MENU button is accessible and touch-target size 
+meets 44times44px minimum (WCAG 2.5.5)
+6. Cross-Page State Sync
+Authentication State Behavior
+Table 11 — Authentication State Behavior Findings
+Scenario Expected Behavior Observed Behavior Status
+Access /dashboard 
+without auth
+Redirect to /login Redirects to /login Pass
+Access /jobs without 
+auth
+Redirect to /login Redirects to /login Pass
+Access /home without 
+auth
+Load page (public) Loads correctly Pass
+Access /login directly Load login form Loads correctly Pass
+Auth state indicator on 
+public pages
+Show logged-in/out 
+status
+No visible indicator Gap
+Session persistence 
+after tab close
+Maintain or clear 
+session
+Not tested Untested
+Token expiration 
+handling
+Redirect to /login Not tested Untested
+Data Consistency Findings
+• Home page (/home) displays 5 events consistently: TECHFEST 2026, RANGMANCH, 
+SPORTANZA, RESEARCH EXPO, AI/ML SUMMIT — no stale data indicators observed
+• No data flickering or loading artifacts observed on any tested page
+• 'LOADING' text appears during page transitions — confirms loading state is implemented
+• No stale job listings or dashboard data visible (protected routes not accessible without auth)
+Error Page (404) Findings
+CRITICAL STATE SYNC ISSUE: The 404 error page (/register and any non-existent route) renders 
+with a white background (#FFFFFF) while the entire site uses a dark theme. This is not merely a 
+Built with Spine AI on 2026-04-19 13
+
+styling issue — it signals that the 404 page is not inheriting the global theme context, suggesting the error boundary or Next.js/React 
+Router error page is outside the theme provider tree. Fix: Ensure the 404 page component is wrapped within the ThemeProvider and 
+GlobalStyles context, or explicitly apply dark theme CSS variables to the error page root.
+• 404 page is triggered correctly for /register — the route handling is working
+• A 'Go back home' link is present on the 404 page and is functional
+• The 404 page header shows the full navigation (WELCOME, LOGIN, MENU) — same as 
+/home — but on a white background
+• The menu overlay on the 404 page functions correctly, revealing numbered navigation items
+7. Severity-Ranked Issue Register
+Table 12 — Full Issue Register (Severity-Ranked)
+ID Issue Severity Pages 
+Affected
+Fix 
+Recommendat
+ion
+Effort
+UI-01 404 page uses 
+white 
+background — 
+breaks dark 
+theme entirely
+Critical /register + all 
+404 routes
+Add 
+background-col
+or: #000; 
+color: #fff to 
+404 page root. 
+Ensure error 
+page is inside 
+ThemeProvider 
+tree.
+XS (1–2 hrs)
+UI-02 Inconsistent 
+design 
+systems 
+across all 
+pages — no 
+cohesive brand
+Critical All pages Create design 
+token file 
+(CSS custom 
+properties or 
+JS tokens). 
+Define 
+--color-bg, 
+--color-text, 
+--color-accent, 
+--color-primary. 
+Apply globally.
+L (1–2 sprints)
+Built with Spine AI on 2026-04-19 14
+
+UI-03 Navigation 
+presence 
+inconsistent — 
+3 different nav 
+patterns
+High /, /login, 
+/home, /404
+Define nav 
+visibility rules 
+in a layout 
+component. 
+Use a shared 
+<Header> 
+component 
+with 
+conditional 
+rendering 
+based on 
+route context.
+M (1–3 days)
+UI-04 Primary CTA 
+button styles 
+differ between 
+landing and 
+login
+High /, /login Create a 
+<Button 
+variant='primar
+y'|'secondary'|'
+ghost'> React 
+component. 
+Apply outlined 
+white style as 
+primary on 
+dark 
+backgrounds.
+S (4–8 hrs)
+UI-05 Header height 
+and layout 
+varies 
+significantly 
+across pages
+High /, /home, /404 Standardize 
+header height 
+(e.g., height: 
+64px) in the 
+shared 
+<Header> 
+component. 
+Use CSS 
+min-height to 
+prevent 
+collapse.
+S (4–8 hrs)
+UI-06 Footer absent 
+on /login, 
+minimal on /, 
+full on /home
+High /, /login, /home Define footer 
+strategy: use a 
+shared 
+<Footer> 
+component 
+with a 
+compact 
+variant for 
+auth pages 
+and full variant 
+for content 
+pages.
+S (4–8 hrs)
+Built with Spine AI on 2026-04-19 15
+
+UI-07 Typography 
+scale 
+inconsistent — 
+massive hero 
+vs. small 
+section 
+headers
+Medium /, /home Define 
+typographic 
+scale using 
+CSS clamp() 
+or a type scale 
+system (e.g., 
+--text-hero, 
+--text-h1, 
+--text-h2). 
+Document in 
+design tokens.
+M (1–2 days)
+UI-08 Login page 
+background 
+uses teal 
+gradient — 
+disconnected 
+from site
+Medium /login Replace teal 
+gradient with 
+dark 
+background 
+consistent with 
+site. If gradient 
+is intentional, 
+define it as a 
+design token 
+--gradient-auth.
+XS (1–2 hrs)
+UI-09 Multiple 
+accent colors 
+(green, cyan, 
+yellow-green) 
+without system
+Medium All pages Define 
+--color-accent-
+primary 
+(recommend 
+cyan), 
+--color-accent-
+secondary, 
+--color-status-o
+nline (green). 
+Remove 
+ad-hoc color 
+usage.
+M (1–2 days)
+UI-10 No visible auth 
+state indicator 
+on public 
+pages
+Medium /, /home Add auth state 
+to global 
+header: show 
+user 
+avatar/initials 
+or 'LOGIN' 
+button based 
+on auth 
+context. Use 
+React context 
+or Zustand 
+store.
+M (1–2 days)
+Built with Spine AI on 2026-04-19 16
+
+UI-11 Version 
+number only 
+on landing 
+page footer
+Low / Either add 
+version to all 
+page footers 
+(in compact 
+form) or 
+remove from 
+landing. 
+Recommend 
+keeping in a 
+global footer 
+component.
+XS (<1 hr)
+UI-12 Hover/focus/ac
+tive states not 
+tested — 
+unknown 
+consistency
+Low All interactive 
+elements
+Conduct 
+dedicated 
+interactive 
+state audit. 
+Define :hover, 
+:focus-visible, 
+:active styles 
+in the button 
+and link 
+components.
+S (4–8 hrs)
+8. Design System Debt Assessment
+Current State vs. Ideal State
+Table 13 — Design System Current vs. Ideal State
+Dimension Current State Ideal State Gap Severity
+Color Tokens Ad-hoc hex values per 
+page, no shared 
+variables
+CSS custom properties: 
+--color-bg, 
+--color-surface, 
+--color-text-primary, 
+--color-accent, 
+--color-status-*
+Critical
+Typography Scale Per-page font sizing, no 
+documented scale
+Fluid type scale using 
+clamp(): --text-xs 
+through --text-hero, 
+defined in :root
+High
+Spacing System Inconsistent 
+padding/margin per 
+page
+8px base grid: 
+--space-1 (8px) through 
+--space-16 (128px)
+High
+Built with Spine AI on 2026-04-19 17
+
+Component Library No shared components 
+— pages built 
+independently
+Shared React 
+components: <Button>, 
+<Header>, <Footer>, 
+<Card>, <Input>, 
+<Modal>
+Critical
+Button Variants 2+ incompatible button 
+styles with no shared 
+component
+Single <Button> 
+component with 
+variant='primary'|'second
+ary'|'ghost'|'danger'
+High
+Navigation 3 different nav patterns, 
+no shared <Header> 
+component
+Single <Header> 
+component with props 
+controlling visibility of 
+nav items
+High
+Theme System No theme provider — 
+pages style themselves 
+independently
+React ThemeProvider 
+or CSS custom 
+properties at :root level, 
+applied globally
+Critical
+Error Pages 404 page outside 
+theme context — white 
+background
+Error pages wrapped in 
+ThemeProvider, 
+inheriting global dark 
+theme
+Critical
+Documentation No design system 
+documentation observed
+Storybook or Figma 
+component library with 
+usage guidelines
+Medium
+Missing Design Tokens
+The following CSS custom properties should be defined in a global :root block and consumed by all 
+components. This eliminates the current pattern of hardcoded hex values scattered across 
+page-level stylesheets.
+• Color tokens: --color-bg-primary (#000000), --color-bg-surface (#0A0A0A), 
+--color-text-primary (#FFFFFF), --color-text-secondary (#808080), --color-accent-cyan 
+(#00D9FF), --color-accent-green (#00FF88), --color-status-online (#22C55E)
+• Typography tokens: --text-hero (clamp(3rem, 8vw, 7rem)), --text-h1 (clamp(2rem, 4vw, 
+3.5rem)), --text-h2 (1.75rem), --text-body (1rem), --text-small (0.875rem), --font-sans ('Inter', 
+sans-serif), --font-mono ('JetBrains Mono', monospace)
+• Spacing tokens: --space-1 (8px), --space-2 (16px), --space-3 (24px), --space-4 (32px), 
+--space-6 (48px), --space-8 (64px), --space-12 (96px)
+• Component tokens: --header-height (64px), --border-radius-sm (4px), --border-radius-md 
+(8px), --border-radius-lg (16px), --border-width (1px), --transition-fast (150ms ease), 
+--transition-base (250ms ease)
+Built with Spine AI on 2026-04-19 18
+
+Recommended Tooling
+Table 14 — Recommended Design System Tooling
+Tool Purpose Priority
+CSS Custom Properties (:root) Design tokens — colors, 
+spacing, typography. Zero 
+dependencies, works with any 
+framework.
+Immediate
+Storybook Component library 
+documentation and visual 
+regression baseline. Integrates 
+with Chromatic for automated 
+visual diffs.
+Short-term
+Chromatic Automated visual regression 
+testing in CI/CD. Catches 
+unintended UI changes on every 
+PR.
+Short-term
+Figma Design Tokens Plugin Sync design tokens between 
+Figma and codebase. Ensures 
+design and code stay in sync.
+Medium-term
+ESLint + stylelint Enforce no hardcoded color 
+values in CSS/JS. Lint rules to 
+require token usage.
+Short-term
+Playwright / Cypress End-to-end visual regression and 
+navigation pattern testing. 
+Automates the 8 navigation 
+patterns.
+Medium-term
+9. Fix Roadmap
+Sprint 1 — Critical (Pre-Launch Blockers)
+These items must be resolved before any public launch. Each is a high-visibility issue that will be 
+immediately noticed by users or stakeholders.
+Table 15 — Sprint 1: Critical Pre-Launch Fixes
+Built with Spine AI on 2026-04-19 19
+
+Item Issue ID Action Owner Effort
+Fix 404 dark 
+theme
+UI-01 Set 
+background-color: 
+#000; color: #fff 
+on 404 page root. 
+Wrap error page 
+in ThemeProvider.
+Frontend Dev 1–2 hrs
+Define global color 
+tokens
+UI-02 Create tokens.css 
+with CSS custom 
+properties for all 
+colors. Replace all 
+hardcoded hex 
+values.
+Frontend Dev 4–8 hrs
+Standardize 
+primary button
+UI-04 Build <Button 
+variant='primary'> 
+React component. 
+Apply to landing 
+CTA and login 
+CTA.
+Frontend Dev 4–8 hrs
+Fix login page 
+background
+UI-08 Replace teal 
+gradient with 
+--color-bg-primary 
+(#000) or define 
+as intentional 
+token.
+Frontend Dev 1–2 hrs
+Wrap all pages in 
+ThemeProvider
+UI-02 Ensure all routes 
+including error 
+pages inherit 
+global theme 
+context.
+Frontend Dev 2–4 hrs
+Sprint 2 — High (This Sprint)
+Table 16 — Sprint 2: High Priority Fixes
+Item Issue ID Action Owner Effort
+Shared <Header> 
+component
+UI-03, UI-05 Build single 
+<Header> 
+component with 
+showNav, 
+showAuth props. 
+Standardize 
+height: 64px.
+Frontend Dev 1–2 days
+Built with Spine AI on 2026-04-19 20
+
+Shared <Footer> 
+component
+UI-06 Build <Footer 
+variant='full'|'comp
+act'|'none'>. Apply 
+compact to /login, 
+full to /home.
+Frontend Dev 1 day
+Navigation 
+presence rules
+UI-03 Document and 
+implement: 
+Landing = minimal 
+header, Auth 
+pages = no nav, 
+Content pages = 
+full nav.
+Frontend Dev + 
+Design
+4–8 hrs
+Responsive 
+testing at 375px, 
+768px
+Responsive Test all 4 pages at 
+375px and 768px. 
+Fix hero overflow 
+with clamp(), fix 
+card grid with 
+auto-fill.
+Frontend Dev + 
+QA
+1–2 days
+Auth state 
+indicator
+UI-10 Add conditional 
+LOGIN/avatar to 
+<Header> based 
+on auth context. 
+Use React context 
+or Zustand.
+Frontend Dev 4–8 hrs
+Sprint 3 — Medium (Next Sprint)
+Table 17 — Sprint 3: Medium Priority Improvements
+Item Issue ID Action Owner Effort
+Typography scale 
+system
+UI-07 Define --text-* 
+tokens using 
+clamp(). Apply 
+consistently 
+across all pages.
+Frontend Dev + 
+Design
+1–2 days
+Accent color 
+system
+UI-09 Define 
+--color-accent-prim
+ary (cyan), 
+--color-accent-seco
+ndary. Remove 
+ad-hoc 
+green/yellow-green
+.
+Frontend Dev + 
+Design
+4–8 hrs
+Built with Spine AI on 2026-04-19 21
+
+Responsive 
+testing at 390px, 
+1920px
+Responsive Test remaining 
+breakpoints. Fix 
+max-width 
+container for 
+1920px.
+Frontend Dev + 
+QA
+1 day
+Complete 
+navigation 
+regression 
+patterns P5–P8
+P5–P8 Test browser back 
+button, page 
+refresh, rapid tab 
+switching, session 
+reopen.
+QA 4–8 hrs
+Interactive state 
+audit
+UI-12 Test and 
+document hover, 
+focus, active, 
+disabled states for 
+all interactive 
+elements.
+QA + Frontend 
+Dev
+1 day
+Backlog — Low Priority
+• UI-11: Standardize version number display — add to global footer component or remove 
+from landing page
+• Set up Storybook for component library documentation
+• Integrate Chromatic for automated visual regression in CI/CD pipeline
+• Conduct WCAG 2.1 accessibility audit — keyboard navigation, screen reader compatibility, 
+color contrast ratios
+• Cross-browser testing — Chrome, Firefox, Safari, Edge at all breakpoints
+• Performance audit — page load times, animation smoothness, Core Web Vitals (LCP, CLS, 
+FID)
+• Implement design tokens sync between Figma and codebase using Figma Tokens plugin
+10. Positive Findings
+Despite the design system inconsistencies, BErozgar demonstrates a strong technical foundation 
+and a genuinely compelling visual aesthetic. The issues identified are structural and fixable — they 
+do not indicate poor engineering, but rather the natural state of a V0.1.0 product built before a 
+formal design system was established.
+Table 18 — Positive Findings from Audit
+Built with Spine AI on 2026-04-19 22
+
+# Positive Finding Why It Matters
+1 Zero layout drift on navigation — 
+all 4 tested patterns show 
+identical page states on return
+Confirms React component state 
+management is working correctly 
+for basic navigation flows
+2 Consistent logo treatment — 
+logo remains same size and 
+position on all pages with 
+navigation
+Brand anchor point is stable; 
+users can always orient 
+themselves via the logo
+3 Event cards on /home have 
+perfectly consistent styling 
+across all 5 cards
+Demonstrates the team can build 
+consistent component systems 
+— this pattern should be 
+extended site-wide
+4 Auth redirects work correctly — 
+/dashboard and /jobs both 
+redirect to /login without auth
+Security-critical behavior is 
+implemented correctly; no 
+unauthorized access to protected 
+routes
+5 Loading states are present — 
+'LOADING' text appears during 
+page transitions
+Good UX signal; users are not 
+left with blank screens during 
+navigation
+6 No broken elements observed — 
+no 404 images, no broken links 
+on tested pages
+Content integrity is maintained; 
+the site is production-stable in 
+terms of asset loading
+7 Clean, modern design aesthetic 
+— individual pages are 
+well-crafted and visually striking
+The design vision is strong; the 
+work needed is unification, not 
+redesign
+11. Appendix
+A. All Discovered Routes with Access Levels
+Table 19 — Complete Route Inventory
+Route Access Level Behavior Content
+/ Public Loads landing page Marketing hero: 
+'BUILDING CAMPUS 
+TRUST', CTA button, 
+minimal nav
+Built with Spine AI on 2026-04-19 23
+
+/login Public Loads login form Email + password form, 
+ENTER PORTAL 
+button, system status 
+text
+/home Public (no auth required) Loads content hub Full nav, 5 event cards, 
+multiple content 
+sections, full footer
+/register Public Returns 404 error 404 page with white 
+background (critical 
+issue), 'Go back home' 
+link
+/about Public Redirects to /home No dedicated about 
+page — redirect 
+behavior
+/dashboard Protected Redirects to /login Content not accessible 
+without authentication
+/jobs Protected Redirects to /login Content not accessible 
+without authentication
+B. Testing Limitations and Untested Patterns
+Table 20 — Testing Limitations and Recommended Follow-up Actions
+Test Category Status Risk Level Recommended Action
+Browser back button 
+navigation
+Not tested High Test in follow-up 
+session — common 
+source of stale state in 
+React SPAs
+Page refresh 
+mid-session
+Not tested High Test F5/Cmd+R on 
+/dashboard and /jobs — 
+verify auth state persists
+Rapid tab switching (5+ 
+switches)
+Not tested Medium Test /jobs leftrightarrow 
+/dashboard 
+leftrightarrow / 
+leftrightarrow /profile 
+repeated 5+ timesSession reopen after 
+tab close
+Not tested Medium Verify session token 
+persistence in 
+localStorage/cookies
+Responsive breakpoints 
+(375px, 390px, 768px, 
+1920px)
+Not tested Critical Dedicated responsive 
+testing session required 
+before launch
+Built with Spine AI on 2026-04-19 24
+
+Interactive states 
+(hover, focus, active, 
+disabled)
+Not tested Medium Audit all interactive 
+elements for consistent 
+state styling
+Form validation and 
+error states
+Not tested Medium Test /login with invalid 
+credentials, empty 
+fields, malformed email
+Modal close behavior Not tested Low Test MENU modal close 
+via Escape key, click 
+outside, close button
+Cross-browser testing Not tested Medium Test Chrome, Firefox, 
+Safari, Edge at 1280px 
+minimum
+Accessibility (WCAG 
+2.1)
+Not tested High Screen reader, 
+keyboard navigation, 
+color contrast audit
+Session expiration 
+behavior
+Not tested Medium Verify expired token 
+handling — should 
+redirect to /login 
+gracefully
+Protected route content 
+(/dashboard, /jobs)
+Not tested Medium Requires authenticated 
+session — test with 
+valid credentials
+C. Recommended Follow-Up Audit Scope
+1. Responsive Audit Session — Test all 4 pages at 375px, 390px, 768px, and 1920px using 
+browser DevTools device emulation. Document all overflow and layout break issues with 
+screenshots.
+2. Navigation Regression Completion — Complete patterns P5–P8: browser back button, page 
+refresh, rapid tab switching, and session reopen. Use Playwright for automated execution.
+3. Authenticated Route Audit — Log in with valid credentials and audit /dashboard and /jobs for 
+UI consistency, data loading states, and navigation behavior.
+4. Interactive State Audit — Systematically test hover, focus, active, and disabled states for all 
+buttons, links, form inputs, and interactive components across all pages.
+5. Accessibility Audit — Run axe-core or Lighthouse accessibility scan. Test keyboard 
+navigation (Tab, Enter, Escape). Verify color contrast ratios meet WCAG 2.1 AA (4.5:1 for 
+normal text, 3:1 for large text).
+6. Post-Fix Regression — After Sprint 1 and Sprint 2 fixes are deployed, re-run the full audit to 
+verify no regressions were introduced by the design system unification work.
+Table 21 — Audit Summary Record
+Built with Spine AI on 2026-04-19 25
+
+Field Value
+Audit Date April 19, 2026
+Site Version V0.1.0 // CAMPUS OS
+Site URL https://rgitrozgar.in/
+Pages Tested 4 (/, /login, /home, /register-404)
+Total Issues Found 12 (2 Critical, 4 High, 4 Medium, 2 Low)
+Navigation Patterns Tested 4 of 8
+Responsive Breakpoints Confirmed 1 of 5 (1280px only)
+Overall Launch Readiness NOT READY — 2 critical issues must be resolved 
+before production launch
+Audit Tool Browser Navigate Agent — Live Site Traversal
+Next Audit Recommended Post Sprint 1 & 2 fixes — estimated 2–3 weeks
+Built with Spine AI on 2026-04-19 26

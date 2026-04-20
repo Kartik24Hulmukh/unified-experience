@@ -27,6 +27,8 @@ const navItems: NavItem[] = [
   { label: 'Resale', path: '/resale', number: '04' },
 ];
 
+const HIDDEN_NAV_ROUTES = new Set(['/login', '/signup', '/verify', '/admin']);
+
 const ContextNav = memo(function ContextNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
@@ -62,7 +64,6 @@ const ContextNav = memo(function ContextNav() {
   // Kill ScrollTriggers when leaving animated pages (runs on all routes)
   useScrollTriggerCleanup();
 
-  const isAuthPage = ['/login', '/signup', '/verify'].includes(location.pathname);
   const isLandingPage = location.pathname === '/';
   const isHomepage = location.pathname === '/home';
 
@@ -190,7 +191,7 @@ const ContextNav = memo(function ContextNav() {
   }, [logout, navigate, queryClient]);
 
   // ── Early return AFTER all hooks ──
-  if (isAuthPage || isLandingPage || location.pathname === '/admin') return null;
+  if (isLandingPage || HIDDEN_NAV_ROUTES.has(location.pathname)) return null;
 
   const isNavDark = isDark || isMenuOpen;
 
@@ -209,7 +210,7 @@ const ContextNav = memo(function ContextNav() {
           transition: 'opacity 0.4s ease, color 0.4s ease',
         }}
       >
-        <div className="safe-area-top flex min-w-0 items-center justify-between gap-2 px-4 py-4 sm:px-6 md:px-12 md:py-6">
+        <div className="safe-area-top flex h-[64px] min-w-0 items-center justify-between gap-2 px-4 sm:px-6 md:px-12">
           {/* Logo */}
           <Link
             to="/home"
@@ -243,7 +244,7 @@ const ContextNav = memo(function ContextNav() {
               <Link
                 to="/create-listing"
                 onClick={(e) => handleNavClick(e, '/create-listing')}
-                className={`tap-target flex items-center justify-center bg-[#a3ff12] text-black hover:bg-[#8ade0e] transition-colors rounded-sm px-3 py-1.5 md:px-4 md:py-2 border border-transparent shadow-[0_0_15px_rgba(163,255,18,0.2)] hover:shadow-[0_0_20px_rgba(163,255,18,0.4)]`}
+                className="tap-target flex items-center justify-center rounded-sm border border-transparent bg-[hsl(var(--color-accent-secondary))] px-3 py-1.5 text-black shadow-[0_0_15px_hsl(var(--color-accent-secondary)/0.25)] transition-colors hover:bg-[hsl(var(--color-accent-secondary)/0.85)] hover:shadow-[0_0_20px_hsl(var(--color-accent-secondary)/0.45)] md:px-4 md:py-2"
                 aria-label="Create Listing"
               >
                 <span className="hidden sm:block text-[10px] md:text-xs uppercase tracking-widest font-bold">Sell / List</span>
@@ -266,7 +267,7 @@ const ContextNav = memo(function ContextNav() {
                     {user?.fullName?.split(' ')[0] || 'Profile'}
                   </span>
                 </div>
-                <div className={`relative w-8 h-8 rounded-full border border-current flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:border-[#a3ff12] ${isNavDark ? 'border-portal-foreground' : 'border-foreground'}`}>
+                <div className={`relative w-8 h-8 rounded-full border border-current flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:scale-110 group-hover:border-[hsl(var(--color-accent-secondary))] ${isNavDark ? 'border-portal-foreground' : 'border-foreground'}`}>
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${isNavDark ? 'bg-portal-foreground text-portal' : 'bg-black text-white'}`}>
                     {user?.fullName?.[0] || 'U'}
                   </div>
@@ -418,7 +419,7 @@ const ContextNav = memo(function ContextNav() {
                     <Link
                       to="/admin"
                       onClick={(e) => handleNavClick(e, '/admin')}
-                      className="text-[#a3ff12] text-xs uppercase tracking-widest hover:opacity-80 transition-opacity"
+                      className="text-[hsl(var(--color-accent-secondary))] text-xs uppercase tracking-widest hover:opacity-80 transition-opacity"
                     >
                       Admin Panel →
                     </Link>
@@ -428,7 +429,7 @@ const ContextNav = memo(function ContextNav() {
                 <Link
                   to="/login"
                   onClick={(e) => handleNavClick(e, '/login')}
-                  className="tap-target text-portal-foreground font-display text-lg hover:text-[#a3ff12] transition-colors"
+                  className="tap-target text-portal-foreground font-display text-lg hover:text-[hsl(var(--color-accent-secondary))] transition-colors"
                 >
                   Sign In →
                 </Link>

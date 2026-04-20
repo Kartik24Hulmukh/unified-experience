@@ -10,6 +10,10 @@ import rateLimit from '@fastify/rate-limit';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { env } from '@/config/env';
 
+type RateLimitErrorContext = Parameters<
+  NonNullable<import('@fastify/rate-limit').RateLimitOptions['errorResponseBuilder']>
+>[1];
+
 /**
  * Per-route rate limit overrides.
  * Key = "METHOD /path", value = { max, timeWindow }.
@@ -94,7 +98,7 @@ export async function registerRateLimit(app: FastifyInstance): Promise<void> {
       // Authenticated routes: keyed by userId (survives IP change / VPN)
       return request.userId ?? request.ip;
     },
-    errorResponseBuilder: (_request: FastifyRequest, context: any) => ({
+    errorResponseBuilder: (_request: FastifyRequest, context: RateLimitErrorContext) => ({
       statusCode: 429,
       error: 'Too many requests',
       code: 'RATE_LIMIT_EXCEEDED',

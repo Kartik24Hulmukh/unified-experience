@@ -640,7 +640,7 @@ export async function googleSignIn(
 export async function refreshAccessToken(
   rawOldToken: string,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<{ tokens: AuthTokens; user: any }> {
+): Promise<{ tokens: AuthTokens; user: NonNullable<ReturnType<typeof sanitizeUser>> }> {
   const hashedOldToken = hashToken(rawOldToken);
 
   const record = await prisma.refreshToken.findUnique({

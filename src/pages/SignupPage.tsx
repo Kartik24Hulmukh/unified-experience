@@ -105,7 +105,7 @@ const SignupPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 {/* Form Column */}
                 <div className="order-1 relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-l from-primary/20 to-teal-500/20 rounded-2xl blur-xl transition-all duration-1000 group-hover:opacity-100 opacity-50" />
+                    <div className="absolute -inset-1 rounded-2xl bg-gradient-to-l from-primary/20 to-[hsl(var(--color-accent-primary)/0.2)] blur-xl opacity-50 transition-all duration-1000 group-hover:opacity-100" />
 
                     <div className="relative z-10 bg-[#0a0a0a] border border-white/10 p-8 md:p-12 rounded-2xl shadow-2xl backdrop-blur-3xl overflow-hidden">
                         {/* ── Google Sign-In — Primary CTA ── */}
@@ -114,7 +114,8 @@ const SignupPage = () => {
                             type="button"
                             onClick={handleGoogleClick}
                             disabled={isGoogleLoading || isLoading}
-                            className="w-full h-14 mb-4 bg-white hover:bg-gray-50 text-gray-800 font-bold text-base rounded-xl flex items-center justify-center gap-3 transition-all duration-300 border border-gray-200 shadow-lg hover:shadow-xl hover:scale-[1.01]"
+                            variant="secondary"
+                            className="mb-4 flex h-14 w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white text-base font-bold text-gray-800 shadow-lg transition-all duration-300 hover:scale-[1.01] hover:bg-gray-50 hover:shadow-xl"
                         >
                             <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -165,6 +166,9 @@ const SignupPage = () => {
                                                 <div className="relative">
                                                     <User className="absolute left-0 top-3 w-4 h-4 text-white/30" />
                                                     <Input
+                                                        id="fullName"
+                                                        data-testid="signup-full-name-input"
+                                                        autoComplete="name"
                                                         placeholder="John Doe"
                                                         {...field}
                                                         className="bg-black/50 border-white/10 text-white h-12 rounded-none border-b-2 border-x-0 border-t-0 pl-8 focus-visible:ring-0 focus-visible:border-primary transition-all duration-300"
@@ -186,6 +190,9 @@ const SignupPage = () => {
                                                 <div className="relative">
                                                     <Mail className="absolute left-0 top-3 w-4 h-4 text-white/30" />
                                                     <Input
+                                                        id="email"
+                                                        data-testid="signup-email-input"
+                                                        autoComplete="email"
                                                         placeholder="you@mctrgit.ac.in"
                                                         {...field}
                                                         className="bg-black/50 border-white/10 text-white h-12 rounded-none border-b-2 border-x-0 border-t-0 pl-8 focus-visible:ring-0 focus-visible:border-primary transition-all duration-300"
@@ -207,6 +214,9 @@ const SignupPage = () => {
                                                 <div className="relative">
                                                     <Shield className="absolute left-0 top-3 w-4 h-4 text-white/30" />
                                                     <Input
+                                                        id="password"
+                                                        data-testid="signup-password-input"
+                                                        autoComplete="new-password"
                                                         type="password"
                                                         placeholder="••••••••"
                                                         {...field}
@@ -221,9 +231,11 @@ const SignupPage = () => {
 
                                 <div className="flex flex-col space-y-4 pt-4">
                                     <Button
+                                        data-testid="signup-submit"
                                         type="submit"
                                         disabled={isLoading || isGoogleLoading}
-                                        className="w-full bg-primary hover:bg-teal-400 text-black font-bold h-14 rounded-none group relative overflow-hidden transition-all duration-500"
+                                        variant="primary"
+                                        className="group relative h-14 w-full overflow-hidden rounded-none border-white/25 font-bold text-white transition-all duration-500 hover:border-white hover:bg-white hover:text-black"
                                     >
                                         <span className="relative z-10 flex items-center justify-center space-x-2">
                                             {isLoading ? "REQUESTING ACCESS..." : "REQUEST ACCESS"}

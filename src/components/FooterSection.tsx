@@ -1,6 +1,7 @@
 import { useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { APP_VERSION } from '@/lib/app-meta';
 
 const PRINCIPLES = [
   { title: 'Trust First',         desc: 'Verified users, admin oversight' },
@@ -121,7 +122,7 @@ const FooterSection = () => {
         className="absolute inset-0 pointer-events-none opacity-[0.03]"
         style={{
           backgroundImage:
-            'linear-gradient(rgba(163,255,18,1) 1px, transparent 1px), linear-gradient(90deg, rgba(163,255,18,1) 1px, transparent 1px)',
+            'linear-gradient(hsl(var(--color-accent-secondary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--color-accent-secondary)) 1px, transparent 1px)',
           backgroundSize: '100px 100px',
         }}
       />
@@ -130,11 +131,11 @@ const FooterSection = () => {
         
         {/* ── Eyebrow Tag ────────────────────────────────────────────────────── */}
         <div className="ftr-eyebrow flex items-center justify-center gap-4 mb-8">
-          <div className="h-px w-8 bg-[#a3ff12]/30 hidden sm:block" />
-          <span className="text-[#a3ff12] font-mono text-[9px] uppercase tracking-[0.5em] font-medium">
+          <div className="hidden h-px w-8 bg-[hsl(var(--color-accent-secondary)/0.3)] sm:block" />
+          <span className="font-mono text-[9px] font-medium uppercase tracking-[0.5em] text-[hsl(var(--color-accent-secondary))]">
             Institutional Platform
           </span>
-          <div className="h-px w-8 bg-[#a3ff12]/30 hidden sm:block" />
+          <div className="hidden h-px w-8 bg-[hsl(var(--color-accent-secondary)/0.3)] sm:block" />
         </div>
 
         {/* ── Heading ────────────────────────────────────────────────────────── */}
@@ -183,8 +184,8 @@ const FooterSection = () => {
         {/* ── Principles Grid ────────────────────────────────────────────────── */}
         <div className="ftr-principles grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-24">
           {PRINCIPLES.map((p) => (
-            <div key={p.title} className="ftr-principle border-l border-[#a3ff12]/20 pl-6 group">
-              <h3 className="text-portal-foreground font-display text-sm uppercase tracking-wider mb-3 group-hover:text-[#a3ff12] transition-colors duration-300">
+            <div key={p.title} className="ftr-principle group border-l border-[hsl(var(--color-accent-secondary)/0.2)] pl-6">
+              <h3 className="mb-3 font-display text-sm uppercase tracking-wider text-portal-foreground transition-colors duration-300 group-hover:text-[hsl(var(--color-accent-secondary))]">
                 {p.title}
               </h3>
               <p className="text-portal-foreground/50 text-[12px] font-body leading-relaxed">
@@ -201,10 +202,10 @@ const FooterSection = () => {
           <div className="flex flex-col lg:flex-row justify-between items-center gap-6 pb-4">
             {/* Logo/Context Branding */}
             <div className="ftr-bottom-text flex items-center gap-3">
-               <div className="w-8 h-8 rounded-sm bg-[#a3ff12] flex items-center justify-center font-display font-bold text-black text-[12px]">B</div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-[hsl(var(--color-accent-secondary))] font-display text-[12px] font-bold text-black">B</div>
                <div className="flex flex-col">
                   <span className="text-portal-foreground font-display text-[11px] uppercase tracking-tighter leading-none">BErozgar</span>
-                  <span className="text-portal-foreground/30 font-mono text-[8px] uppercase tracking-[0.2em] leading-none mt-1">Campus Portal v1.4</span>
+                <span className="mt-1 font-mono text-[8px] uppercase leading-none tracking-[0.2em] text-portal-foreground/30">Campus Portal {APP_VERSION}</span>
                </div>
             </div>
 

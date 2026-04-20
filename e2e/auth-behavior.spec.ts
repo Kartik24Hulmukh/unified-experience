@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { getLatestOtp } from './helpers';
 
+const BASE_URL = (process.env.E2E_WEB_URL ?? process.env.BASE_URL ?? 'http://127.0.0.1:8080').replace(/\/$/, '');
 const TEST_EMAIL = `e2e-auth-behavior-${Math.floor(Date.now() / 1000)}@mctrgit.ac.in`;
 const TEST_PASS = 'TestPass@123!';
 
@@ -8,7 +9,7 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
     test.describe.configure({ mode: 'serial' });
 
     test('Phase 1 — Signup (Email): User created only after OTP verification with correct defaults', async ({ page }) => {
-        await page.goto('http://127.0.0.1:5173/signup', { waitUntil: 'domcontentloaded' });
+        await page.goto(`${BASE_URL}/signup`, { waitUntil: 'domcontentloaded' });
         // Expand email form when CTA is present (some builds render it expanded by default).
         const signupCta = page.getByText(/or sign up with email|use legacy mail/i).first();
         if (await signupCta.isVisible().catch(() => false)) {
@@ -16,8 +17,8 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
         }
 
         await page.getByPlaceholder('John Doe').fill('Behavioral User');
-        await page.getByPlaceholder('you@mctrgit.ac.in').fill(TEST_EMAIL);
-        const passwordInput = page.getByPlaceholder('••••••••');
+        await page.locator('input[type="email"], input[name="email"], input[autocomplete="email"], [placeholder*="mctrgit" i], [placeholder*="email" i]').first().fill(TEST_EMAIL);
+        const passwordInput = page.locator('input[type="password"], input[name="password"], input[autocomplete="new-password"], input[autocomplete="current-password"]').first();
         await passwordInput.fill(TEST_PASS);
 
         const signupResponsePromise = page.waitForResponse((response) => (
@@ -61,7 +62,7 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
         // Setup: Tab 1 (Main) — use desktop viewport so the Logout button (hidden sm:flex) is visible
         const page1 = await context.newPage();
         await page1.setViewportSize({ width: 1280, height: 720 });
-        await page1.goto('http://127.0.0.1:5173/login', { waitUntil: 'domcontentloaded' });
+        await page1.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
 
         // Expand email form only if not already shown — when GIS is unavailable
         // (headless), the form is expanded by default and the button reads "HIDE AUTH".
@@ -69,8 +70,8 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
         if (await legacyMailBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
             await legacyMailBtn.click();
         }
-        await page1.getByPlaceholder('YOU@MCTRGIT.AC.IN').fill(TEST_EMAIL);
-        await page1.getByPlaceholder('••••••••').fill(TEST_PASS);
+        await page1.locator('input[type="email"], input[name="email"], input[autocomplete="email"], [placeholder*="mctrgit" i], [placeholder*="email" i]').first().fill(TEST_EMAIL);
+        await page1.locator('input[type="password"], input[name="password"], input[autocomplete="current-password"]').first().fill(TEST_PASS);
         await page1.getByRole('button', { name: /ENTER PORTAL/i }).click();
 
         // Wait for /home
@@ -79,7 +80,7 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
         // Setup: Tab 2 (Secondary)
         const page2 = await context.newPage();
         await page2.setViewportSize({ width: 1280, height: 720 });
-        await page2.goto('http://127.0.0.1:5173/profile', { waitUntil: 'domcontentloaded' });
+        await page2.goto(`${BASE_URL}/profile`, { waitUntil: 'domcontentloaded' });
         // Because of the hydration fix in AuthContext, Tab 2 should successfully call /auth/refresh and remain on the protected route.
         await expect(page2).toHaveURL(/\/profile/, { timeout: 20000 });
 
@@ -99,7 +100,7 @@ test.describe('Authentication Flow - Behavioral Tests', () => {
                 bc.close();
             });
             await page1.context().clearCookies();
-            await page1.goto('http://127.0.0.1:5173/login', { waitUntil: 'domcontentloaded' });
+            await page1.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
         }
 
         // Result: Tab 1 should be on /login. Tab 2 may or may not auto-redirect

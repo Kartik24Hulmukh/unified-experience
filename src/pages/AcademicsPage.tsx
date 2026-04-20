@@ -6,7 +6,7 @@ import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
 import ListingFormModal from '@/components/ListingFormModal';
 import ResourceListingForm from '@/components/ResourceListingForm';
-import { Search, X, Plus } from 'lucide-react';
+import { Search, X, Plus, ExternalLink } from 'lucide-react';
 import { useListings } from '@/hooks/api/useApi';
 
 const academicsHero = '/Academics.jpg';
@@ -27,12 +27,52 @@ const ACADEMIC_CATEGORIES = [
 // ScrollTrigger registered in lib/gsap-init.ts
 
 const branches = [
-  { code: 'CSE', name: 'Computer Science', semesters: 8 },
+  { code: 'CSE', name: 'Computer Engineering', semesters: 8 },
   { code: 'ECE', name: 'Electronics & Communication', semesters: 8 },
   { code: 'ME', name: 'Mechanical Engineering', semesters: 8 },
   { code: 'CE', name: 'Civil Engineering', semesters: 8 },
   { code: 'EE', name: 'Electrical Engineering', semesters: 8 },
 ];
+
+const CSE_SEMESTER_RESOURCE_GROUPS = [
+  {
+    key: 'sem-1-2-3',
+    label: 'Sem 1, 2, 3',
+    semesters: [1, 2, 3],
+    url: 'https://drive.google.com/drive/folders/1SdVyh6wYBLOWvuloJIykuM1hBr2F3NY0',
+  },
+  {
+    key: 'sem-5',
+    label: 'Sem 5',
+    semesters: [5],
+    url: 'https://drive.google.com/drive/folders/1XKilsUKiHpJQObljYkkhlYbGyBgTIqIe',
+  },
+  {
+    key: 'sem-6',
+    label: 'Sem 6',
+    semesters: [6],
+    url: 'https://drive.google.com/drive/folders/1qS_rpSTqOhxhipQwG4Sl2qGkbxMRS4l0',
+  },
+  {
+    key: 'sem-7',
+    label: 'Sem 7',
+    semesters: [7],
+    url: 'https://drive.google.com/drive/folders/1eG00TIjxjpkQCctDnSEEHLMGYxS5Xqum?usp=drive_link',
+  },
+  {
+    key: 'sem-8',
+    label: 'Sem 8',
+    semesters: [8],
+    url: 'https://drive.google.com/drive/folders/1hEEnnS0tkT8tRJfnQ9bPnuJ62Lo9YRWI',
+  },
+];
+
+const CSE_SEMESTER_RESOURCE_MAP = CSE_SEMESTER_RESOURCE_GROUPS.reduce<Record<number, string>>((acc, group) => {
+  group.semesters.forEach((sem) => {
+    acc[sem] = group.url;
+  });
+  return acc;
+}, {});
 
 const resources = [
   { type: 'Syllabus', icon: '📋', desc: 'Official curriculum and course structure' },
@@ -332,6 +372,72 @@ const AcademicsPage = () => {
                 </button>
               ))}
             </div>
+
+            {selectedBranch === 'CSE' && (
+              <div className="mt-12 space-y-6">
+                <div className="flex flex-col gap-2">
+                  <p className="text-portal-foreground/40 text-xs uppercase tracking-widest">
+                    CSE Academic PDF Repositories
+                  </p>
+                  <h3 className="text-portal-foreground font-display text-2xl sm:text-3xl font-bold">
+                    Semester-Wise Google Drive Links
+                  </h3>
+                  <p className="text-portal-foreground/60 text-sm max-w-3xl">
+                    Open the semester folder to access all uploaded PDFs for that semester section.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {CSE_SEMESTER_RESOURCE_GROUPS.map((group) => {
+                    const isActive = selectedSemester ? group.semesters.includes(selectedSemester) : false;
+
+                    return (
+                      <div
+                        key={group.key}
+                        className={`border p-5 transition-colors ${isActive
+                          ? 'border-portal-foreground bg-portal-foreground/10'
+                          : 'border-portal-foreground/15 bg-black/20 hover:border-portal-foreground/40'
+                          }`}
+                      >
+                        <p className="text-portal-foreground font-bold uppercase tracking-widest text-xs mb-2">
+                          {group.label}
+                        </p>
+                        <p className="text-portal-foreground/50 text-[11px] mb-4 uppercase tracking-wider">
+                          {group.semesters.length > 1
+                            ? `Includes Sem ${group.semesters.join(', ')}`
+                            : `Includes Sem ${group.semesters[0]}`}
+                        </p>
+                        <a
+                          href={group.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 border border-portal-foreground/40 text-portal-foreground text-[11px] uppercase tracking-widest font-bold hover:bg-portal-foreground hover:text-portal transition-colors"
+                        >
+                          Open Folder
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {selectedSemester === 4 && (
+                  <div className="border border-amber-400/30 bg-amber-400/10 px-4 py-3">
+                    <p className="text-amber-300 text-xs uppercase tracking-widest font-bold">
+                      Sem 4 folder link is not provided yet.
+                    </p>
+                  </div>
+                )}
+
+                {selectedSemester !== null && selectedSemester !== 4 && !CSE_SEMESTER_RESOURCE_MAP[selectedSemester] && (
+                  <div className="border border-amber-400/30 bg-amber-400/10 px-4 py-3">
+                    <p className="text-amber-300 text-xs uppercase tracking-widest font-bold">
+                      No folder is configured for the selected semester.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       )}

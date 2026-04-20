@@ -197,7 +197,8 @@ const VerificationPage = () => {
                         <Button
                             onClick={handleVerify}
                             disabled={isBusy || otp.length < 6}
-                            className="w-full bg-primary hover:bg-teal-400 text-black font-bold h-14 rounded-none group relative overflow-hidden transition-all duration-500"
+                            variant="primary"
+                            className="group relative h-14 w-full overflow-hidden rounded-none border-white/25 font-bold text-white transition-all duration-500 hover:border-white hover:bg-white hover:text-black"
                         >
                             <span className="relative z-10 flex items-center justify-center space-x-2">
                                 {isBusy ? "VERIFYING..." : "VERIFY & LOGIN"}

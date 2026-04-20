@@ -832,8 +832,8 @@ const AdminPage = () => {
                                                 </TableHeader>
                                                 <TableBody>
                                                     {filteredFraudUsers.map((flag) => (
-                                                        <TableRow key={flag.userId} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
-                                                            <TableCell className="font-mono text-[10px] text-primary font-bold">{flag.userId?.slice(0, 8) ?? '--'}</TableCell>
+                                                        <TableRow key={flag.userId || 'unknown'} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
+                                                            <TableCell className="font-mono text-[10px] text-primary font-bold">{flag.userId && flag.userId.length > 0 ? flag.userId.slice(0, 8) : '--'}</TableCell>
                                                             <TableCell>
                                                                 <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${flag.riskLevel === 'HIGH' ? 'border-red-500/30 text-red-400' : flag.riskLevel === 'MEDIUM' ? 'border-amber-500/30 text-amber-400' : 'border-white/20 text-white/60'}`}>
                                                                     {flag.riskLevel ?? 'UNKNOWN'}
@@ -880,9 +880,9 @@ const AdminPage = () => {
                                              {filteredAuditLogs.map((log) => (
                                                  <TableRow key={log.id} className="border-white/5 hover:bg-primary/5 transition-all duration-300">
                                                      <TableCell className="text-[10px] font-mono text-white/40">{new Date(log.timestamp).toLocaleString()}</TableCell>
-                                                     <TableCell className="text-xs font-bold uppercase tracking-tight">{log.actorId.slice(0, 8)} <span className="text-white/30">({log.actorRole})</span></TableCell>
+                                                     <TableCell className="text-xs font-bold uppercase tracking-tight">{log.actorId && log.actorId.length > 0 ? log.actorId.slice(0, 8) : '--'} <span className="text-white/30">({log.actorRole ?? 'unknown'})</span></TableCell>
                                                      <TableCell><Badge variant="outline" className="border-primary/30 text-primary text-[8px] uppercase tracking-widest">{log.action.replace(/_/g, ' ')}</Badge></TableCell>
-                                                     <TableCell className="text-[10px] font-mono text-white/40">{log.targetType}/{log.targetId.slice(0, 8)}</TableCell>
+                                                     <TableCell className="text-[10px] font-mono text-white/40">{log.targetType}/{log.targetId && log.targetId.length > 0 ? log.targetId.slice(0, 8) : '--'}</TableCell>
                                                      <TableCell className="text-xs text-white/40 max-w-xs truncate">{log.details ?? '--'}</TableCell>
                                                  </TableRow>
                                              ))}

@@ -6,13 +6,11 @@
  * Per-route configs applied at route-level via routeConfig.
  */
 
-import rateLimit from '@fastify/rate-limit';
+import rateLimit, { type errorResponseBuilderContext } from '@fastify/rate-limit';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { env } from '@/config/env';
 
-type RateLimitErrorContext = Parameters<
-  NonNullable<import('@fastify/rate-limit').RateLimitOptions['errorResponseBuilder']>
->[1];
+type RateLimitErrorContext = errorResponseBuilderContext;
 
 /**
  * Per-route rate limit overrides.

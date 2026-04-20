@@ -640,7 +640,7 @@ export async function googleSignIn(
 export async function refreshAccessToken(
   rawOldToken: string,
   meta?: { userAgent?: string; ipAddress?: string },
-): Promise<{ tokens: AuthTokens; user: NonNullable<ReturnType<typeof sanitizeUser>> }> {
+): Promise<{ tokens: AuthTokens; user: SanitizedUser }> {
   const hashedOldToken = hashToken(rawOldToken);
 
   const record = await prisma.refreshToken.findUnique({
@@ -842,7 +842,14 @@ export async function getCurrentUser(userId: string) {
    Helpers
    ═══════════════════════════════════════════════════ */
 
-function sanitizeUser(user: User | null) {
+export type SanitizedUser = Omit<User, 'password' | 'failedLoginAttempts' | 'lockedUntil'> & {
+  provider: 'GOOGLE' | 'EMAIL';
+  collegeLinked: boolean;
+};
+
+export function sanitizeUser(user: User): SanitizedUser;
+export function sanitizeUser(user: null): null;
+export function sanitizeUser(user: User | null): SanitizedUser | null {
   if (!user) return null;
   const { password, failedLoginAttempts, lockedUntil, ...safe } = user;
   return {

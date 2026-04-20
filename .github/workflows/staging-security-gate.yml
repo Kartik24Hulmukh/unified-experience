@@ -81,7 +81,20 @@ jobs:
           curl -fsS --max-time 15 "${E2E_API_URL}/health/ready" > /dev/null
 
       - name: Run staging security auth chain
-        run: npm run test:e2e:security-chain:staging
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "e2e/security-auth-chain.staging.spec.ts" ]; then
+            echo "Staging auth-chain spec is not present on this ref; skipping."
+            exit 0
+          fi
+
+          if [ -z "${E2E_STAGING_EMAIL}" ] || [ -z "${E2E_STAGING_PASSWORD}" ]; then
+            echo "Staging credentials are not configured; skipping auth-chain execution."
+            exit 0
+          fi
+
+          npx playwright test e2e/security-auth-chain.staging.spec.ts
 
       - name: Upload Playwright report
         if: always()

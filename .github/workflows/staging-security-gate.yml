@@ -18,6 +18,7 @@ jobs:
     timeout-minutes: 25
     environment: staging
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       E2E_WEB_URL: ${{ vars.E2E_STAGING_WEB_URL || 'https://staging.berozgar.in' }}
       E2E_API_URL: ${{ vars.E2E_STAGING_API_URL || vars.E2E_STAGING_WEB_URL || 'https://staging.berozgar.in' }}
       E2E_STAGING_EMAIL: ${{ secrets.E2E_STAGING_EMAIL || '' }}

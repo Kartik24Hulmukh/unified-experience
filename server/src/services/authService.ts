@@ -450,7 +450,7 @@ export async function login(
     user.role = 'ADMIN';
     user.privilegeLevel = 'SUPER';
     isRoleUpdated = true;
-  } else if (!isAdmin && collegeRecord && user.role !== 'STUDENT_VERIFIED') {
+  } else if (!isAdmin && collegeRecord && user.role !== 'STUDENT_VERIFIED' && user.role !== 'ADMIN') {
     user.role = 'STUDENT_VERIFIED';
     user.collegeStudentId = collegeRecord.id;
     isRoleUpdated = true;
@@ -775,7 +775,7 @@ export async function getCurrentUser(userId: string) {
     user.role = 'ADMIN';
     user.privilegeLevel = 'SUPER';
     isRoleUpdated = true;
-  } else if (!isAdmin && collegeRecord && user.role !== 'STUDENT_VERIFIED') {
+  } else if (!isAdmin && collegeRecord && user.role !== 'STUDENT_VERIFIED' && user.role !== 'ADMIN') {
     user.role = 'STUDENT_VERIFIED';
     user.collegeStudentId = collegeRecord.id;
     isRoleUpdated = true;

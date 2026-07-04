@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
+import { CollegeVerificationBanner } from '@/components/CollegeVerificationBanner';
 import GlitchText from '@/components/GlitchText';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import { useTypewriter } from '@/hooks/useTypewriter';
@@ -670,6 +671,7 @@ const AccommodationPage = () => {
       {/* ═══════════════ BROWSE LISTINGS ═══════════════ */}
       <section ref={browseRef} className="py-10 sm:py-16 md:py-20 px-4 sm:px-8 md:px-16 border-t border-white/5 reveal-section">
         <div className="max-w-7xl mx-auto space-y-16">
+          <CollegeVerificationBanner />
           <div className="flex items-center gap-4 mb-4">
             <Search className="w-4 h-4 text-cyan-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">

@@ -86,7 +86,21 @@ export const createListingSchema = z.object({
   title: safeString(200),
   description: safeString(2000).optional(),
   category: safeString(100).optional(),
-  module: safeString(100).optional(),
+  module: z
+    .enum([
+      'ACCOMMODATION',
+      'RESALE',
+      'ACADEMICS',
+      'MESS',
+      'HOSPITAL',
+      'accommodation',
+      'resale',
+      'academics',
+      'mess',
+      'hospital',
+    ])
+    .transform((val) => val.toUpperCase())
+    .optional(),
   price: z.number({ coerce: true }).nonnegative('Price must be non-negative').default(0),
 });
 

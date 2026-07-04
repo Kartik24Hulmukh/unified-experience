@@ -99,15 +99,17 @@ model Listing {
   updatedAt   DateTime      @updatedAt @map("updated_at")
   category    String?
   description String?
-  module      String?
+  module      ListingModule?
   disputes    Dispute[]     @relation("DisputeListing")
   owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   requests    Request[]
+  images      ListingImage[]
 
   @@index([ownerId])
   @@index([status])
   @@index([category])
   @@index([createdAt(sort: Desc)])
+  @@index([module])
   @@map("listings")
 }
 
@@ -240,4 +242,58 @@ enum DisputeType {
   ITEM_NOT_AS_DESCRIBED
   NO_SHOW
   OTHER
+}
+
+enum ListingModule {
+  ACCOMMODATION
+  RESALE
+  ACADEMICS
+  MESS
+  HOSPITAL
+}
+
+model ListingImage {
+  id        String   @id @default(uuid())
+  listingId String   @map("listing_id")
+  url       String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("listing_images")
+}
+
+model MessProvider {
+  id           String   @id @default(uuid())
+  name         String
+  type         String   // "canteen" | "tiffin" | "cloud_kitchen"
+  location     String?
+  timings      String?
+  priceRange   String?  @map("price_range")
+  cuisine      String[]
+  contactPhone String?  @map("contact_phone")
+  rating       Float?   @default(0)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("mess_providers")
+}
+
+model Hospital {
+  id             String   @id @default(uuid())
+  name           String
+  type           String   // "campus" | "hospital" | "clinic" | "dispensary"
+  address        String
+  distance       String?
+  specialties    String[]
+  contactPhone   String?  @map("contact_phone")
+  emergencyPhone String?  @map("emergency_phone")
+  rating         Float?   @default(0)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("hospitals")
 }

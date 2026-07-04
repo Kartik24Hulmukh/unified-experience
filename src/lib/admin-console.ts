@@ -1,6 +1,6 @@
 import type { AuditLogEntry, Dispute, FraudDashboardData, PendingItem } from '@/hooks/api/useApi';
 
-export type AdminTab = 'pending' | 'users' | 'disputes' | 'fraud' | 'logs' | 'activity';
+export type AdminTab = 'pending' | 'users' | 'disputes' | 'fraud' | 'logs' | 'activity' | 'mess' | 'hospital';
 
 function includesQuery(parts: Array<string | undefined>, query: string): boolean {
   const normalized = query.trim().toLowerCase();
@@ -21,6 +21,10 @@ export function getAdminSearchConfig(activeTab: AdminTab): { enabled: boolean; p
       return { enabled: true, placeholder: 'Search audit logs...' };
     case 'fraud':
       return { enabled: true, placeholder: 'Search fraud flags...' };
+    case 'mess':
+      return { enabled: true, placeholder: 'Search mess providers...' };
+    case 'hospital':
+      return { enabled: true, placeholder: 'Search hospitals...' };
     default:
       return { enabled: false, placeholder: 'Search unavailable on this tab' };
   }

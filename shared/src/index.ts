@@ -81,7 +81,20 @@ export const createListingSchema = z.object({
   title: safeString(200),
   price: z.string().max(20).optional().default('0'),
   category: safeString(100),
-  module: z.enum(validModules, { errorMap: () => ({ message: 'Invalid module' }) }),
+  module: z
+    .enum([
+      'ACCOMMODATION',
+      'RESALE',
+      'ACADEMICS',
+      'MESS',
+      'HOSPITAL',
+      'accommodation',
+      'resale',
+      'academics',
+      'mess',
+      'hospital',
+    ])
+    .transform((val) => val.toUpperCase()),
   description: z.string().max(2000).optional(),
 });
 

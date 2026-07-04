@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (!isHydrated) {
-      timer = setTimeout(() => setHydrationTimeout(true), 20000);
+      timer = setTimeout(() => setHydrationTimeout(true), 6000);
     }
     return () => {
       if (timer) clearTimeout(timer);

@@ -10,10 +10,10 @@ interface SEOProps {
   image?: string;
 }
 
-export function SEO({ title, description, type = 'website', name = 'BErozgar', image = 'https://berozgar.in/logo.png' }: SEOProps) {
+export function SEO({ title, description, type = 'website', name = 'BErozgar', image = 'https://rgitrozgar.in/logo.png' }: SEOProps) {
   const isOrganization = type === 'website';
   const location = useLocation();
-  const currentUrl = `https://berozgar.in${location.pathname}`;
+  const currentUrl = `https://rgitrozgar.in${location.pathname}`;
   
   // Base Schema for the entire Campus Platform
   const schemaData = {
@@ -21,7 +21,7 @@ export function SEO({ title, description, type = 'website', name = 'BErozgar', i
     "@type": isOrganization ? "Organization" : "WebPage",
     "name": name,
     "url": currentUrl,
-    "logo": "https://berozgar.in/logo.png",
+    "logo": "https://rgitrozgar.in/logo.png",
     "description": description,
     "sameAs": [
       "https://twitter.com/Berozgar",

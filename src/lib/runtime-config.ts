@@ -120,7 +120,7 @@ const STAGING_CONFIG: RuntimeConfig = {
     scanIntervalMs: 10 * 60_000, // 10 min
     staleTtlMs: 48 * 60 * 60_000, // 48 hours
   },
-  allowedOrigins: ['https://staging.berozgar.in'],
+  allowedOrigins: ['https://staging.rgitrozgar.in'],
 };
 
 const PRODUCTION_CONFIG: RuntimeConfig = {
@@ -140,7 +140,7 @@ const PRODUCTION_CONFIG: RuntimeConfig = {
     scanIntervalMs: 10 * 60_000, // 10 min
     staleTtlMs: 48 * 60 * 60_000, // 48 hours
   },
-  allowedOrigins: ['https://berozgar.in', 'https://www.berozgar.in'],
+  allowedOrigins: ['https://rgitrozgar.in', 'https://www.rgitrozgar.in'],
 };
 
 /* ═══════════════════════════════════════════════════

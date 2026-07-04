@@ -14,7 +14,9 @@ import {
     Search,
     Filter,
     RefreshCw,
-    Home
+    Home,
+    Heart,
+    Coffee
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -61,7 +63,9 @@ import { canRunAdminRecovery, canModerateContent } from '@/lib/user-journey';
 import {
     useAdminPending, useAdminStats, useUpdateListingStatus,
     useDisputes, useUpdateDisputeStatus, useAdminAuditLog, useAdminFraudDashboard, useAdminRecovery,
-    useAdminUsers, useUpdateUserStatus
+    useAdminUsers, useUpdateUserStatus,
+    useMessProviders, useCreateMessProvider, useUpdateMessProvider, useDeleteMessProvider,
+    useHospitals, useCreateHospital, useUpdateHospital, useDeleteHospital
 } from '@/hooks/api/useApi';
 import type { PendingItem, Dispute, AuditLogEntry } from '@/hooks/api/useApi';
 import {
@@ -85,6 +89,10 @@ const AdminPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [confirmation, setConfirmation] = useState<ConfirmationState>(null);
     const [isConfirmationLocked, setIsConfirmationLocked] = useState(false);
+    const [editingMess, setEditingMess] = useState<any>(null);
+    const [editingHospital, setEditingHospital] = useState<any>(null);
+    const [isMessFormOpen, setIsMessFormOpen] = useState(false);
+    const [isHospitalFormOpen, setIsHospitalFormOpen] = useState(false);
     // Track which detail dialog is open (keyed by listing id) so we can close it after actions
     const [openDialogs, setOpenDialogs] = useState<Record<string, boolean>>({});
     const containerRef = useRef<HTMLDivElement>(null);
@@ -103,10 +111,23 @@ const AdminPage = () => {
     const { data: auditResponse, isLoading: auditLoading } = useAdminAuditLog();
     const { data: fraudResponse, isLoading: fraudLoading } = useAdminFraudDashboard();
 
+    const { data: messResponse } = useMessProviders();
+    const { data: hospitalResponse } = useHospitals();
+    
+    const createMess = useCreateMessProvider();
+    const updateMess = useUpdateMessProvider();
+    const deleteMess = useDeleteMessProvider();
+    
+    const createHospital = useCreateHospital();
+    const updateHospital = useUpdateHospital();
+    const deleteHospital = useDeleteHospital();
+
     const disputes = useMemo(() => disputesResponse?.data ?? [], [disputesResponse?.data]);
     const auditLogs = useMemo(() => auditResponse?.data ?? [], [auditResponse?.data]);
     const fraudData = fraudResponse?.data ?? null;
     const fraudUsers = useMemo(() => fraudData?.flaggedUsers ?? [], [fraudData]);
+    const messProviders = useMemo(() => messResponse?.data ?? [], [messResponse?.data]);
+    const hospitalProviders = useMemo(() => hospitalResponse?.data ?? [], [hospitalResponse?.data]);
 
     const [userPage, setUserPage] = useState(1);
     const { data: usersResponse, isLoading: usersLoading, refetch: refetchUsers } = useAdminUsers(
@@ -340,6 +361,8 @@ const AdminPage = () => {
                         { id: 'fraud', label: 'Fraud Dashboard', icon: Activity },
                         { id: 'logs', label: 'System Logs', icon: Terminal },
                         { id: 'activity', label: 'Live Metrics', icon: Activity },
+                        { id: 'mess', label: 'Mess Directory', icon: Coffee },
+                        { id: 'hospital', label: 'Hospital Directory', icon: Heart },
                     ].map((item) => (
                         <button
                             key={item.id}
@@ -917,6 +940,361 @@ const AdminPage = () => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* ═══ MESS TAB ═══ */}
+                    {activeTab === 'mess' && (
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Mess Directory</h3>
+                                <Button
+                                    onClick={() => {
+                                        setEditingMess(null);
+                                        setIsMessFormOpen(true);
+                                    }}
+                                    className="rounded-none bg-primary text-black hover:bg-teal-400 font-bold uppercase text-[10px] tracking-widest"
+                                >
+                                    Add Mess Provider
+                                </Button>
+                            </div>
+
+                            <div className="border border-white/10 bg-black/20 overflow-x-auto">
+                                <Table>
+                                    <TableHeader className="bg-white/[0.02]">
+                                        <TableRow className="border-b border-white/10">
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Name</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Type</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Location</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Timings</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Price Range</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Cuisine</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Contact</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40 text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {messProviders.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={8} className="text-center py-8 text-white/30 text-xs font-mono uppercase tracking-widest">
+                                                    No mess providers listed
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            messProviders.map((provider) => (
+                                                <TableRow key={provider.id} className="border-b border-white/5 hover:bg-white/[0.01]">
+                                                    <TableCell className="font-bold text-sm text-white">{provider.name}</TableCell>
+                                                    <TableCell className="text-xs text-white/60 font-mono capitalize">{provider.type}</TableCell>
+                                                    <TableCell className="text-xs text-white/60">{provider.location ?? '--'}</TableCell>
+                                                    <TableCell className="text-xs text-white/60">{provider.timings ?? '--'}</TableCell>
+                                                    <TableCell className="text-xs text-white/60">{provider.priceRange ?? '--'}</TableCell>
+                                                    <TableCell className="text-xs text-white/60">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {provider.cuisine.map((c, i) => (
+                                                                <Badge key={i} variant="outline" className="text-[9px] uppercase border-white/10 text-white/60">
+                                                                    {c}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs text-white/60 font-mono">{provider.contactPhone ?? '--'}</TableCell>
+                                                    <TableCell className="text-right space-x-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setEditingMess(provider);
+                                                                setIsMessFormOpen(true);
+                                                            }}
+                                                            className="text-primary hover:text-teal-400 hover:bg-primary/5 rounded-none font-bold uppercase text-[9px] tracking-wider"
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setConfirmation({
+                                                                    title: 'Delete Mess Provider?',
+                                                                    description: `Are you sure you want to delete ${provider.name}? This will remove it from the directory.`,
+                                                                    confirmLabel: 'Delete',
+                                                                    variant: 'destructive',
+                                                                    onConfirm: () => deleteMess.mutate(provider.id),
+                                                                });
+                                                            }}
+                                                            className="text-red-400 hover:text-red-300 hover:bg-red-500/5 rounded-none font-bold uppercase text-[9px] tracking-wider"
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Create/Edit Mess Dialog */}
+                            <Dialog open={isMessFormOpen} onOpenChange={setIsMessFormOpen}>
+                                <DialogContent className="bg-[#0a0a0a] border-white/10 text-white rounded-none">
+                                    <DialogHeader>
+                                        <DialogTitle className="font-display text-2xl font-bold uppercase tracking-widest text-primary">
+                                            {editingMess ? 'Edit Mess Provider' : 'Add Mess Provider'}
+                                        </DialogTitle>
+                                        <DialogDescription className="text-white/40">
+                                            Enter the details for this official/verified mess service.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <form
+                                        onSubmit={async (e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            const payload = {
+                                                name: formData.get('name') as string,
+                                                type: formData.get('type') as string,
+                                                location: formData.get('location') as string || undefined,
+                                                timings: formData.get('timings') as string || undefined,
+                                                priceRange: formData.get('priceRange') as string || undefined,
+                                                cuisine: (formData.get('cuisine') as string || '').split(',').map(s => s.trim()).filter(Boolean),
+                                                contactPhone: formData.get('contactPhone') as string || undefined,
+                                            };
+
+                                            try {
+                                                if (editingMess) {
+                                                    await updateMess.mutateAsync({ id: editingMess.id, ...payload });
+                                                    toast({ title: 'Success', description: 'Mess provider updated successfully.' });
+                                                } else {
+                                                    await createMess.mutateAsync(payload);
+                                                    toast({ title: 'Success', description: 'Mess provider created successfully.' });
+                                                }
+                                                setIsMessFormOpen(false);
+                                            } catch (err) {
+                                                toast({ title: 'Error', description: 'Failed to save mess provider.', variant: 'destructive' });
+                                            }
+                                        }}
+                                        className="space-y-4 pt-4"
+                                    >
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Name</label>
+                                            <Input name="name" defaultValue={editingMess?.name ?? ''} required className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. RGIT Main Canteen" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Type</label>
+                                            <select name="type" defaultValue={editingMess?.type ?? 'canteen'} className="w-full bg-black/40 border border-white/10 rounded-none text-white text-sm px-3 py-2 focus:outline-none focus:border-primary">
+                                                <option value="canteen">Canteen</option>
+                                                <option value="tiffin">Tiffin Service</option>
+                                                <option value="cloud_kitchen">Cloud Kitchen</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Location</label>
+                                            <Input name="location" defaultValue={editingMess?.location ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. Ground Floor, Main Block" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Timings</label>
+                                                <Input name="timings" defaultValue={editingMess?.timings ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. 8:00 AM - 8:00 PM" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Price Range</label>
+                                                <Input name="priceRange" defaultValue={editingMess?.priceRange ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. 50-150" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Cuisines (comma separated)</label>
+                                            <Input name="cuisine" defaultValue={editingMess?.cuisine?.join(', ') ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. North Indian, Chinese, Snacks" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Contact Phone</label>
+                                            <Input name="contactPhone" defaultValue={editingMess?.contactPhone ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. +91 98765 43210" />
+                                        </div>
+                                        <div className="flex justify-end space-x-2 pt-4">
+                                            <Button type="button" variant="outline" onClick={() => setIsMessFormOpen(false)} className="rounded-none border-white/10 hover:bg-white/5">Cancel</Button>
+                                            <Button type="submit" className="rounded-none bg-primary text-black hover:bg-teal-400 font-bold uppercase text-[10px] tracking-widest">
+                                                {createMess.isPending || updateMess.isPending ? 'Saving...' : 'Save Provider'}
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                    )}
+
+                    {/* ═══ HOSPITAL TAB ═══ */}
+                    {activeTab === 'hospital' && (
+                        <div className="space-y-6">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-display font-bold uppercase tracking-widest border-l-2 border-primary pl-4">Hospital Directory</h3>
+                                <Button
+                                    onClick={() => {
+                                        setEditingHospital(null);
+                                        setIsHospitalFormOpen(true);
+                                    }}
+                                    className="rounded-none bg-primary text-black hover:bg-teal-400 font-bold uppercase text-[10px] tracking-widest"
+                                >
+                                    Add Facility
+                                </Button>
+                            </div>
+
+                            <div className="border border-white/10 bg-black/20 overflow-x-auto">
+                                <Table>
+                                    <TableHeader className="bg-white/[0.02]">
+                                        <TableRow className="border-b border-white/10">
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Name</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Type</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Address</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Distance</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Specialties</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Contact</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40">Emergency</TableHead>
+                                            <TableHead className="text-[10px] uppercase tracking-wider font-bold text-white/40 text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {hospitalProviders.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={8} className="text-center py-8 text-white/30 text-xs font-mono uppercase tracking-widest">
+                                                    No medical facilities listed
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            hospitalProviders.map((hospital) => (
+                                                <TableRow key={hospital.id} className="border-b border-white/5 hover:bg-white/[0.01]">
+                                                    <TableCell className="font-bold text-sm text-white">{hospital.name}</TableCell>
+                                                    <TableCell className="text-xs text-white/60 font-mono capitalize">{hospital.type}</TableCell>
+                                                    <TableCell className="text-xs text-white/60 max-w-[150px] truncate">{hospital.address}</TableCell>
+                                                    <TableCell className="text-xs text-white/60 font-mono">{hospital.distance ?? '--'}</TableCell>
+                                                    <TableCell className="text-xs text-white/60">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {hospital.specialties.map((s, i) => (
+                                                                <Badge key={i} variant="outline" className="text-[9px] uppercase border-white/10 text-white/60">
+                                                                    {s}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs text-white/60 font-mono">{hospital.contactPhone ?? '--'}</TableCell>
+                                                    <TableCell className="text-xs text-red-400 font-mono">{hospital.emergencyPhone ?? '--'}</TableCell>
+                                                    <TableCell className="text-right space-x-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setEditingHospital(hospital);
+                                                                setIsHospitalFormOpen(true);
+                                                            }}
+                                                            className="text-primary hover:text-teal-400 hover:bg-primary/5 rounded-none font-bold uppercase text-[9px] tracking-wider"
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setConfirmation({
+                                                                    title: 'Delete Facility?',
+                                                                    description: `Are you sure you want to delete ${hospital.name}? This will remove it from the directory.`,
+                                                                    confirmLabel: 'Delete',
+                                                                    variant: 'destructive',
+                                                                    onConfirm: () => deleteHospital.mutate(hospital.id),
+                                                                });
+                                                            }}
+                                                            className="text-red-400 hover:text-red-300 hover:bg-red-500/5 rounded-none font-bold uppercase text-[9px] tracking-wider"
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Create/Edit Hospital Dialog */}
+                            <Dialog open={isHospitalFormOpen} onOpenChange={setIsHospitalFormOpen}>
+                                <DialogContent className="bg-[#0a0a0a] border-white/10 text-white rounded-none">
+                                    <DialogHeader>
+                                        <DialogTitle className="font-display text-2xl font-bold uppercase tracking-widest text-primary">
+                                            {editingHospital ? 'Edit Medical Facility' : 'Add Medical Facility'}
+                                        </DialogTitle>
+                                        <DialogDescription className="text-white/40">
+                                            Enter details for this hospital, clinic, or emergency facility.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <form
+                                        onSubmit={async (e) => {
+                                            e.preventDefault();
+                                            const formData = new FormData(e.currentTarget);
+                                            const payload = {
+                                                name: formData.get('name') as string,
+                                                type: formData.get('type') as string,
+                                                address: formData.get('address') as string,
+                                                distance: formData.get('distance') as string || undefined,
+                                                specialties: (formData.get('specialties') as string || '').split(',').map(s => s.trim()).filter(Boolean),
+                                                contactPhone: formData.get('contactPhone') as string || undefined,
+                                                emergencyPhone: formData.get('emergencyPhone') as string || undefined,
+                                            };
+
+                                            try {
+                                                if (editingHospital) {
+                                                    await updateHospital.mutateAsync({ id: editingHospital.id, ...payload });
+                                                    toast({ title: 'Success', description: 'Medical facility updated successfully.' });
+                                                } else {
+                                                    await createHospital.mutateAsync(payload);
+                                                    toast({ title: 'Success', description: 'Medical facility created successfully.' });
+                                                }
+                                                setIsHospitalFormOpen(false);
+                                            } catch (err) {
+                                                toast({ title: 'Error', description: 'Failed to save facility.', variant: 'destructive' });
+                                            }
+                                        }}
+                                        className="space-y-4 pt-4"
+                                    >
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Name</label>
+                                            <Input name="name" defaultValue={editingHospital?.name ?? ''} required className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. RGIT Health Center" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Type</label>
+                                            <select name="type" defaultValue={editingHospital?.type ?? 'hospital'} className="w-full bg-black/40 border border-white/10 rounded-none text-white text-sm px-3 py-2 focus:outline-none focus:border-primary">
+                                                <option value="hospital">Hospital</option>
+                                                <option value="clinic">Clinic</option>
+                                                <option value="dispensary">Dispensary</option>
+                                                <option value="campus">Campus Center</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Address</label>
+                                            <Input name="address" defaultValue={editingHospital?.address ?? ''} required className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. Versova, Andheri West" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Distance from Campus</label>
+                                            <Input name="distance" defaultValue={editingHospital?.distance ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. On Campus, 500m, 2.5km" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Specialties (comma separated)</label>
+                                            <Input name="specialties" defaultValue={editingHospital?.specialties?.join(', ') ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. General Medicine, Orthopedics, Emergency" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Contact Phone</label>
+                                                <Input name="contactPhone" defaultValue={editingHospital?.contactPhone ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. 022-2630XXXX" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[9px] uppercase font-bold tracking-widest text-white/50">Emergency Hotline</label>
+                                                <Input name="emergencyPhone" defaultValue={editingHospital?.emergencyPhone ?? ''} className="bg-black/40 border-white/10 rounded-none text-white text-sm" placeholder="e.g. 108" />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end space-x-2 pt-4">
+                                            <Button type="button" variant="outline" onClick={() => setIsHospitalFormOpen(false)} className="rounded-none border-white/10 hover:bg-white/5">Cancel</Button>
+                                            <Button type="submit" className="rounded-none bg-primary text-black hover:bg-teal-400 font-bold uppercase text-[10px] tracking-widest">
+                                                {createHospital.isPending || updateHospital.isPending ? 'Saving...' : 'Save Facility'}
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     )}
                 </section>

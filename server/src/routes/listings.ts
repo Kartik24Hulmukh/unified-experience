@@ -9,6 +9,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
+import { requireVerifiedStudent } from '@/middleware/requireVerifiedStudent';
 import { idempotency } from '@/middleware/idempotency';
 import { validate } from '@/middleware/validate';
 import { createListingSchema, updateListingStatusSchema } from '@/shared/validation';
@@ -31,6 +32,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
       category: query.category,
       module: query.module,
       limit: safeParseInt(query.limit),
+      page: safeParseInt(query.page),
       cursor: query.cursor,
       search: query.search,
     });
@@ -48,7 +50,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/listings',
     {
-      preHandler: [authenticate, idempotency],
+      preHandler: [authenticate, requireVerifiedStudent, idempotency],
       preValidation: validate(createListingSchema),
     },
     async (request, reply) => {
@@ -64,7 +66,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     '/listings/:id/status',
     {
-      preHandler: [authenticate, idempotency],
+      preHandler: [authenticate, requireVerifiedStudent, idempotency],
       preValidation: validate(updateListingStatusSchema),
     },
     async (request, reply) => {
@@ -83,7 +85,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
   app.put(
     '/listings/:id',
     {
-      preHandler: [authenticate, idempotency],
+      preHandler: [authenticate, requireVerifiedStudent, idempotency],
       preValidation: validate(createListingSchema),
     },
     async (request, reply) => {
@@ -101,7 +103,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
   /** DELETE /listings/:id — delete listing (auth required) */
   app.delete(
     '/listings/:id',
-    { preHandler: [authenticate] },
+    { preHandler: [authenticate, requireVerifiedStudent] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       await listingService.deleteListing(id, request.userId!, request.userRole!);

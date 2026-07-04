@@ -37,5 +37,25 @@ nginx/certs/
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
+.sln
 *.sw?
+
+# Environment files (contain secrets)
+.env.bak
+.env.backup
+
+# Database files
+*.db
+*.db-journal
+
+# Generated reports & temp files
+tmp_*
+debug_*
+eslint_report.*
+lint.json
+final_*.json
+test_*.json
+test-results.json
+test_results*.json
+*.litcoffee
+admin-debug-output.txt

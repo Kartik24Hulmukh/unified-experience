@@ -218,7 +218,6 @@ const LoginPage = () => {
 
             <div className="absolute bottom-8 left-4 z-10 pointer-events-none flex flex-col space-y-2 text-[9px] uppercase tracking-[0.5em] text-white/10 font-mono sm:left-12">
                 <span>SYSTEM_STATUS: ONLINE</span>
-                <span>AUTH_PROTOCOL: HMAC_SHA256</span>
             </div>
 
             <footer className="absolute bottom-4 right-4 z-10 text-[9px] font-mono uppercase tracking-[0.3em] text-white/25 sm:right-12">

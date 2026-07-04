@@ -5,9 +5,14 @@ Allow: /accommodation
 Allow: /hospital
 Allow: /mess
 
-# Disallow specific non-indexable routes
+# Disallow specific non-indexable/auth-gated routes
 Disallow: /admin
 Disallow: /profile
+Disallow: /requests
+Disallow: /disputes
+Disallow: /create-listing
+Disallow: /analytics
+Disallow: /home
 
 # Sitemap location
-Sitemap: https://berozgar.in/sitemap.xml
+Sitemap: https://rgitrozgar.in/sitemap.xml

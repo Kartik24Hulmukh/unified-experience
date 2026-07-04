@@ -3,9 +3,10 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
-import { useListings } from '@/hooks/api/useApi';
+import { useListings, useMessProviders } from '@/hooks/api/useApi';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 import GlitchText from '@/components/GlitchText';
+import { CollegeVerificationBanner } from '@/components/CollegeVerificationBanner';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import FaqItem from '@/components/FaqItem';
 import WordMarquee from '@/components/WordMarquee';
@@ -120,31 +121,49 @@ const MessPage = () => {
   const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 5000]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch mess providers from API
+  const { data: messProvidersResponse, isLoading: isMessLoading } = useMessProviders();
+
   // Fetch listings from API
-  const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'mess' });
+  const { data: listingsResponse, isLoading: isListingsLoading, isError, error, refetch } = useListings({ module: 'mess' });
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
+
+  const dbMesses = useMemo(() => {
+    const list = messProvidersResponse?.data || [];
+    if (list.length === 0) {
+      // Fallback seed data if DB is empty or offline
+      return messServices.map((s, index) => ({
+        id: s.id,
+        title: s.title,
+        price: s.price,
+        category: s.category,
+        institution: s.institution,
+        image: index % 2 === 0 ? '/DabbaGo.jpeg' : '/happyGrub.jpeg',
+      }));
+    }
+    return list.map((s, index) => ({
+      id: s.id,
+      title: s.name,
+      price: s.priceRange || 'N/A',
+      category: s.type,
+      institution: 'Official',
+      image: index % 2 === 0 ? '/DabbaGo.jpeg' : '/happyGrub.jpeg',
+    }));
+  }, [messProvidersResponse]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    const defaultMesses = messServices.map(s => s.category.toLowerCase());
+    const defaultMesses = dbMesses.map(s => s.category.toLowerCase());
     defaultMesses.forEach(cat => counts[cat] = (counts[cat] || 0) + 1);
     visibleItems.forEach(item => {
       const cat = (item.category || '').toLowerCase();
       counts[cat] = (counts[cat] || 0) + 1;
     });
     return counts;
-  }, [visibleItems]);
+  }, [dbMesses, visibleItems]);
 
   const filteredItems = useMemo(() => {
-    const defaultMesses = messServices.map((s, index) => ({
-      id: s.id,
-      title: s.title,
-      price: s.price,
-      category: s.category,
-      institution: (s as unknown).institution,
-      image: index % 2 === 0 ? '/DabbaGo.jpeg' : '/happyGrub.jpeg',
-    }));
-    const listItems = [...defaultMesses, ...visibleItems.map((s) => ({
+    const listItems = [...dbMesses, ...visibleItems.map((s) => ({
       id: s.id,
       title: s.title,
       price: s.price,
@@ -611,6 +630,7 @@ const MessPage = () => {
       {/* ═══════════════ BROWSE LISTINGS ═══════════════ */}
       <section ref={browseRef} className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
         <div className="max-w-7xl mx-auto space-y-16">
+          <CollegeVerificationBanner />
           <div className="flex items-center gap-4 mb-4">
             <Search className="w-4 h-4 text-amber-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Service Database</span>
@@ -632,7 +652,7 @@ const MessPage = () => {
             priceRange={[0, 5000]}
           />
 
-          {isLoading && filteredItems.length === 0 ? (
+          {(isMessLoading || isListingsLoading) && filteredItems.length === 0 ? (
             <div className="py-16 flex flex-col items-center gap-4">
               <LoadingSpinner />
               <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading mess services…</p>

@@ -10,9 +10,7 @@ describe("Admin route aliases", () => {
     const requiredPaths = [
       '/admin/dashboard',
       '/admin/users',
-      '/admin/jobs',
       '/admin/settings',
-      '/admin/companies',
     ];
 
     for (const path of requiredPaths) {

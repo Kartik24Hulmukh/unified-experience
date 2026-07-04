@@ -64,12 +64,12 @@ services:
       JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
       JWT_REFRESH_EXPIRES_DAYS: ${JWT_REFRESH_EXPIRES_DAYS:-7}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://berozgar.in}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://rgitrozgar.in}
       COOKIE_SECURE: "true"
-      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.berozgar.in}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.rgitrozgar.in}
       # Email
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-resend}
-      EMAIL_FROM: ${EMAIL_FROM:-BErozgar <noreply@berozgar.in>}
+      EMAIL_FROM: ${EMAIL_FROM:-BErozgar <noreply@rgitrozgar.in>}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}

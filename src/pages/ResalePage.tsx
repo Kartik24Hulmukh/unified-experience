@@ -15,6 +15,7 @@ import { useListings } from '@/hooks/api/useApi';
 import { countBrowseListingsByCategory, getBrowseVisibleListings } from '@/lib/browse-listings';
 import { LoadingSpinner, ErrorFallback, SkeletonListingGrid } from '@/components/FallbackUI';
 import { SEO } from '@/components/SEO';
+import { CollegeVerificationBanner } from '@/components/CollegeVerificationBanner';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
@@ -269,6 +270,7 @@ const ResalePage = () => {
       {/* Browse Section */}
       <section className="py-20 sm:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5">
         <div className="max-w-7xl mx-auto space-y-16">
+          <CollegeVerificationBanner />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex-1">
               <ModuleSearchFilter

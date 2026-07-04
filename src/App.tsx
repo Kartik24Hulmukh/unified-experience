@@ -36,7 +36,6 @@ const SignupPage = lazy(() => import('./pages/SignupPage'));
 const VerificationPage = lazy(() => import('./pages/VerificationPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const MessPage = lazy(() => import('./pages/MessPage'));
-const JobsPage = lazy(() => import('./pages/JobsPage'));
 const HospitalPage = lazy(() => import('./pages/HospitalPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
@@ -217,7 +216,7 @@ const App = () => (
                         {import.meta.env.DEV && <Route path="/splash-test" element={<SplashTestPage />} />}
 
                         {/* Post-login home — MasterExperience + modules */}
-                        <Route path="/home" element={<RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary>} />
+                        <Route path="/home" element={<ProtectedRoute><RouteErrorBoundary name="Home"><Index /></RouteErrorBoundary></ProtectedRoute>} />
                         <Route path="/dashboard" element={<ProtectedRoute><Navigate to="/home" replace /></ProtectedRoute>} />
                         <Route path="/about" element={<Navigate to="/home" replace />} />
                         <Route path="/general-listings" element={<Navigate to="/home" replace />} />
@@ -229,7 +228,6 @@ const App = () => (
                         <Route path="/accommodation" element={<ProtectedRoute><RouteErrorBoundary name="Accommodation"><AccommodationPage /></RouteErrorBoundary></ProtectedRoute>} />
                         <Route path="/essentials" element={<ProtectedRoute><RouteErrorBoundary name="Essentials"><EssentialsPage /></RouteErrorBoundary></ProtectedRoute>} />
                         <Route path="/academics" element={<ProtectedRoute><RouteErrorBoundary name="Academics"><AcademicsPage /></RouteErrorBoundary></ProtectedRoute>} />
-                        <Route path="/jobs" element={<ProtectedRoute><RouteErrorBoundary name="Jobs"><JobsPage /></RouteErrorBoundary></ProtectedRoute>} />
                         <Route path="/mess" element={<ProtectedRoute><RouteErrorBoundary name="Mess"><MessPage /></RouteErrorBoundary></ProtectedRoute>} />
                         <Route path="/hospital" element={<ProtectedRoute><RouteErrorBoundary name="Hospital"><HospitalPage /></RouteErrorBoundary></ProtectedRoute>} />
                         <Route path="/agency" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="Agency"><AgentsHub /></RouteErrorBoundary></ProtectedRoute>} />
@@ -244,9 +242,7 @@ const App = () => (
                         <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><RouteErrorBoundary name="Admin"><AdminPage /></RouteErrorBoundary></ProtectedRoute>} />
                         <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
                         <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
-                        <Route path="/admin/jobs" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
                         <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
-                        <Route path="/admin/companies" element={<ProtectedRoute allowedRoles={['admin']}><Navigate to="/admin" replace /></ProtectedRoute>} />
 
                         <Route path="*" element={<NotFound />} />
                       </Routes>

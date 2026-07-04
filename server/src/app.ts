@@ -33,6 +33,8 @@ import { disputeRoutes } from '@/routes/disputes';
 import { adminRoutes } from '@/routes/admin';
 import { profileRoutes } from '@/routes/profile';
 import { analyticsRoutes } from '@/routes/analytics';
+import { messRoutes } from '@/routes/mess';
+import { hospitalRoutes } from '@/routes/hospital';
 
 export async function buildApp() {
   // ── Sentry (optional — only when DSN is configured) ──
@@ -192,6 +194,8 @@ export async function buildApp() {
   await app.register(profileRoutes, { prefix: '/api' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(analyticsRoutes, { prefix: '/api/analytics' });
+  await app.register(messRoutes, { prefix: '/api' });
+  await app.register(hospitalRoutes, { prefix: '/api' });
 
   return app;
 }

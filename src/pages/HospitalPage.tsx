@@ -3,9 +3,10 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ModuleSearchFilter from '@/components/ModuleSearchFilter';
 import ListingGrid from '@/components/ListingGrid';
-import { useListings } from '@/hooks/api/useApi';
+import { useListings, useHospitals } from '@/hooks/api/useApi';
 import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 import GlitchText from '@/components/GlitchText';
+import { CollegeVerificationBanner } from '@/components/CollegeVerificationBanner';
 import AnimatedCounter from '@/components/AnimatedCounter';
 import FaqItem from '@/components/FaqItem';
 import WordMarquee from '@/components/WordMarquee';
@@ -140,36 +141,56 @@ const HospitalPage = () => {
   const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 1000]);
   const [isBooking, setIsBooking] = useState(false);
 
-  const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ module: 'hospital' });
+  // Fetch hospitals from API
+  const { data: hospitalsResponse, isLoading: isHospitalsLoading } = useHospitals();
+
+  // Fetch listings from API
+  const { data: listingsResponse, isLoading: isListingsLoading, isError, error, refetch } = useListings({ module: 'hospital' });
   const visibleItems = useMemo(() => getBrowseVisibleListings(listingsResponse?.data ?? []), [listingsResponse?.data]);
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    const defaultHospitals = hospitals.map(h => h.category.toLowerCase());
-    defaultHospitals.forEach(cat => counts[cat] = (counts[cat] || 0) + 1);
-    visibleItems.forEach(item => {
-      const cat = (item.category || '').toLowerCase();
-      counts[cat] = (counts[cat] || 0) + 1;
-    });
-    return counts;
-  }, [visibleItems]);
-
-  const filteredItems = useMemo(() => {
-    const listItems = [
-      ...hospitals.map(h => ({
+  const dbHospitals = useMemo(() => {
+    const list = hospitalsResponse?.data || [];
+    if (list.length === 0) {
+      // Fallback seed data if DB is empty or offline
+      return hospitals.map(h => ({
         id: h.id, 
         title: h.title, 
         price: h.price, 
         category: h.category, 
         institution: h.institution, 
         image: '/Hospital.png'
-      })), 
+      }));
+    }
+    return list.map(h => ({
+      id: h.id,
+      title: h.name,
+      price: h.contactPhone || 'N/A',
+      category: h.type,
+      institution: h.distance || 'Official',
+      image: '/Hospital.png'
+    }));
+  }, [hospitalsResponse]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const defaultHospitals = dbHospitals.map(h => h.category.toLowerCase());
+    defaultHospitals.forEach(cat => counts[cat] = (counts[cat] || 0) + 1);
+    visibleItems.forEach(item => {
+      const cat = (item.category || '').toLowerCase();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [dbHospitals, visibleItems]);
+
+  const filteredItems = useMemo(() => {
+    const listItems = [
+      ...dbHospitals, 
       ...visibleItems.map((h) => ({
         id: h.id,
         title: h.title,
         price: h.price,
         category: h.category,
-        institution: (h as unknown).institution || 'EXTERNAL',
+        institution: (h as unknown as { institution?: string }).institution || 'EXTERNAL',
       }))
     ];
     return listItems.filter(
@@ -635,6 +656,7 @@ const HospitalPage = () => {
       {/* ═══════════════ BROWSE FACILITIES ═══════════════ */}
       <section ref={browseRef} className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 hosp-reveal">
         <div className="max-w-7xl mx-auto space-y-16">
+          <CollegeVerificationBanner />
           <div className="flex items-center gap-4 mb-4">
             <Search className="w-4 h-4 text-emerald-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Facility Database</span>
@@ -656,7 +678,7 @@ const HospitalPage = () => {
             priceRange={[0, 1000]}
           />
 
-          {isLoading && filteredItems.length === 0 ? (
+          {(isHospitalsLoading || isListingsLoading) && filteredItems.length === 0 ? (
             <div className="py-16 flex flex-col items-center gap-4">
               <LoadingSpinner />
               <p className="text-white/30 text-[10px] uppercase tracking-[0.3em] font-mono">Loading medical facilities…</p>

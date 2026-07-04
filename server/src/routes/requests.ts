@@ -9,6 +9,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
+import { requireVerifiedStudent } from '@/middleware/requireVerifiedStudent';
 import { idempotency } from '@/middleware/idempotency';
 import { validate } from '@/middleware/validate';
 import { createRequestSchema, updateRequestEventSchema } from '@/shared/validation';
@@ -54,7 +55,7 @@ export async function requestRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/requests',
     {
-      preHandler: [authenticate, idempotency],
+      preHandler: [authenticate, requireVerifiedStudent, idempotency],
       preValidation: validate(createRequestSchema),
     },
     async (request, reply) => {
@@ -70,7 +71,7 @@ export async function requestRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     '/requests/:id/event',
     {
-      preHandler: [authenticate, idempotency],
+      preHandler: [authenticate, requireVerifiedStudent, idempotency],
       preValidation: validate(updateRequestEventSchema),
     },
     async (request, reply) => {

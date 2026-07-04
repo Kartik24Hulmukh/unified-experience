@@ -1,1 +1,0 @@
-import { createVerifiedUser } from './e2e/helpers.js'; createVerifiedUser('student101@mctrgit.ac.in', 'Password123!', 'Test Student').then((id) => console.log('CREATED USER:', id)).catch(console.error);

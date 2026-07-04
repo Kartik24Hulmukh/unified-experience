@@ -67,7 +67,7 @@ export async function analyticsRoutes(app: FastifyInstance): Promise<void> {
     {
       config: {
         rateLimit: {
-          max: 30,
+          max: 10,
           timeWindow: '1 minute',
         },
       },
@@ -89,7 +89,12 @@ export async function analyticsRoutes(app: FastifyInstance): Promise<void> {
         timestamp: ev.timestamp && ev.timestamp > 0 ? Math.min(ev.timestamp, now + 60_000) : now,
         properties: clampRecord(ev.properties),
         context: clampRecord(ev.context),
-        user: ev.user
+        user: request.userId
+          ? {
+              id: request.userId,
+              role: request.userRole ?? undefined,
+            }
+          : ev.user
           ? {
               id: ev.user.id.slice(0, 128),
               role: ev.user.role?.slice(0, 64),

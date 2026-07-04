@@ -9,7 +9,7 @@ import { NotFoundError, ForbiddenError } from '@/errors/index';
 import { InvalidTransitionError, ConflictError } from '@/errors/index';
 import { PAGINATION } from '@/config/constants';
 import type { CreateListingInput, UpdateListingStatusInput } from '@/shared/validation';
-import type { ListingStatus, RequestStatus, Prisma } from '@prisma/client';
+import type { ListingStatus, RequestStatus, Prisma, ListingModule } from '@prisma/client';
 import { createListingMachine } from '@/domain/fsm/ListingMachine';
 import type { ListingState, ListingEvent } from '@/domain/fsm/ListingMachine';
 import { evaluateFraudHeuristics, isFraudReviewRequired } from '@/domain/fraudHeuristics';
@@ -24,6 +24,7 @@ interface ListListingsParams {
   category?: string;
   module?: string;
   limit?: number;
+  page?: number;
   cursor?: string; // GAP-08: cursor for pagination
   search?: string;
 }
@@ -41,7 +42,7 @@ export async function listListings(params: ListListingsParams) {
     where.category = { equals: params.category };
   }
   if (params.module) {
-    where.module = { equals: params.module };
+    where.module = { equals: params.module.toUpperCase() as ListingModule };
   }
   if (params.search) {
     where.OR = [
@@ -138,7 +139,7 @@ export async function createListing(
         title: input.title,
         description: input.description,
         category: input.category,
-        module: input.module,
+        module: input.module as ListingModule,
         price: input.price,
         status: 'PENDING_REVIEW',
         ownerId: userId,
@@ -412,7 +413,7 @@ export async function updateListing(
       title: input.title,
       description: input.description,
       category: input.category,
-      module: input.module,
+      module: input.module as ListingModule,
       price: input.price,
       ...(needsReReview ? { status: 'PENDING_REVIEW' } : {}),
     },

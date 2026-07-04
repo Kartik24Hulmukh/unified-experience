@@ -24,6 +24,7 @@ const ListingDetailPage = () => {
     const { isAuthenticated } = useAuth();
     const { canPerform } = useRestriction();
     const canRequestExchange = canPerform('REQUEST_EXCHANGE');
+    const canRequestContact = canPerform('REQUEST_CONTACT');
 
     const [message, setMessage] = useState('');
     const [requestSent, setRequestSent] = useState(false);
@@ -324,44 +325,65 @@ const ListingDetailPage = () => {
                             </h3>
                         </div>
 
-                        {(listing.module === 'mess' || listing.module === 'hospital') && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                <Button 
-                                    className="h-12 bg-white text-black hover:bg-white/90 rounded-none font-bold uppercase text-[10px] tracking-widest"
-                                    onClick={() => window.open(`tel:+919876543210`, '_self')}
-                                >
-                                    <Phone className="w-4 h-4 mr-2" />
-                                    Call Provider
-                                </Button>
-                                <Button 
-                                    variant="outline"
-                                    className="h-12 border-white/10 bg-black/40 hover:bg-black/60 rounded-none text-white font-bold uppercase text-[10px] tracking-widest"
-                                    onClick={() => window.open(`https://wa.me/919876543210`, '_blank')}
-                                >
-                                    <MessageSquare className="w-4 h-4 mr-2" />
-                                    WhatsApp
-                                </Button>
+                        {!isAuthenticated ? (
+                            <div className="text-center py-6 space-y-4">
+                                <p className="text-white/50 uppercase text-sm font-bold tracking-widest font-display">Sign in to contact</p>
+                                <p className="text-white/30 text-xs">Only verified RGIT students can access contact details.</p>
+                                <Link to="/login" className="inline-block px-8 py-3 bg-primary text-black font-bold uppercase text-[10px] tracking-widest hover:bg-teal-400 transition-colors">
+                                    Sign In →
+                                </Link>
                             </div>
-                        )}
+                        ) : !canRequestContact ? (
+                            <div className="text-center py-6 space-y-2">
+                                <Shield className="w-8 h-8 text-amber-400/60 mx-auto animate-pulse" />
+                                <p className="text-amber-400/80 text-sm uppercase font-bold tracking-widest font-display">Access Restricted</p>
+                                <p className="text-white/30 text-xs">Verify your college email to unlock contact details.</p>
+                                <Link to="/profile" className="inline-block mt-2 text-primary text-[10px] uppercase font-bold tracking-widest hover:underline">
+                                    Verify Email →
+                                </Link>
+                            </div>
+                        ) : (
+                            <>
+                                {(listing.module === 'mess' || listing.module === 'hospital') && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <Button 
+                                            className="h-12 bg-white text-black hover:bg-white/90 rounded-none font-bold uppercase text-[10px] tracking-widest"
+                                            onClick={() => window.open(`tel:+919876543210`, '_self')}
+                                        >
+                                            <Phone className="w-4 h-4 mr-2" />
+                                            Call Provider
+                                        </Button>
+                                        <Button 
+                                            variant="outline"
+                                            className="h-12 border-white/10 bg-black/40 hover:bg-black/60 rounded-none text-white font-bold uppercase text-[10px] tracking-widest"
+                                            onClick={() => window.open(`https://wa.me/919876543210`, '_blank')}
+                                        >
+                                            <MessageSquare className="w-4 h-4 mr-2" />
+                                            WhatsApp
+                                        </Button>
+                                    </div>
+                                )}
 
-                        {listing.module === 'accommodation' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                <Button 
-                                    className="h-12 bg-white text-black hover:bg-white/90 rounded-none font-bold uppercase text-[10px] tracking-widest"
-                                    onClick={() => window.open(`tel:+919876543210`, '_self')}
-                                >
-                                    <Phone className="w-4 h-4 mr-2" />
-                                    Contact Owner
-                                </Button>
-                                <Button 
-                                    variant="outline"
-                                    className="h-12 border-white/10 bg-black/40 hover:bg-black/60 rounded-none text-white font-bold uppercase text-[10px] tracking-widest"
-                                    onClick={() => toast({ title: "Viewing Requested", description: "The owner will contact you shortly."})}
-                                >
-                                    <Clock className="w-4 h-4 mr-2" />
-                                    Book Viewing
-                                </Button>
-                            </div>
+                                {listing.module === 'accommodation' && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <Button 
+                                            className="h-12 bg-white text-black hover:bg-white/90 rounded-none font-bold uppercase text-[10px] tracking-widest"
+                                            onClick={() => window.open(`tel:+919876543210`, '_self')}
+                                        >
+                                            <Phone className="w-4 h-4 mr-2" />
+                                            Contact Owner
+                                        </Button>
+                                        <Button 
+                                            variant="outline"
+                                            className="h-12 border-white/10 bg-black/40 hover:bg-black/60 rounded-none text-white font-bold uppercase text-[10px] tracking-widest"
+                                            onClick={() => toast({ title: "Viewing Requested", description: "The owner will contact you shortly."})}
+                                        >
+                                            <Clock className="w-4 h-4 mr-2" />
+                                            Book Viewing
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {listing.module === 'resale' && (

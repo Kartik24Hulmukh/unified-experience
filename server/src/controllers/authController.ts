@@ -153,25 +153,36 @@ export async function refresh(request: FastifyRequest, reply: FastifyReply) {
     ipAddress: request.ip,
   });
 
-  setRefreshCookie(reply, result.tokens.refreshToken);
+  const accessToken = result.tokens?.accessToken || (result as any).accessToken;
+  const refreshToken = result.tokens?.refreshToken || (result as any).refreshToken;
+  const user = result.user || (result as any).user;
+
+  setRefreshCookie(reply, refreshToken);
 
   return reply.status(200).send(normalize({
-    user: result.user,
-    accessToken: result.tokens.accessToken,
+    user,
+    accessToken,
   }));
 }
 
 export async function logout(request: FastifyRequest, reply: FastifyReply) {
   const token = request.cookies[REFRESH_COOKIE.NAME];
   if (token) {
-    await authService.logout(token);
+    if (request.userId) {
+      await authService.logout(token, request.userId);
+    } else {
+      await authService.logout(token);
+    }
   }
 
   clearRefreshCookie(reply);
-  return reply.status(200).send(normalize({ message: 'Logged out successfully' }));
+  return reply.status(200).send(normalize({ message: 'Logged out' }));
 }
 
 export async function me(request: FastifyRequest, reply: FastifyReply) {
-  const user = await authService.getCurrentUser(request.userId!);
-  return reply.status(200).send(normalize({ user }));
+  const result = await authService.getCurrentUser(request.userId!);
+  if (result && (result as any).user) {
+    return reply.status(200).send(normalize(result));
+  }
+  return reply.status(200).send(normalize({ user: result }));
 }

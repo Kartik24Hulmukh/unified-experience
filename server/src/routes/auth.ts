@@ -80,4 +80,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   /** GET /me — get current user profile */
   app.get('/me', { preHandler: authenticate }, authController.me);
+
+  /** GET /csrf-token — retrieve the active CSRF token */
+  app.get('/csrf-token', async (request: FastifyRequest, reply: FastifyReply) => {
+    const token = request.cookies['_csrf'] || null;
+    return reply.status(200).send({ csrfToken: token });
+  });
 }

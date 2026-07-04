@@ -30,6 +30,10 @@ export const queryKeys = {
   // Profile
   profile: ['profile'] as const,
 
+  // Mess & Hospital
+  mess: ['mess'] as const,
+  hospitals: ['hospitals'] as const,
+
   // Listings
   listings: {
     all: ['listings'] as const,
@@ -80,6 +84,34 @@ export interface Listing {
   createdAt: string;
   description?: string;
   owner?: { id: string; fullName: string; email: string };
+}
+
+export interface MessProvider {
+  id: string;
+  name: string;
+  type: 'canteen' | 'tiffin' | 'cloud_kitchen' | string;
+  location?: string;
+  timings?: string;
+  priceRange?: string;
+  cuisine: string[];
+  contactPhone?: string;
+  rating: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface Hospital {
+  id: string;
+  name: string;
+  type: 'campus' | 'hospital' | 'clinic' | 'dispensary' | string;
+  address: string;
+  distance?: string;
+  specialties: string[];
+  contactPhone?: string;
+  emergencyPhone?: string;
+  rating: number;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface ListingFilters {
@@ -803,6 +835,92 @@ export function useUpdateUserStatus() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.user(userId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.adminFraud });
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.stats });
+    },
+  });
+}
+
+export function useMessProviders(
+  options?: Partial<UseQueryOptions<ApiResponse<MessProvider[]>, ApiError>>,
+) {
+  return useQuery({
+    queryKey: queryKeys.mess,
+    queryFn: ({ signal }) => api.get<ApiResponse<MessProvider[]>>('/mess', { signal }),
+    staleTime: 5 * 60 * 1000,
+    ...options,
+  });
+}
+
+export function useHospitals(
+  options?: Partial<UseQueryOptions<ApiResponse<Hospital[]>, ApiError>>,
+) {
+  return useQuery({
+    queryKey: queryKeys.hospitals,
+    queryFn: ({ signal }) => api.get<ApiResponse<Hospital[]>>('/hospitals', { signal }),
+    staleTime: 5 * 60 * 1000,
+    ...options,
+  });
+}
+
+export function useCreateMessProvider() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<MessProvider, 'id' | 'isActive' | 'createdAt' | 'rating'>) =>
+      api.post<ApiResponse<MessProvider>>('/admin/mess', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mess });
+    },
+  });
+}
+
+export function useUpdateMessProvider() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: Partial<MessProvider> & { id: string }) =>
+      api.put<ApiResponse<MessProvider>>(`/admin/mess/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mess });
+    },
+  });
+}
+
+export function useDeleteMessProvider() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ message: string }>(`/admin/mess/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mess });
+    },
+  });
+}
+
+export function useCreateHospital() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<Hospital, 'id' | 'isActive' | 'createdAt' | 'rating'>) =>
+      api.post<ApiResponse<Hospital>>('/admin/hospitals', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.hospitals });
+    },
+  });
+}
+
+export function useUpdateHospital() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: Partial<Hospital> & { id: string }) =>
+      api.put<ApiResponse<Hospital>>(`/admin/hospitals/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.hospitals });
+    },
+  });
+}
+
+export function useDeleteHospital() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ message: string }>(`/admin/hospitals/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.hospitals });
     },
   });
 }

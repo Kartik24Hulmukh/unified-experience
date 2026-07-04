@@ -8,6 +8,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
+import { requireVerifiedStudent } from '@/middleware/requireVerifiedStudent';
 import { authorize } from '@/middleware/authorize';
 import { idempotency } from '@/middleware/idempotency';
 import { validate } from '@/middleware/validate';
@@ -43,7 +44,7 @@ export async function disputeRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/disputes',
     {
-      preHandler: [authenticate, idempotency],
+      preHandler: [authenticate, requireVerifiedStudent, idempotency],
       preValidation: validate(createDisputeSchema),
     },
     async (request, reply) => {

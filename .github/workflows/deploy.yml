@@ -13,14 +13,14 @@
 #   5. Health check — rolls back on failure
 #
 # Required GitHub Secrets:
-#   VPS_HOST          — SSH hostname (e.g., berozgar.in)
+#   VPS_HOST          — SSH hostname (e.g., rgitrozgar.in)
 #   VPS_USER          — SSH username (e.g., deploy)
 #   VPS_SSH_KEY       — Private SSH key for VPS access
 #   VPS_APP_PATH      — App directory on VPS (e.g., /opt/berozgar)
 #   DEPLOY_ENV_FILE   — Base64-encoded .env.production file
 #
 # Required GitHub Variables (non-secret):
-#   DEPLOY_DOMAIN     — Production domain (default: berozgar.in)
+#   DEPLOY_DOMAIN     — Production domain (default: rgitrozgar.in)
 
 name: Deploy
 

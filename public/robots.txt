@@ -1,9 +1,5 @@
 User-agent: *
 Allow: /
-Allow: /resale
-Allow: /accommodation
-Allow: /hospital
-Allow: /mess
 
 # Disallow specific non-indexable/auth-gated routes
 Disallow: /admin
@@ -13,6 +9,13 @@ Disallow: /disputes
 Disallow: /create-listing
 Disallow: /analytics
 Disallow: /home
+Disallow: /resale
+Disallow: /accommodation
+Disallow: /hospital
+Disallow: /mess
+Disallow: /academics
+Disallow: /listing/
 
 # Sitemap location
 Sitemap: https://rgitrozgar.in/sitemap.xml
+

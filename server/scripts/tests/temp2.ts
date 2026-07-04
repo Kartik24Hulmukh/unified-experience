@@ -1,1 +1,0 @@
-import { PrismaClient } from '@prisma/client'; import * as argon2 from 'argon2'; const p = new PrismaClient(); async function main() { const email = 'pz-buyer-1774992304325@mctrgit.ac.in'; const h = await argon2.hash('Password123@'); await p.user.update({where:{email}, data:{password: h}}); console.log('updated'); } main();

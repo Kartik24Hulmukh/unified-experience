@@ -1,1 +1,0 @@
-﻿import {PrismaClient} from '@prisma/client'; const prisma = new PrismaClient(); async function g() { const u = await prisma.user.findFirst({where:{email:'seller2@mctrgit.ac.in'}, include:{otps:{orderBy:{createdAt: 'desc'}, take:1}}}); console.log(u && u.otps[0] ? u.otps[0].code : 'NOT FOUND'); await prisma.$disconnect(); } g();

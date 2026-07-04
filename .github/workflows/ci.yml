@@ -12,7 +12,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [20.x, 22.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -28,24 +28,34 @@ jobs:
 
     - name: Build Frontend
       run: npm run build
+
+    - name: Upload client dist
+      if: matrix.node-version == '20.x'
+      uses: actions/upload-artifact@v4
+      with:
+        name: client-dist
+        path: dist/
+        retention-days: 7
       
     - name: Clean Install Server Dependencies
-      run: |
-        cd server
-        npm ci
+      run: cd server && npm ci
 
     - name: Generate Prisma Types
-      run: |
-        cd server
-        npx prisma generate
+      run: cd server && npx prisma generate
         
     - name: Build and Typecheck Backend
-      run: |
-        cd server
-        npm run build
+      run: cd server && npm run build
 
-    - name: Run Playwright Layout Tests
-      run: |
-        # If tests are added in the future you can run npm run test
-        npx playwright install --with-deps chromium
-        node test-pw.cjs || true
+    - name: Run Server Tests
+      run: cd server && npm test
+      env:
+        JWT_SECRET: test-secret-key-for-ci-minimum-32-chars
+        DATABASE_URL: postgresql://test:test@localhost:5432/test
+        NODE_ENV: test
+        CORS_ORIGIN: http://localhost:5173
+        COOKIE_DOMAIN: localhost
+        ADMIN_EMAILS: admin@test.com
+
+    - name: Run Frontend Tests
+      run: npm test
+

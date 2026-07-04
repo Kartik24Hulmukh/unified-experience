@@ -59,3 +59,18 @@ test-results.json
 test_results*.json
 *.litcoffee
 admin-debug-output.txt
+
+# AI/editor tooling
+.cursor/
+.base/
+.planning/
+.mcp.json
+SKILL.md
+
+# Bun lockfiles (project uses npm)
+bun.lockb
+bun.lock
+
+# Generic backups
+*.bak
+

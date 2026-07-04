@@ -9,6 +9,9 @@ import Fastify, { type FastifyError } from 'fastify';
 import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import compress from '@fastify/compress';
+import multipart from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
+import path from 'path';
 import { env } from '@/config/env';
 import { registerCors } from '@/plugins/cors';
 import { registerRateLimit } from '@/plugins/rate-limit';
@@ -35,6 +38,8 @@ import { profileRoutes } from '@/routes/profile';
 import { analyticsRoutes } from '@/routes/analytics';
 import { messRoutes } from '@/routes/mess';
 import { hospitalRoutes } from '@/routes/hospital';
+import { imageRoutes } from '@/routes/images';
+
 
 export async function buildApp() {
   // ── Sentry (optional — only when DSN is configured) ──
@@ -99,6 +104,18 @@ export async function buildApp() {
   await app.register(csrfPlugin);
   await app.register(sanitizePlugin);
   await app.register(compress, { global: true });
+
+  await app.register(multipart, {
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5 MB
+    }
+  });
+
+  await app.register(fastifyStatic, {
+    root: path.join(process.cwd(), 'uploads'),
+    prefix: '/uploads/',
+    decorateReply: false
+  });
 
   // ── Request ID propagation ──────────────────────
   app.addHook('onRequest', async (request, reply) => {
@@ -196,6 +213,7 @@ export async function buildApp() {
   await app.register(analyticsRoutes, { prefix: '/api/analytics' });
   await app.register(messRoutes, { prefix: '/api' });
   await app.register(hospitalRoutes, { prefix: '/api' });
+  await app.register(imageRoutes, { prefix: '/api' });
 
   return app;
 }

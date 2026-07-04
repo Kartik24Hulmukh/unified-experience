@@ -12,11 +12,11 @@
 #
 # For production, replace with certbot:
 #   certbot certonly --webroot -w /var/www/certbot \
-#     -d berozgar.in -d www.berozgar.in
+#     -d rgitrozgar.in -d www.rgitrozgar.in
 
 set -euo pipefail
 
-DOMAIN="${1:-berozgar.in}"
+DOMAIN="${1:-rgitrozgar.in}"
 CERTS_DIR="$(cd "$(dirname "$0")/.." && pwd)/nginx/certs"
 
 mkdir -p "$CERTS_DIR"

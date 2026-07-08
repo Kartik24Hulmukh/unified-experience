@@ -12,7 +12,6 @@ import { authenticate } from '@/middleware/authenticate';
 import { authorize } from '@/middleware/authorize';
 import { validate } from '@/middleware/validate';
 import { createHospitalSchema, updateHospitalSchema } from '@/shared/validation';
-import type { CreateHospitalInput, UpdateHospitalInput } from '@/shared/validation';
 import { apiData } from '@/shared/response';
 import * as hospitalService from '@/services/hospitalService';
 
@@ -32,7 +31,7 @@ export async function hospitalRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const hospital = await hospitalService.createHospital(
-        request.body as CreateHospitalInput,
+        request.body as hospitalService.CreateHospitalInput,
       );
       return reply.status(201).send(apiData(hospital));
     },
@@ -49,7 +48,7 @@ export async function hospitalRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const hospital = await hospitalService.updateHospital(
         id,
-        request.body as UpdateHospitalInput,
+        request.body as Partial<hospitalService.CreateHospitalInput>,
       );
       return reply.status(200).send(apiData(hospital));
     },

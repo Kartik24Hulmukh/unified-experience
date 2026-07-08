@@ -12,7 +12,6 @@ import { authenticate } from '@/middleware/authenticate';
 import { authorize } from '@/middleware/authorize';
 import { validate } from '@/middleware/validate';
 import { createMessProviderSchema, updateMessProviderSchema } from '@/shared/validation';
-import type { CreateMessProviderInput, UpdateMessProviderInput } from '@/shared/validation';
 import { apiData } from '@/shared/response';
 import * as messService from '@/services/messService';
 
@@ -32,7 +31,7 @@ export async function messRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const provider = await messService.createMessProvider(
-        request.body as CreateMessProviderInput,
+        request.body as messService.CreateMessProviderInput,
       );
       return reply.status(201).send(apiData(provider));
     },
@@ -49,7 +48,7 @@ export async function messRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const provider = await messService.updateMessProvider(
         id,
-        request.body as UpdateMessProviderInput,
+        request.body as Partial<messService.CreateMessProviderInput>,
       );
       return reply.status(200).send(apiData(provider));
     },

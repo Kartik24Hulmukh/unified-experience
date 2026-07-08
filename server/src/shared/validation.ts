@@ -209,6 +209,30 @@ export const flagUserSchema = z.object({
   reason: safeString(500),
 });
 
+export const createMessProviderSchema = z.object({
+  name: safeString(200),
+  type: z.enum(['canteen', 'tiffin', 'CANTEEN', 'TIFFIN']).transform(val => val.toUpperCase()),
+  location: safeString(500).optional(),
+  timings: safeString(100).optional(),
+  priceRange: safeString(100).optional(),
+  cuisine: z.array(safeString(100)).nonempty('At least one cuisine is required'),
+  contactPhone: z.string().trim().max(20).optional(),
+});
+
+export const updateMessProviderSchema = createMessProviderSchema.partial();
+
+export const createHospitalSchema = z.object({
+  name: safeString(200),
+  type: z.enum(['campus', 'hospital', 'CAMPUS', 'HOSPITAL']).transform(val => val.toUpperCase()),
+  address: safeString(500),
+  distance: safeString(100).optional(),
+  specialties: z.array(safeString(100)).nonempty('At least one specialty is required'),
+  contactPhone: z.string().trim().max(20).optional(),
+  emergencyPhone: z.string().trim().max(20).optional(),
+});
+
+export const updateHospitalSchema = createHospitalSchema.partial();
+
 /* ═══════════════════════════════════════════════════
    Type Exports (inferred from schemas)
    ═══════════════════════════════════════════════════ */
@@ -226,3 +250,7 @@ export type CreateRequestInput = z.infer<typeof createRequestSchema>;
 export type UpdateRequestEventInput = z.infer<typeof updateRequestEventSchema>;
 export type CreateAuditLogInput = z.infer<typeof createAuditLogSchema>;
 export type FlagUserInput = z.infer<typeof flagUserSchema>;
+export type CreateMessProviderInput = z.infer<typeof createMessProviderSchema>;
+export type UpdateMessProviderInput = z.infer<typeof updateMessProviderSchema>;
+export type CreateHospitalInput = z.infer<typeof createHospitalSchema>;
+export type UpdateHospitalInput = z.infer<typeof updateHospitalSchema>;

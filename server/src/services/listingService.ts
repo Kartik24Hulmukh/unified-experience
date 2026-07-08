@@ -36,13 +36,19 @@ export async function listListings(params: ListListingsParams) {
   const where: Prisma.ListingWhereInput = {};
 
   if (params.status) {
-    where.status = params.status.toUpperCase() as ListingStatus;
+    const statusVal = params.status.toUpperCase();
+    if (Object.values(ListingStatus).includes(statusVal as ListingStatus)) {
+      where.status = statusVal as ListingStatus;
+    }
   }
   if (params.category) {
     where.category = { equals: params.category };
   }
   if (params.module) {
-    where.module = { equals: params.module.toUpperCase() as ListingModule };
+    const moduleVal = params.module.toUpperCase();
+    if (Object.values(ListingModule).includes(moduleVal as ListingModule)) {
+      where.module = { equals: moduleVal as ListingModule };
+    }
   }
   if (params.search) {
     where.OR = [

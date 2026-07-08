@@ -151,8 +151,8 @@ html.lenis body {
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 
-    --portal: 0 0% 100%;
-    --portal-foreground: 0 0% 0%;
+    --portal: 0 0% 0%;
+    --portal-foreground: 0 0% 100%;
 
     --card: 0 0% 5%;
     --card-foreground: 0 0% 100%;

@@ -63,7 +63,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
               key={module.id}
               data-module-id={module.id}
               data-module-path={module.path}
-              className={`module-item group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-white/[0.04] hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] flex flex-col justify-between p-6 sm:p-8 ${
+              className={`module-item group relative cursor-pointer overflow-hidden rounded-2xl border border-portal-foreground/10 bg-portal-foreground/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-portal-foreground/[0.04] hover:shadow-[0_0_30px_rgba(var(--portal-foreground),0.1)] flex flex-col justify-between p-6 sm:p-8 ${
                 index === 0 ? 'md:col-span-2 lg:col-span-2 lg:row-span-2' : ''
               } ${
                 index === 1 ? 'md:col-span-2 lg:col-span-2' : ''
@@ -82,7 +82,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
               {/* Background Image Setup */}
               <div className={`absolute inset-0 transition-opacity duration-700 ${activeModule === module.id ? 'opacity-100' : 'opacity-40 grayscale-[0.8]'}`}>
                  <img src={module.preview} alt={module.title} className="w-full h-full object-cover scale-105 transition-transform duration-1000 group-hover:scale-100" loading="lazy" />
-                 <div className="absolute inset-0 bg-gradient-to-t from-portal via-portal/60 to-transparent" />
+                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
               </div>
   
               {/* Content Setup */}

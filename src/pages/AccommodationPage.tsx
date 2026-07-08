@@ -706,10 +706,10 @@ const AccommodationPage = () => {
 
               {filteredItems.length === 0 && (
                 <div className="py-24 text-center space-y-6">
-                  <div className="w-16 h-16 border border-white/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
-                    <X className="w-8 h-8 text-white -rotate-45" />
+                  <div className="w-16 h-16 border border-portal-foreground/10 rotate-45 mx-auto flex items-center justify-center opacity-20">
+                    <X className="w-8 h-8 text-portal-foreground -rotate-45" />
                   </div>
-                  <p className="text-white/20 uppercase tracking-[0.4em] font-mono text-[10px]">
+                  <p className="text-portal-foreground/20 uppercase tracking-[0.4em] font-mono text-[10px]">
                     No accommodation protocols found
                   </p>
                 </div>

@@ -32,4 +32,4 @@ COPY prisma ./prisma
 COPY package.json ./
 EXPOSE 3001
 USER node
-CMD ["node", "dist/server.cjs"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.cjs"]

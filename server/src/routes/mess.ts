@@ -10,6 +10,9 @@
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
 import { authorize } from '@/middleware/authorize';
+import { validate } from '@/middleware/validate';
+import { createMessProviderSchema, updateMessProviderSchema } from '@/shared/validation';
+import type { CreateMessProviderInput, UpdateMessProviderInput } from '@/shared/validation';
 import { apiData } from '@/shared/response';
 import * as messService from '@/services/messService';
 
@@ -23,10 +26,13 @@ export async function messRoutes(app: FastifyInstance): Promise<void> {
   /** POST /admin/mess — Create mess provider (admin only) */
   app.post(
     '/admin/mess',
-    { preHandler: [authenticate, authorize('ADMIN')] },
+    {
+      preHandler: [authenticate, authorize('ADMIN')],
+      preValidation: validate(createMessProviderSchema),
+    },
     async (request, reply) => {
       const provider = await messService.createMessProvider(
-        request.body as messService.CreateMessProviderInput,
+        request.body as CreateMessProviderInput,
       );
       return reply.status(201).send(apiData(provider));
     },
@@ -35,12 +41,15 @@ export async function messRoutes(app: FastifyInstance): Promise<void> {
   /** PUT /admin/mess/:id — Update mess provider (admin only) */
   app.put(
     '/admin/mess/:id',
-    { preHandler: [authenticate, authorize('ADMIN')] },
+    {
+      preHandler: [authenticate, authorize('ADMIN')],
+      preValidation: validate(updateMessProviderSchema),
+    },
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const provider = await messService.updateMessProvider(
         id,
-        request.body as Partial<messService.CreateMessProviderInput>,
+        request.body as UpdateMessProviderInput,
       );
       return reply.status(200).send(apiData(provider));
     },

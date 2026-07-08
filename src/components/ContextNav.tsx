@@ -158,6 +158,17 @@ const ContextNav = memo(function ContextNav() {
     return () => ctx.revert();
   }, [isMenuOpen]);
 
+  // Lock body scroll while menu is open to prevent double scrollbars
+  useEffect(() => {
+    if (isMenuOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isMenuOpen]);
+
   // Guard against rapid navigation clicks during page transitions
   const handleNavClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, targetPath: string) => {
     // Block if already transitioning

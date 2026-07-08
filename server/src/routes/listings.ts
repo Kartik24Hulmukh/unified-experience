@@ -8,6 +8,7 @@
  */
 
 import type { FastifyInstance } from 'fastify';
+import { ListingStatus, ListingModule } from '@prisma/client';
 import { authenticate } from '@/middleware/authenticate';
 import { requireVerifiedStudent } from '@/middleware/requireVerifiedStudent';
 import { idempotency } from '@/middleware/idempotency';
@@ -16,6 +17,10 @@ import { createListingSchema, updateListingStatusSchema } from '@/shared/validat
 import type { CreateListingInput, UpdateListingStatusInput } from '@/shared/validation';
 import { apiData, apiPage } from '@/shared/response';
 import * as listingService from '@/services/listingService';
+
+const VALID_STATUSES = new Set(Object.values(ListingStatus));
+const VALID_MODULES = new Set(Object.values(ListingModule));
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Safe parseInt: rejects NaN, negative, and non-finite values to prevent Prisma crashes.
 const safeParseInt = (s: string | undefined) => {
@@ -27,10 +32,37 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
   /** GET /listings — list with optional filters */
   app.get('/listings', async (request, reply) => {
     const query = request.query as Record<string, string>;
+
+    const status = query.status?.toUpperCase();
+    if (status && !VALID_STATUSES.has(status as ListingStatus)) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        code: 'VALIDATION_ERROR',
+        message: `Invalid status parameter. Must be one of: ${Object.values(ListingStatus).join(', ')}`,
+      });
+    }
+
+    const moduleParam = query.module?.toUpperCase();
+    if (moduleParam && !VALID_MODULES.has(moduleParam as ListingModule)) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        code: 'VALIDATION_ERROR',
+        message: `Invalid module parameter. Must be one of: ${Object.values(ListingModule).join(', ')}`,
+      });
+    }
+
+    if (query.cursor && !UUID_REGEX.test(query.cursor)) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid cursor parameter. Must be a valid UUID v4.',
+      });
+    }
+
     const result = await listingService.listListings({
-      status: query.status,
+      status: status,
       category: query.category,
-      module: query.module,
+      module: moduleParam,
       limit: safeParseInt(query.limit),
       page: safeParseInt(query.page),
       cursor: query.cursor,

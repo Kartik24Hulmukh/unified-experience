@@ -10,7 +10,7 @@ import { CollegeVerificationBanner } from '@/components/CollegeVerificationBanne
 import AnimatedCounter from '@/components/AnimatedCounter';
 import FaqItem from '@/components/FaqItem';
 import WordMarquee from '@/components/WordMarquee';
-const messHero = '/Mess.png';
+const messHero = '/Mess.webp';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import ScanlineOverlay from '@/components/ScanlineOverlay';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -138,7 +138,7 @@ const MessPage = () => {
         price: s.price,
         category: s.category,
         institution: s.institution,
-        image: index % 2 === 0 ? '/DabbaGo.jpeg' : '/happyGrub.jpeg',
+        image: index % 2 === 0 ? '/mess/DabbaGo.jpeg' : '/mess/happyGrub.jpeg',
       }));
     }
     return list.map((s, index) => ({
@@ -147,7 +147,7 @@ const MessPage = () => {
       price: s.priceRange || 'N/A',
       category: s.type,
       institution: 'Official',
-      image: index % 2 === 0 ? '/DabbaGo.jpeg' : '/happyGrub.jpeg',
+      image: index % 2 === 0 ? '/mess/DabbaGo.jpeg' : '/mess/happyGrub.jpeg',
     }));
   }, [messProvidersResponse]);
 
@@ -270,7 +270,7 @@ const MessPage = () => {
   return (
     <>
       <SEO title="Mess & Tiffin Services" description="Discover verified mess services, tiffin providers, and campus canteens. Student-reviewed, hygiene-checked, and priced for your budget." />
-      <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative pt-[var(--nav-height)]">
+      <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground overflow-hidden relative pt-[var(--nav-height)]">
         <ScanlineOverlay />
 
       {/* ═══════════════ HERO ═══════════════ */}
@@ -280,6 +280,8 @@ const MessPage = () => {
           <img
             src={messHero}
             alt=""
+            width={1920}
+            height={1080}
             className="mess-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"

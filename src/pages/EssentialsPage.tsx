@@ -139,7 +139,7 @@ const EssentialsPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative pt-[var(--nav-height)]">
+    <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground overflow-hidden relative pt-[var(--nav-height)]">
 
       {/* ═══════════════ HERO ═══════════════ */}
       <section ref={heroRef} className="relative min-h-[calc(100dvh-var(--nav-height))] flex items-end overflow-hidden">
@@ -148,6 +148,8 @@ const EssentialsPage = () => {
           <img
             src={essentialsPreview}
             alt=""
+            width={1920}
+            height={1080}
             className="ess-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"

@@ -194,7 +194,7 @@ const AcademicsPage = () => {
   }, []);
 
   return (
-    <div ref={mainRef} className="min-h-[100dvh] bg-portal pt-[var(--nav-height)]">
+    <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground pt-[var(--nav-height)]">
       {/* Hero - Typography-focused with branch codes as design elements */}
       <section ref={heroRef} className="relative min-h-[calc(100dvh-var(--nav-height))] overflow-hidden">
         {/* Background image + overlay */}
@@ -202,6 +202,8 @@ const AcademicsPage = () => {
           <img
             src={academicsHero}
             alt=""
+            width={1920}
+            height={1080}
             loading="eager"
             className="acad-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover block"
             style={{ opacity: 0, contentVisibility: 'auto' }}

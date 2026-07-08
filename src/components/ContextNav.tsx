@@ -356,7 +356,7 @@ const ContextNav = memo(function ContextNav() {
       {/* Fullscreen Menu Overlay */}
       <div
         ref={menuRef}
-        className="fixed inset-0 z-[70] flex overflow-y-auto bg-portal opacity-0"
+        className="fixed inset-0 z-[70] flex overflow-y-auto bg-portal opacity-0 scrollbar-hide"
         style={{ willChange: isMenuOpen ? 'clip-path' : 'auto', pointerEvents: isMenuOpen ? 'auto' : 'none' }}
         role={isMenuOpen ? 'dialog' : undefined}
         aria-modal={isMenuOpen ? true : undefined}

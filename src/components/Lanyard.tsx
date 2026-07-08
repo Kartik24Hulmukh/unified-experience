@@ -208,9 +208,55 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false }) {
         attachPos
       ]);
       
-      const geom = new THREE.TubeGeometry(path, 64, 0.035, 8, false);
-      (band.current as unknown).geometry.dispose();
-      (band.current as unknown).geometry = geom;
+      const geometry = (band.current as unknown).geometry as THREE.BufferGeometry;
+      if (geometry) {
+        const { tangents, normals, binormals } = path.computeFrenetFrames(64, false);
+        const positionAttribute = geometry.getAttribute('position') as THREE.BufferAttribute;
+        const normalAttribute = geometry.getAttribute('normal') as THREE.BufferAttribute;
+        
+        if (positionAttribute) {
+          const positions = positionAttribute.array as Float32Array;
+          const normalsArray = normalAttribute ? (normalAttribute.array as Float32Array) : null;
+
+          let index = 0;
+          for (let i = 0; i <= 64; i++) {
+            const u = i / 64;
+            const p = path.getPointAt(u);
+            const N = normals[i];
+            const B = binormals[i];
+
+            for (let j = 0; j <= 8; j++) {
+              const v = (j / 8) * Math.PI * 2;
+              const cosV = Math.cos(v);
+              const sinV = Math.sin(v);
+              const cx = -0.035 * cosV;
+              const sy = 0.035 * sinV;
+
+              // Update position
+              positions[index] = p.x + cx * N.x + sy * B.x;
+              positions[index + 1] = p.y + cx * N.y + sy * B.y;
+              positions[index + 2] = p.z + cx * N.z + sy * B.z;
+
+              // Update normal
+              if (normalsArray) {
+                const nx = -cosV * N.x + sinV * B.x;
+                const ny = -cosV * N.y + sinV * B.y;
+                const nz = -cosV * N.z + sinV * B.z;
+                const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1.0;
+                normalsArray[index] = nx / len;
+                normalsArray[index + 1] = ny / len;
+                normalsArray[index + 2] = nz / len;
+              }
+
+              index += 3;
+            }
+          }
+          positionAttribute.needsUpdate = true;
+          if (normalAttribute) {
+            normalAttribute.needsUpdate = true;
+          }
+        }
+      }
       
       // Smart angular velocity dampening that prevents spinning identically without locking rotations entirely!
       ang.copy(card.current.angvel());

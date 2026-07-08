@@ -10,7 +10,7 @@ import { CollegeVerificationBanner } from '@/components/CollegeVerificationBanne
 import AnimatedCounter from '@/components/AnimatedCounter';
 import FaqItem from '@/components/FaqItem';
 import WordMarquee from '@/components/WordMarquee';
-const hospitalHero = '/Hospital.png';
+const hospitalHero = '/Hospital.webp';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import ScanlineOverlay from '@/components/ScanlineOverlay';
 import {
@@ -158,7 +158,7 @@ const HospitalPage = () => {
         price: h.price, 
         category: h.category, 
         institution: h.institution, 
-        image: '/Hospital.png'
+        image: '/Hospital.webp'
       }));
     }
     return list.map(h => ({
@@ -167,7 +167,7 @@ const HospitalPage = () => {
       price: h.contactPhone || 'N/A',
       category: h.type,
       institution: h.distance || 'Official',
-      image: '/Hospital.png'
+      image: '/Hospital.webp'
     }));
   }, [hospitalsResponse]);
 
@@ -295,7 +295,7 @@ const HospitalPage = () => {
   return (
     <>
       <SEO title="Campus Healthcare" description="Quick access to nearby hospitals, clinics, pharmacies, and emergency services. Student-verified with pricing transparency." />
-      <div ref={mainRef} className="min-h-[100dvh] bg-black text-white overflow-hidden relative pt-[var(--nav-height)]">
+      <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground overflow-hidden relative pt-[var(--nav-height)]">
         <ScanlineOverlay />
 
       {/* ═══════════════ HERO ═══════════════ */}
@@ -305,6 +305,8 @@ const HospitalPage = () => {
           <img
             src={hospitalHero}
             alt=""
+            width={1920}
+            height={1080}
             className="hosp-hero-img absolute inset-0 w-full h-full sm:h-[130%] object-cover"
             style={{ opacity: 0 }}
             loading="eager"

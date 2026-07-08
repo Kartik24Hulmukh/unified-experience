@@ -129,7 +129,7 @@ const ResalePage = () => {
   return (
     <>
       <SEO title="Campus Resale" description="Buy and sell engineering books, calculators, and lab equipment on campus." />
-      <div ref={mainRef} className="min-h-[100dvh] bg-portal pt-[var(--nav-height)]">
+      <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground pt-[var(--nav-height)]">
       {/* Hero Section - Full bleed with diagonal split */}
       <section ref={heroRef} className="relative min-h-[calc(100dvh-var(--nav-height))] overflow-hidden">
         {/* Background Image with Parallax */}
@@ -138,6 +138,8 @@ const ResalePage = () => {
             ref={imageRef}
             src={resaleTech}
             alt="Resource Resale"
+            width={1920}
+            height={1080}
             className="w-full h-full sm:h-[130%] object-cover opacity-70"
             loading="eager"
           />

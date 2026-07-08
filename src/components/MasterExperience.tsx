@@ -10,7 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import resaleTech from '@/assets/resale-tech.jpg';
 import housingHandover from '@/assets/housing-handover.jpg';
 import essentialsTiffin from '@/assets/essentials-tiffin.jpg';
-const academicsPreview = '/Academics.jpg';
+import academicsPreview from '@/assets/Academics.jpg';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
 const SplashCursor = lazy(() => import('@/components/SplashCursor'));
@@ -31,86 +31,131 @@ const modules: Module[] = [
   { id: 'resale', number: '04', title: 'RESALE', subtitle: 'P2P EXCHANGE', preview: resaleTech, path: '/resale' },
 ];
 
+const ModuleItemCard = memo(function ModuleItemCard({
+  module,
+  index,
+  activeModule,
+  handleMouseEnter,
+  handleMouseLeave,
+  handleClick,
+  handleKeyDown,
+}: {
+  module: Module;
+  index: number;
+  activeModule: string | null;
+  handleMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => void;
+  handleMouseLeave: () => void;
+  handleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  handleKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+}) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const titleClass = (index === 2 || index === 3)
+    ? "text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl font-display font-bold uppercase transition-colors duration-500 leading-[0.9] tracking-[-0.04em]"
+    : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold uppercase transition-colors duration-500 leading-[0.9] tracking-[-0.04em]";
+
+  return (
+    <div
+      data-module-id={module.id}
+      data-module-path={module.path}
+      className={`module-item group relative cursor-pointer overflow-hidden rounded-2xl border border-portal-foreground/10 bg-portal-foreground/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-portal-foreground/[0.04] hover:shadow-[0_0_30px_hsla(var(--portal-foreground),0.1)] flex flex-col justify-between p-6 sm:p-8 ${
+        index === 0 ? 'md:col-span-2 lg:col-span-2 lg:row-span-2' : ''
+      } ${
+        index === 1 ? 'md:col-span-2 lg:col-span-2' : ''
+      } ${
+        index === 2 ? 'lg:col-span-1' : ''
+      } ${
+        index === 3 ? 'lg:col-span-1' : ''
+      }`}
+      role="button"
+      tabIndex={0}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      {/* Background Image Setup */}
+      <div className={`absolute inset-0 transition-opacity duration-700 ${activeModule === module.id ? 'opacity-100' : 'opacity-40 grayscale-[0.8]'}`}>
+         {!isLoaded && (
+           <div className="absolute inset-0 bg-neutral-850 animate-pulse bg-white/5 border border-white/10" />
+         )}
+         <img
+           src={module.preview}
+           alt={module.title}
+           onLoad={() => setIsLoaded(true)}
+           className={`w-full h-full object-cover scale-105 transition-transform duration-1000 group-hover:scale-100 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+           loading="lazy"
+         />
+         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+      </div>
+
+      {/* Content Setup */}
+      <div className="relative z-10 space-y-4">
+         <div>
+            <span className={`font-mono text-sm md:text-base font-medium inline-block px-3 py-1 rounded-full border transition-colors duration-500 ${activeModule === module.id ? 'border-[#a3ff12]/50 text-[#a3ff12] bg-[#a3ff12]/10' : 'border-white/20 text-white/50 bg-black/30'}`}>
+               {module.number}
+            </span>
+         </div>
+      </div>
+
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-8 md:mt-0">
+         <div>
+            <h3 className={`${titleClass} ${activeModule === module.id ? 'text-white' : 'text-white/80'}`}>
+               {module.title}
+            </h3>
+            <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.3em] uppercase mt-3 transition-colors duration-500 line-clamp-2 ${activeModule === module.id ? 'text-[#a3ff12]' : 'text-white/50'}`}>
+               {module.subtitle}
+            </p>
+         </div>
+         <div className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 transition-all duration-500 group-hover:bg-[#a3ff12] group-hover:border-[#a3ff12] group-hover:text-black`}>
+            <span className="font-mono text-lg transition-transform duration-300 group-hover:translate-x-1">→</span>
+         </div>
+      </div>
+    </div>
+  );
+});
+
 const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: { modules: Module[]; onModuleClick: (path: string) => void; }) {
   const [activeModule, setActiveModule] = useState<string | null>(null);
 
-    const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-      const id = (e.currentTarget as HTMLDivElement).dataset.moduleId ?? null;
-      setActiveModule((prev) => (prev === id ? prev : id));
-    }, []);
-  
-    const handleMouseLeave = useCallback(() => {
-      setActiveModule((prev) => (prev === null ? prev : null));
-    }, []);
-  
-    const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-      const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
-      if (path) onModuleClick(path);
-    }, [onModuleClick]);
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const id = (e.currentTarget as HTMLDivElement).dataset.moduleId ?? null;
+    setActiveModule((prev) => (prev === id ? prev : id));
+  }, []);
 
-    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      e.preventDefault();
-      const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
-      if (path) onModuleClick(path);
-    }, [onModuleClick]);
-  
-    return (
-      <div className="w-full h-full flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-24 overflow-y-auto">
-        <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 auto-rows-[minmax(200px,auto)] md:auto-rows-[minmax(300px,auto)]">
-          {modules.map((module, index) => (
-            <div
-              key={module.id}
-              data-module-id={module.id}
-              data-module-path={module.path}
-              className={`module-item group relative cursor-pointer overflow-hidden rounded-2xl border border-portal-foreground/10 bg-portal-foreground/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-portal-foreground/[0.04] hover:shadow-[0_0_30px_hsla(var(--portal-foreground),0.1)] flex flex-col justify-between p-6 sm:p-8 ${
-                index === 0 ? 'md:col-span-2 lg:col-span-2 lg:row-span-2' : ''
-              } ${
-                index === 1 ? 'md:col-span-2 lg:col-span-2' : ''
-              } ${
-                index === 2 ? 'lg:col-span-1' : ''
-              } ${
-                index === 3 ? 'lg:col-span-1' : ''
-              }`}
-              role="button"
-              tabIndex={0}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              onClick={handleClick}
-              onKeyDown={handleKeyDown}
-            >
-              {/* Background Image Setup */}
-              <div className={`absolute inset-0 transition-opacity duration-700 ${activeModule === module.id ? 'opacity-100' : 'opacity-40 grayscale-[0.8]'}`}>
-                 <img src={module.preview} alt={module.title} className="w-full h-full object-cover scale-105 transition-transform duration-1000 group-hover:scale-100" loading="lazy" />
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-              </div>
-  
-              {/* Content Setup */}
-              <div className="relative z-10 space-y-4">
-                 <div>
-                    <span className={`font-mono text-sm md:text-base font-medium inline-block px-3 py-1 rounded-full border transition-colors duration-500 ${activeModule === module.id ? 'border-[#a3ff12]/50 text-[#a3ff12] bg-[#a3ff12]/10' : 'border-white/20 text-white/50 bg-black/30'}`}>
-                      {module.number}
-                    </span>
-                 </div>
-              </div>
-  
-              <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-8 md:mt-0">
-                 <div>
-                    <h3 className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold uppercase transition-colors duration-500 leading-[0.9] tracking-[-0.04em] ${activeModule === module.id ? 'text-white' : 'text-white/80'}`}>
-                      {module.title}
-                    </h3>
-                    <p className={`text-[10px] md:text-[11px] font-mono tracking-[0.3em] uppercase mt-3 transition-colors duration-500 line-clamp-2 ${activeModule === module.id ? 'text-[#a3ff12]' : 'text-white/50'}`}>
-                      {module.subtitle}
-                    </p>
-                 </div>
-                 <div className={`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 transition-all duration-500 group-hover:bg-[#a3ff12] group-hover:border-[#a3ff12] group-hover:text-black`}>
-                    <span className="font-mono text-lg transition-transform duration-300 group-hover:translate-x-1">→</span>
-                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+  const handleMouseLeave = useCallback(() => {
+    setActiveModule((prev) => (prev === null ? prev : null));
+  }, []);
+
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
+    if (path) onModuleClick(path);
+  }, [onModuleClick]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
+    if (path) onModuleClick(path);
+  }, [onModuleClick]);
+
+  return (
+    <div className="w-full h-full flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-24 overflow-y-auto">
+      <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 auto-rows-[minmax(200px,auto)] md:auto-rows-[minmax(300px,auto)]">
+        {modules.map((module, index) => (
+          <ModuleItemCard
+            key={module.id}
+            module={module}
+            index={index}
+            activeModule={activeModule}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            handleClick={handleClick}
+            handleKeyDown={handleKeyDown}
+          />
+        ))}
       </div>
+    </div>
   );
 });
 

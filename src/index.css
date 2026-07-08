@@ -41,6 +41,7 @@ html.lenis body {
 @layer base {
   :root {
     --context-nav-height: 4.75rem;
+    --nav-height: var(--context-nav-height);
 
     /* Audit token layer (UI-02, UI-07, UI-09) */
     --color-bg: 0 0% 0%;
@@ -628,10 +629,6 @@ html.lenis body {
    Ensures consistent spacing and sizing on small devices
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Prevent horizontal overflow on mobile */
-html, body {
-  overflow-x: clip;
-}
 
 /* Corner brackets scale down on mobile */
 @media (max-width: 639px) {

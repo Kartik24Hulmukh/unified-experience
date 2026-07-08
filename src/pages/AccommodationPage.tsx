@@ -295,7 +295,7 @@ const AccommodationPage = () => {
   return (
     <>
     <SEO title="Campus Accommodations" description="Find verified flats, PGs, and hostels mapped close to your college. Connect with landlords directly through our secure platform." />
-    <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground overflow-hidden relative">
+    <div ref={mainRef} className="dark min-h-[100dvh] bg-background text-foreground overflow-hidden relative pt-[var(--nav-height)]">
 
       {/* ═══════════════ HERO SECTION ═══════════════ */}
       <section ref={heroRef} className="relative min-h-[100dvh] flex flex-col justify-between overflow-hidden">
@@ -304,6 +304,8 @@ const AccommodationPage = () => {
           <img
             src={housingHandover}
             alt=""
+            width={1920}
+            height={1080}
             className="accom-hero-img absolute inset-0 w-full h-full max-w-full object-cover"
             style={{ opacity: 0 }}
             loading="eager"

@@ -63,7 +63,7 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
               key={module.id}
               data-module-id={module.id}
               data-module-path={module.path}
-              className={`module-item group relative cursor-pointer overflow-hidden rounded-2xl border border-portal-foreground/10 bg-portal-foreground/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-portal-foreground/[0.04] hover:shadow-[0_0_30px_rgba(var(--portal-foreground),0.1)] flex flex-col justify-between p-6 sm:p-8 ${
+              className={`module-item group relative cursor-pointer overflow-hidden rounded-2xl border border-portal-foreground/10 bg-portal-foreground/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-portal-foreground/[0.04] hover:shadow-[0_0_30px_hsla(var(--portal-foreground),0.1)] flex flex-col justify-between p-6 sm:p-8 ${
                 index === 0 ? 'md:col-span-2 lg:col-span-2 lg:row-span-2' : ''
               } ${
                 index === 1 ? 'md:col-span-2 lg:col-span-2' : ''

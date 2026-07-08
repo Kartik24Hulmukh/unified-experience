@@ -11,6 +11,10 @@
 -- for enum alterations to remain safe inside Prisma's
 -- transaction wrapper. ALTER TYPE ... ADD VALUE cannot run
 -- inside a PostgreSQL transaction block.
+--
+-- All primary key and foreign key columns use UUID type to
+-- match the production database schema established by the init
+-- migration (20260221134321_init).
 -- ============================================================
 
 -- ── 1. Add missing PrivilegeLevel enum values ─────────────────
@@ -55,16 +59,17 @@ ALTER TABLE "listings"
 CREATE INDEX IF NOT EXISTS "listings_module_idx" ON "listings"("module");
 
 -- ── 3. Create listing_images table ───────────────────────────
-CREATE TABLE IF NOT EXISTS "listing_images" (
-  "id"         TEXT NOT NULL,
-  "listing_id" TEXT NOT NULL,
+-- Uses UUID type for id/listing_id to match the production DB
+-- convention established in the init migration.
+CREATE TABLE "listing_images" (
+  "id"         UUID NOT NULL DEFAULT gen_random_uuid(),
+  "listing_id" UUID NOT NULL,
   "url"        TEXT NOT NULL,
   "order"      INTEGER NOT NULL DEFAULT 0,
   "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "listing_images_pkey" PRIMARY KEY ("id")
 );
 
--- FK: listing_images → listings (CASCADE delete)
 ALTER TABLE "listing_images"
   ADD CONSTRAINT "listing_images_listing_id_fkey"
   FOREIGN KEY ("listing_id") REFERENCES "listings"("id")
@@ -73,8 +78,8 @@ ALTER TABLE "listing_images"
 CREATE INDEX IF NOT EXISTS "listing_images_listing_id_idx" ON "listing_images"("listing_id");
 
 -- ── 4. Create mess_providers table ──────────────────────────
-CREATE TABLE IF NOT EXISTS "mess_providers" (
-  "id"            TEXT NOT NULL,
+CREATE TABLE "mess_providers" (
+  "id"            UUID NOT NULL DEFAULT gen_random_uuid(),
   "name"          TEXT NOT NULL,
   "type"          TEXT NOT NULL,
   "location"      TEXT,
@@ -90,8 +95,8 @@ CREATE TABLE IF NOT EXISTS "mess_providers" (
 );
 
 -- ── 5. Create hospitals table ────────────────────────────────
-CREATE TABLE IF NOT EXISTS "hospitals" (
-  "id"              TEXT NOT NULL,
+CREATE TABLE "hospitals" (
+  "id"              UUID NOT NULL DEFAULT gen_random_uuid(),
   "name"            TEXT NOT NULL,
   "type"            TEXT NOT NULL,
   "address"         TEXT NOT NULL,

@@ -99,12 +99,14 @@ const LandingPage = () => {
         }
       });
 
-      // CSS fallback: ensure all content is visible even if GSAP fails
+      // CSS fallback: ensure all content is visible even if GSAP fails.
+      // This runs BEFORE the fromTo animations so JS-disabled users see content.
+      // The loader overlay (z-100) covers these elements during loading anyway.
       gsap.set(
         [navBrandRef.current, navStatusRef.current, line1Ref.current, line2Ref.current,
          line3Ref.current, taglineRef.current, ctaRef.current, portalContainerRef.current,
          metaLeftRef.current, metaRightRef.current],
-        { opacity: 1 }
+        { opacity: 1, y: 0, yPercent: 0, scale: 1 }
       );
 
       // Content reveal — stagger from bottom
@@ -198,6 +200,8 @@ const LandingPage = () => {
 
   return (
     <div ref={containerRef} className="relative h-[100dvh] w-full overflow-hidden bg-[#050505] select-none">
+      {/* SR-only page heading — one h1 per page (WCAG 1.3.1, audit P2) */}
+      <h1 className="sr-only">BErozgar — Campus Resource Exchange Platform</h1>
       {/* ═══════════════════════════════════════════
           LOADER OVERLAY 
           ═══════════════════════════════════════════ */}
@@ -238,7 +242,7 @@ const LandingPage = () => {
         {/* ── Top Nav Bar ── */}
         <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 md:px-12 py-6 pointer-events-none">
           {/* Brand */}
-          <div ref={navBrandRef} className="flex items-center gap-3 opacity-0 pointer-events-auto">
+          <div ref={navBrandRef} className="flex items-center gap-3 pointer-events-auto">
             <div className="flex items-center justify-center w-7 h-7 bg-white rounded-md overflow-hidden border border-white/10 shadow-[0_0_10px_rgba(255,255,255,0.1)]">
               <img 
                 src="/logo.png" 
@@ -252,7 +256,7 @@ const LandingPage = () => {
           </div>
 
           {/* Status indicator */}
-          <div ref={navStatusRef} className="flex items-center gap-3 opacity-0">
+          <div ref={navStatusRef} className="flex items-center gap-3">
             <div className="h-2 w-2 animate-pulse rounded-full bg-[hsl(var(--color-status-online))]" />
             <span className="text-white/40 text-[10px] uppercase tracking-[0.3em] font-body hidden md:block">
               System Online

@@ -16,6 +16,7 @@ import { LoadingSpinner, ErrorFallback } from '@/components/FallbackUI';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRestriction } from '@/hooks/useRestriction';
 import { toast } from '@/components/ui/use-toast';
+import { CollegeVerificationBanner } from '@/components/CollegeVerificationBanner';
 
 const ACADEMIC_CATEGORIES = [
   { value: 'notes', label: 'Lecture Notes' },
@@ -83,13 +84,16 @@ const resources = [
 ];
 
 const AcademicsPage = () => {
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
-  const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') ?? '';
   const activeCategory = searchParams.get('category') ?? null;
+  // Branch and semester are URL-persisted so refresh and deep links work correctly
+  const selectedBranch = searchParams.get('branch') ?? null;
+  const selectedSemester = searchParams.get('semester') ? parseInt(searchParams.get('semester')!, 10) : null;
   const setSearchQuery = (q: string) => setSearchParams(prev => { if (q) prev.set('q', q); else prev.delete('q'); return new URLSearchParams(prev); }, { replace: true });
   const setActiveCategory = (cat: string | null) => setSearchParams(prev => { if (cat) prev.set('category', cat); else prev.delete('category'); return new URLSearchParams(prev); }, { replace: true });
+  const setSelectedBranch = (branch: string | null) => setSearchParams(prev => { if (branch) prev.set('branch', branch); else prev.delete('branch'); return new URLSearchParams(prev); }, { replace: true });
+  const setSelectedSemester = (sem: number | null) => setSearchParams(prev => { if (sem !== null) prev.set('semester', sem.toString()); else prev.delete('semester'); return new URLSearchParams(prev); }, { replace: true });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -320,6 +324,7 @@ const AcademicsPage = () => {
           {/* Bento Grid */}
           {/* Search and Resources Section */}
           <div ref={browseRef} className="space-y-16">
+            <CollegeVerificationBanner />
             <ModuleSearchFilter
               onSearch={setSearchQuery}
               onFilterChange={handleFilterChange}

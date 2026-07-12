@@ -16,8 +16,9 @@ import type { ApiErrorCode } from '@/lib/api-client';
 
 export function LoadingSpinner({ className = '' }: { className?: string }) {
   return (
-    <div className={`flex items-center justify-center p-8 ${className}`}>
+    <div className={`flex items-center justify-center p-8 ${className}`} role="status" aria-live="polite">
       <div className="w-6 h-6 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+      <span className="sr-only">Loading…</span>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ModuleSearchFilter from '@/components/ModuleSearchFilter';
@@ -110,10 +111,15 @@ const AccommodationPage = () => {
   const browseRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
   const [activeArea, setActiveArea] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
   const [heroLoaded, setHeroLoaded] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 30000]);
+
+  // URL-persisted search/filter state (survives refresh and enables deep links)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') ?? '';
+  const activeCategory = searchParams.get('category') ?? null;
+  const setSearchQuery = (q: string) => setSearchParams(prev => { if (q) prev.set('q', q); else prev.delete('q'); return new URLSearchParams(prev); }, { replace: true });
+  const setActiveCategory = (cat: string | null) => setSearchParams(prev => { if (cat) prev.set('category', cat); else prev.delete('category'); return new URLSearchParams(prev); }, { replace: true });
 
   const { displayedLines, isComplete } = useTypewriter(consoleLines, 25, 150, 800);
 

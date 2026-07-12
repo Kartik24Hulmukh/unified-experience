@@ -28,6 +28,7 @@ interface ListListingsParams {
   page?: number;
   cursor?: string; // GAP-08: cursor for pagination
   search?: string;
+  ownerId?: string; // Filter by listing owner (used by profile page)
 }
 
 export async function listListings(params: ListListingsParams) {
@@ -57,9 +58,13 @@ export async function listListings(params: ListListingsParams) {
       { description: { contains: params.search } },
     ];
   }
-
-  // IAM: Exclude PUBLIC_USER sellers from resale search results
-  where.owner = { role: { not: 'PUBLIC_USER' } };
+  if (params.ownerId) {
+    // When filtering by owner, show all their listings regardless of role
+    where.ownerId = params.ownerId;
+  } else {
+    // IAM: Exclude PUBLIC_USER sellers from public browse results
+    where.owner = { role: { not: 'PUBLIC_USER' } };
+  }
 
   // GAP-08 FIX: Migrate to cursor-based pagination to avoid full table scans (O(N) skip).
   // Cursor-based is O(1) jump using the index on ID. 

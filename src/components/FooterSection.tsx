@@ -221,9 +221,7 @@ const FooterSection = () => {
             </p>
 
             <div className="ftr-bottom-text flex gap-8 order-2 lg:order-3">
-              <span className="text-portal-foreground/50 font-mono text-[9px] uppercase tracking-[0.2em]">Privacy</span>
-              <span className="text-portal-foreground/50 font-mono text-[9px] uppercase tracking-[0.2em]">Security</span>
-              <span className="text-portal-foreground/50 font-mono text-[9px] uppercase tracking-[0.2em]">Governance</span>
+              <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em] italic">Policies Coming Soon</span>
             </div>
           </div>
         </div>

@@ -150,6 +150,14 @@ const AcademicsPage = () => {
 
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {
+    // CSS fallback: ensure hero image is visible even if GSAP fails or prefers-reduced-motion
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) {
+      gsap.set('.acad-hero-img', { opacity: 0.45, scale: 1, clearProps: 'all' });
+      gsap.set('.branch-code', { opacity: 1, y: 0, rotateZ: 0, clearProps: 'all' });
+      return;
+    }
+
     const ctx = gsap.context(() => {
       // Hero image reveal + parallax
       gsap.fromTo('.acad-hero-img', { scale: 1.05, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 1, ease: 'power2.out' });

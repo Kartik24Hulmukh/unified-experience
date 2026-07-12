@@ -165,6 +165,14 @@ const MasterExperience = () => {
   const handleModuleClick = useCallback((path: string) => safeNavigate(navigate, location.pathname, path, { replace: false }), [navigate, location.pathname]);
 
   useLayoutEffect(() => {
+    // CSS fallback: ensure module cards are visible if GSAP fails or user prefers reduced motion
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) {
+      const items = modulesRef.current?.querySelectorAll('.module-item');
+      if (items) gsap.set(items, { opacity: 1, y: 0, rotateX: 0, clearProps: 'all' });
+      return;
+    }
+
     const ctx = gsap.context(() => {
       // MED-06 FIX: ScrollTrigger.refresh() forces synchronous style/layout recalculation.
       // Calling it via tl.add() at position 1.0 runs it mid-scrub while the timeline

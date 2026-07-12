@@ -61,7 +61,7 @@ const DataTicker = ({ visibleItems = [] }: { visibleItems?: unknown[] }) => {
     'ACCOMMODATION_MODULE v2.6',
     'PRIVACY_PROTOCOL: ACTIVE',
     `LISTINGS: ${visibleItems.length} AVAILABLE`,
-    'ZONES: 3 AREAS',
+    `ZONES: ${ZONE_LABELS.length} AREAS`,
     'CONSENT_ENGINE: ENABLED',
     'ADMIN_OVERSIGHT: ACTIVE',
   ];
@@ -556,8 +556,17 @@ const AccommodationPage = () => {
                 <div className="absolute top-4 right-4 text-right space-y-1">
                   <p className="text-[9px] font-mono text-cyan-400/50 uppercase tracking-widest">Status</p>
                   <div className="flex items-center gap-2 justify-end">
-                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-mono text-green-400/80">AVAILABLE</span>
+                    {visibleItems.length > 0 ? (
+                      <>
+                        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-mono text-green-400/80">LISTINGS AVAILABLE</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-1.5 h-1.5 bg-white/20 rounded-full" />
+                        <span className="text-[10px] font-mono text-white/30">NO LISTINGS YET</span>
+                      </>
+                    )}
                   </div>
                 </div>
 

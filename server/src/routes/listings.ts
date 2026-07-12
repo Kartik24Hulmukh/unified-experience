@@ -67,6 +67,7 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
       page: safeParseInt(query.page),
       cursor: query.cursor,
       search: query.search,
+      ownerId: query.ownerId,
     });
     return reply.status(200).send(apiPage(result.listings, result.pagination));
   });

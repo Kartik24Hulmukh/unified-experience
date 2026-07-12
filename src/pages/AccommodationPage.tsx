@@ -350,6 +350,8 @@ const AccommodationPage = () => {
         <div className="relative z-10 flex-1 flex flex-col md:flex-row items-center px-4 sm:px-8 md:px-16">
           {/* Left — Title block */}
           <div className="w-full md:w-3/5 py-12">
+            {/* sr-only h1 for SEO/accessibility — visual title is animated spans below */}
+            <h1 className="sr-only">Accommodation</h1>
             <div className="overflow-hidden mb-2">
               <div className="flex flex-wrap">
                 {'ACCOMMO'.split('').map((char, i) => (

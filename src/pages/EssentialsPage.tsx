@@ -177,9 +177,9 @@ const EssentialsPage = () => {
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
-                <span className="ess-title-word block text-white font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
+                <h1 className="ess-title-word block text-white font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   CAMPUS
-                </span>
+                </h1>
               </div>
               <div className="overflow-hidden">
                 <span className="ess-title-word block font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>

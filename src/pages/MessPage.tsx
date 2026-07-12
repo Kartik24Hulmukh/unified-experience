@@ -263,9 +263,9 @@ const MessPage = () => {
             {/* nvg8-style big words stacking */}
             <div className="space-y-2 mb-8">
               <div className="overflow-hidden">
-                <span className="mess-title-word block text-white font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight">
-                  MESS &
-                </span>
+                <h1 className="mess-title-word block text-white font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight">
+                  MESS &amp;
+                </h1>
               </div>
               <div className="overflow-hidden">
                 <span className="mess-title-word block font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight">
@@ -562,7 +562,12 @@ const MessPage = () => {
                 Find Your Mess <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
             </button>
-            <button className="px-10 py-4 border border-white/10 text-white/50 font-display uppercase tracking-wider text-xs font-bold hover:border-white/30 hover:text-white/80 transition-all duration-300">
+            <button
+              disabled
+              aria-disabled="true"
+              title="Service submission coming soon"
+              className="px-10 py-4 border border-white/10 text-white/25 font-display uppercase tracking-wider text-xs font-bold cursor-not-allowed opacity-50"
+            >
               Submit a Service
             </button>
           </div>

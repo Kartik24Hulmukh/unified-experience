@@ -135,7 +135,8 @@ const HospitalPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 1000]);
-  const [isBooking, setIsBooking] = useState(false);
+  // isBooking / handleAppointmentSubmit removed — appointment form was replaced
+  // with a "Coming Soon" placeholder (no real booking API exists yet)
 
   // Fetch hospitals from API
   const { data: hospitalsResponse, isLoading: isHospitalsLoading } = useHospitals();
@@ -211,22 +212,6 @@ const HospitalPage = () => {
   const scrollToBrowse = useCallback(() => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
-
-  const handleAppointmentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsBooking(true);
-    
-    // Simulate network delay
-    await new Promise(res => setTimeout(res, 1200));
-
-    toast.success('Booking Confirmed', {
-      description: 'Your appointment request has been submitted. Look out for a confirmation SMS shortly.',
-      position: 'top-center'
-    });
-
-    setIsBooking(false);
-    (e.target as HTMLFormElement).reset();
-  };
 
   /* GSAP Animations */
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
@@ -333,9 +318,9 @@ const HospitalPage = () => {
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
-                <span className="hosp-title-word block text-white font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight">
+                <h1 className="hosp-title-word block text-white font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight">
                   HEALTH
-                </span>
+                </h1>
               </div>
               <div className="overflow-hidden">
                 <span className="hosp-title-word block font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight">
@@ -675,7 +660,12 @@ const HospitalPage = () => {
                 Find Facilities <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
             </button>
-            <button className="px-10 py-4 border border-white/10 text-white/50 font-display uppercase tracking-wider text-xs font-bold hover:border-white/30 hover:text-white/80 transition-all duration-300">
+            <button
+              disabled
+              aria-disabled="true"
+              title="Coming soon — use the emergency contacts above for urgent issues"
+              className="px-10 py-4 border border-white/10 text-white/25 font-display uppercase tracking-wider text-xs font-bold cursor-not-allowed opacity-50"
+            >
               Report an Issue
             </button>
           </div>

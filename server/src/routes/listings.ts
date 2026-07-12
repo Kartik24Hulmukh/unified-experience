@@ -59,15 +59,34 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
+    // Security: when ownerId filter is used, restrict visible statuses
+    // - the owner can see all their own listings (any status)
+    // - anyone else can only see APPROVED listings for that owner
+    // Attempt to decode the session token (optional auth — no error if absent)
+    let requestingUserId: string | null = null;
+    try {
+      await authenticate(request, reply);
+      requestingUserId = request.userId ?? null;
+    } catch {
+      // unauthenticated — that's fine for public listing browse
+    }
+
+    const effectiveOwnerId = query.ownerId;
+    // If viewing another user's listings (or unauthenticated), only show APPROVED
+    const ownerIdStatus: string | undefined =
+      effectiveOwnerId && requestingUserId !== effectiveOwnerId
+        ? 'APPROVED'
+        : status; // owner sees all their own statuses
+
     const result = await listingService.listListings({
-      status: status,
+      status: effectiveOwnerId ? ownerIdStatus : status,
       category: query.category,
       module: moduleParam,
       limit: safeParseInt(query.limit),
       page: safeParseInt(query.page),
       cursor: query.cursor,
       search: query.search,
-      ownerId: query.ownerId,
+      ownerId: effectiveOwnerId,
     });
     return reply.status(200).send(apiPage(result.listings, result.pagination));
   });

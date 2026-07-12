@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "statusCode": 200,
+  "consoleErrors": [],
+  "consoleLogs": [],
+  "bodyStyles": {
+    "htmlClass": "lenis light",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(0, 0, 0)",
+    "fontFamily": "\"Space Grotesk\", sans-serif"
+  },
+  "darkStyles": {
+    "htmlClass": "lenis dark",
+    "bg": "rgb(255, 255, 255)",
+    "color": "rgb(255, 255, 255)"
+  }
+}

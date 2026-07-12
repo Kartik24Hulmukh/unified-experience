@@ -94,12 +94,7 @@ export async function analyticsRoutes(app: FastifyInstance): Promise<void> {
               id: request.userId,
               role: request.userRole ?? undefined,
             }
-          : ev.user
-          ? {
-              id: ev.user.id.slice(0, 128),
-              role: ev.user.role?.slice(0, 64),
-            }
-          : undefined,
+          : undefined, // SEC: Never trust body-supplied user.id for unauthenticated callers
       }));
 
       const names = [...new Set(events.map((e) => e.name))].slice(0, 10);

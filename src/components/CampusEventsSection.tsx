@@ -7,7 +7,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 const events = [
   {
     id: '01',
-    date: 'MAR 15',
+    date: 'AUG 15',
+    fullDate: '2026-08-15',
     type: 'TECHNICAL',
     title: 'TECHFEST 2026',
     desc: 'Annual technical festival — hackathons, competitive coding, robotics and IoT exhibitions open to all branches.',
@@ -15,7 +16,8 @@ const events = [
   },
   {
     id: '02',
-    date: 'MAR 22',
+    date: 'SEP 06',
+    fullDate: '2026-09-06',
     type: 'CULTURAL',
     title: 'RANGMANCH',
     desc: 'Grand cultural night featuring dance performances, drama, live music and student art installations.',
@@ -23,7 +25,8 @@ const events = [
   },
   {
     id: '03',
-    date: 'APR 05',
+    date: 'SEP 20',
+    fullDate: '2026-09-20',
     type: 'SPORTS',
     title: 'SPORTANZA',
     desc: 'Inter-branch championship spanning cricket, basketball, chess, athletics and 8 more disciplines.',
@@ -31,7 +34,8 @@ const events = [
   },
   {
     id: '04',
-    date: 'APR 18',
+    date: 'OCT 10',
+    fullDate: '2026-10-10',
     type: 'ACADEMIC',
     title: 'RESEARCH EXPO',
     desc: 'Annual research paper presentation and poster symposium — showcase your innovations to faculty and peers.',
@@ -39,13 +43,24 @@ const events = [
   },
   {
     id: '05',
-    date: 'MAY 02',
+    date: 'NOV 08',
+    fullDate: '2026-11-08',
     type: 'WORKSHOP',
     title: 'AI / ML SUMMIT',
     desc: 'Intensive workshop series covering machine learning, computer vision and real-world AI deployment pipelines.',
     tag: 'Workshop Series',
   },
 ];
+
+/** Returns 'UPCOMING', 'TODAY', or 'COMPLETED' based on the event's date */
+function getEventStatus(fullDate: string): 'UPCOMING' | 'TODAY' | 'COMPLETED' {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const eventDate = new Date(fullDate);
+  eventDate.setHours(0, 0, 0, 0);
+  if (eventDate.getTime() === today.getTime()) return 'TODAY';
+  return eventDate > today ? 'UPCOMING' : 'COMPLETED';
+}
 
 const TYPE_COLORS: Record<string, string> = {
   TECHNICAL: '#a3ff12',
@@ -212,7 +227,6 @@ const CampusEventsSection = () => {
             </div>
 
             <div className="mt-10 flex items-center gap-2 text-portal-foreground/15">
-              <span className="font-mono text-[9px] uppercase tracking-[0.3em]">Scroll to explore</span>
               <span className="text-sm">→</span>
             </div>
           </div>
@@ -296,16 +310,25 @@ const CampusEventsSection = () => {
                     style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
                   >
                     <div className="flex items-center gap-2">
-                      <span
-                        className="w-1.5 h-1.5 rounded-full animate-pulse"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span
-                        className="font-mono text-[8px] uppercase tracking-[0.35em]"
-                        style={{ color }}
-                      >
-                        UPCOMING
-                      </span>
+                      {(() => {
+                        const status = getEventStatus(event.fullDate);
+                        const isPast = status === 'COMPLETED';
+                        const isToday = status === 'TODAY';
+                        return (
+                          <>
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${isPast ? '' : 'animate-pulse'}`}
+                              style={{ backgroundColor: isPast ? 'rgba(255,255,255,0.3)' : color }}
+                            />
+                            <span
+                              className="font-mono text-[8px] uppercase tracking-[0.35em]"
+                              style={{ color: isPast ? 'rgba(255,255,255,0.3)' : isToday ? '#fbbf24' : color }}
+                            >
+                              {status}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                     <span className="text-portal-foreground/20 font-mono text-[8px] uppercase tracking-widest group-hover:text-portal-foreground/40 transition-colors duration-300">
                       EXPLORE &rarr;

@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Shield, ArrowRight, ChevronDown } from "lucide-react";
+import { Shield, ArrowRight, ChevronDown, Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { safeNavigate } from "@/lib/utils";
@@ -46,6 +46,7 @@ const LoginPage = () => {
     const { promptSignIn, isLoading: isGoogleLoading, hasRealGIS } = useGoogleIdentity();
     const isMobile = useIsMobile();
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [showEmailForm, setShowEmailForm] = useState(true);
     const hasRedirected = useRef(false);
 
@@ -110,6 +111,11 @@ const LoginPage = () => {
         }
     }
 
+    // Early return: prevent flash of login form for already-authenticated users
+    if (isAuthenticated && !authLoading) {
+        return null;
+    }
+
     return (
         <div className="fixed inset-0 z-50 overflow-hidden bg-[hsl(var(--color-bg))] text-[hsl(var(--color-text))]">
             {/* Subtle atmosphere without introducing a separate teal page identity */}
@@ -126,11 +132,11 @@ const LoginPage = () => {
               </div>
             )}
 
-            {/* ── Watermark ── */}
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none select-none z-[1] opacity-5">
-                <h1 className="text-[6rem] sm:text-[10rem] md:text-[14rem] lg:text-[20rem] font-bold text-white uppercase leading-none font-display italic tracking-tighter">
+            {/* ── Watermark (decorative, not a page heading) ── */}
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none select-none z-[1] opacity-5" aria-hidden="true">
+                <div className="text-[6rem] sm:text-[10rem] md:text-[14rem] lg:text-[20rem] font-bold text-white uppercase leading-none font-display italic tracking-tighter">
                     TRUST
-                </h1>
+                </div>
             </div>
 
             {/* ── Login Form Overlay ── */}
@@ -141,9 +147,9 @@ const LoginPage = () => {
                             <div className="w-12 h-px bg-primary/30" />
                             <span className="text-[10px] font-bold tracking-[0.4em] uppercase">Campus Gateway</span>
                         </div>
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white uppercase italic font-display leading-tight">
-                            Identity<br />Verified
-                        </h2>
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white uppercase italic font-display leading-tight">
+                            Secure<br />Sign In
+                        </h1>
                     </div>
 
                     <div className="relative">
@@ -194,7 +200,19 @@ const LoginPage = () => {
                                             <FormField control={form.control} name="password" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="text-white/60 text-xs uppercase tracking-widest">Password</FormLabel>
-                                                    <FormControl><Input id="password" data-testid="password-input" autoComplete="current-password" type="password" placeholder="Enter your password" {...field} className="bg-white/5 border-white/5 text-white h-14 rounded-lg placeholder:text-white/30" /></FormControl>
+                                                    <FormControl>
+                                                        <div className="relative">
+                                                            <Input id="password" data-testid="password-input" autoComplete="current-password" type={showPassword ? 'text' : 'password'} placeholder="Enter your password" {...field} className="bg-white/5 border-white/5 text-white h-14 rounded-lg placeholder:text-white/30 pr-12" />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowPassword(p => !p)}
+                                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                                                            >
+                                                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                            </button>
+                                                        </div>
+                                                    </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />

@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, lazy, Suspense, memo } from 'react';
 import { useLayoutEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { safeNavigate } from '@/lib/utils';
@@ -37,16 +37,12 @@ const ModuleItemCard = memo(function ModuleItemCard({
   activeModule,
   handleMouseEnter,
   handleMouseLeave,
-  handleClick,
-  handleKeyDown,
 }: {
   module: Module;
   index: number;
   activeModule: string | null;
-  handleMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => void;
+  handleMouseEnter: (e: React.MouseEvent<HTMLAnchorElement>) => void;
   handleMouseLeave: () => void;
-  handleClick: (e: React.MouseEvent<HTMLDivElement>) => void;
-  handleKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
 }) {
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -55,10 +51,10 @@ const ModuleItemCard = memo(function ModuleItemCard({
     : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold uppercase transition-colors duration-500 leading-[0.9] tracking-[-0.04em]";
 
   return (
-    <div
+    <Link
+      to={module.path}
       data-module-id={module.id}
-      data-module-path={module.path}
-      className={`module-item group relative cursor-pointer overflow-hidden rounded-2xl border border-portal-foreground/10 bg-portal-foreground/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-portal-foreground/[0.04] hover:shadow-[0_0_30px_hsla(var(--portal-foreground),0.1)] flex flex-col justify-between p-6 sm:p-8 ${
+      className={`module-item group relative overflow-hidden rounded-2xl border border-portal-foreground/10 bg-portal-foreground/[0.02] transform transition-all duration-500 hover:scale-[1.02] hover:bg-portal-foreground/[0.04] hover:shadow-[0_0_30px_hsla(var(--portal-foreground),0.1)] flex flex-col justify-between p-6 sm:p-8 ${
         index === 0 ? 'md:col-span-2 lg:col-span-2 lg:row-span-2' : ''
       } ${
         index === 1 ? 'md:col-span-2 lg:col-span-2' : ''
@@ -67,12 +63,8 @@ const ModuleItemCard = memo(function ModuleItemCard({
       } ${
         index === 3 ? 'lg:col-span-1' : ''
       }`}
-      role="button"
-      tabIndex={0}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
     >
       {/* Background Image Setup */}
       <div className={`absolute inset-0 transition-opacity duration-700 ${activeModule === module.id ? 'opacity-100' : 'opacity-40 grayscale-[0.8]'}`}>
@@ -111,33 +103,21 @@ const ModuleItemCard = memo(function ModuleItemCard({
             <span className="font-mono text-lg transition-transform duration-300 group-hover:translate-x-1">→</span>
          </div>
       </div>
-    </div>
+    </Link>
   );
 });
 
-const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: { modules: Module[]; onModuleClick: (path: string) => void; }) {
+const ModuleNavPanel = memo(function ModuleNavPanel({ modules }: { modules: Module[] }) {
   const [activeModule, setActiveModule] = useState<string | null>(null);
 
-  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const id = (e.currentTarget as HTMLDivElement).dataset.moduleId ?? null;
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    const id = (e.currentTarget as HTMLAnchorElement).dataset.moduleId ?? null;
     setActiveModule((prev) => (prev === id ? prev : id));
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     setActiveModule((prev) => (prev === null ? prev : null));
   }, []);
-
-  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
-    if (path) onModuleClick(path);
-  }, [onModuleClick]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    e.preventDefault();
-    const path = (e.currentTarget as HTMLDivElement).dataset.modulePath;
-    if (path) onModuleClick(path);
-  }, [onModuleClick]);
 
   return (
     <div className="w-full h-full flex items-center justify-center p-4 sm:p-8 md:p-12 lg:p-24 overflow-y-auto">
@@ -150,8 +130,6 @@ const ModuleNavPanel = memo(function ModuleNavPanel({ modules, onModuleClick }: 
             activeModule={activeModule}
             handleMouseEnter={handleMouseEnter}
             handleMouseLeave={handleMouseLeave}
-            handleClick={handleClick}
-            handleKeyDown={handleKeyDown}
           />
         ))}
       </div>
@@ -205,9 +183,9 @@ const MasterExperience = () => {
       tl.fromTo(symbolRef.current, { scale: 0.2, opacity: 0, rotateZ: -15 }, { scale: 5, z: 120, opacity: 1, rotateZ: 0, duration: 1.4, ease: 'expo.inOut' }, 0.2);
       tl.to(symbolRef.current, { opacity: 0, scale: 12, duration: 0.5, ease: 'power2.in' }, 0.9);
 
-      tl.to(modulesRef.current, { opacity: 1, pointerEvents: 'auto', duration: 0.4 }, 0.6);
+      // Module items animate in (module panel is visible by default for accessibility)
       const items = modulesRef.current?.querySelectorAll('.module-item');
-      if (items) tl.fromTo(items, { y: 40, opacity: 0, rotateX: 10 }, { y: 0, opacity: 1, rotateX: 0, duration: 0.8, stagger: 0.08, ease: 'power4.out' }, 0.7);
+      if (items) tl.fromTo(items, { y: 40, opacity: 0, rotateX: 10 }, { y: 0, opacity: 1, rotateX: 0, duration: 0.8, stagger: 0.08, ease: 'power4.out' }, 0.6);
 
       // Add idle scrolling time so the 4 modules stay visible for the user to read/click
       tl.to({}, { duration: 0.8 });
@@ -241,51 +219,51 @@ const MasterExperience = () => {
             )}
             {/* High-End Editorial Hero Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none select-none px-4 md:px-8">
-              <div className="w-full max-w-[1800px] flex flex-col relative overflow-visible mt-12 md:mt-0 gap-2 md:gap-4">
-                
-                {/* Row 1: Left */}
-                <div className="animate-fade-in-up flex items-end justify-start w-full relative z-10" style={{ animationDelay: '0.1s', opacity: 0 }}>
-                  <div className="flex-col items-start pb-4 mr-8 hidden lg:flex">
-                     <span className="text-[10px] uppercase font-mono tracking-widest text-foreground/40 mb-4 whitespace-nowrap">
-                       Verified User Base
-                     </span>
-                     <div className="w-[1px] h-12 bg-foreground/30"></div>
-                  </div>
-                  <h1 className="text-[14vw] sm:text-[14vw] lg:text-[10vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0">
-                    TRUST
-                  </h1>
-                </div>
-
-                {/* Row 2: Right */}
-                <div className="animate-fade-in-up flex items-start justify-end w-full relative z-20" style={{ animationDelay: '0.2s', opacity: 0 }}>
-                  <h1 className="text-[13vw] sm:text-[14vw] lg:text-[10vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0 pr-2 lg:pr-8">
-                    CENTRIC
-                  </h1>
-                  <div className="flex-col items-end pt-4 ml-8 hidden lg:flex">
-                     <div className="w-[1px] h-12 bg-foreground/30 mb-4"></div>
-                     <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-foreground/40 max-w-[140px] text-right leading-relaxed">
-                       Admin Authenticated
-                     </span>
-                  </div>
-                </div>
-
-                {/* Row 3: Left Offset */}
-                <div className="animate-fade-in-up flex justify-start lg:justify-center w-full relative z-30" style={{ animationDelay: '0.3s', opacity: 0 }}>
-                  <h1 className="text-[12vw] sm:text-[13vw] lg:text-[10vw] font-display font-medium uppercase tracking-[-0.05em] text-foreground leading-[0.75] m-0 p-0 relative ml-8 lg:ml-0">
-                    <span className="animate-fade-in-up absolute -top-4 -left-6 md:-top-6 md:-left-12 text-2xl md:text-5xl text-[#a3ff12]/80 font-serif italic font-light" style={{ animationDelay: '0.6s', opacity: 0 }}>
-                      *
-                    </span>
-                    EXCHANGE
-                  </h1>
-                </div>
-
-              </div>
+            <div className="w-full max-w-[1800px] flex flex-col relative overflow-visible mt-12 md:mt-0 gap-2 md:gap-4">
               
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-60">
+              {/* Unified h1 — split visually across three rows */}
+              <h1 className="sr-only">Trust-Centric Exchange</h1>
+              
+              {/* Row 1: Left */}
+              <div className="animate-fade-in-up flex items-end justify-start w-full relative z-10" style={{ animationDelay: '0.1s' }}>
+                <div className="flex-col items-start pb-4 mr-8 hidden lg:flex">
+                   <span className="text-[10px] uppercase font-mono tracking-widest text-foreground/40 mb-4 whitespace-nowrap">
+                     Verified User Base
+                   </span>
+                   <div className="w-[1px] h-12 bg-foreground/30"></div>
+                </div>
+                <span aria-hidden="true" className="text-[14vw] sm:text-[14vw] lg:text-[10vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0">
+                  TRUST
+                </span>
+              </div>
+
+              {/* Row 2: Right */}
+              <div className="animate-fade-in-up flex items-start justify-end w-full relative z-20" style={{ animationDelay: '0.2s' }}>
+                <span aria-hidden="true" className="text-[13vw] sm:text-[14vw] lg:text-[10vw] font-display font-medium uppercase tracking-[-0.04em] text-foreground leading-[0.75] m-0 p-0 pr-2 lg:pr-8">
+                  CENTRIC
+                </span>
+                <div className="flex-col items-end pt-4 ml-8 hidden lg:flex">
+                   <div className="w-[1px] h-12 bg-foreground/30 mb-4"></div>
+                   <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-foreground/40 max-w-[140px] text-right leading-relaxed">
+                     Admin Authenticated
+                   </span>
+                </div>
+              </div>
+
+              {/* Row 3: Left Offset */}
+              <div className="animate-fade-in-up flex justify-start lg:justify-center w-full relative z-30" style={{ animationDelay: '0.3s' }}>
+                <span aria-hidden="true" className="text-[12vw] sm:text-[13vw] lg:text-[10vw] font-display font-medium uppercase tracking-[-0.05em] text-foreground leading-[0.75] m-0 p-0 relative ml-8 lg:ml-0">
+                  <span className="animate-fade-in-up absolute -top-4 -left-6 md:-top-6 md:-left-12 text-2xl md:text-5xl text-[#a3ff12]/80 font-serif italic font-light" style={{ animationDelay: '0.6s' }}>
+                    *
+                  </span>
+                  EXCHANGE
+                </span>
+              </div>
+
+            </div>
+              
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-60" aria-hidden="true">
                 <div className="w-[1px] h-16 bg-gradient-to-b from-foreground/50 to-transparent"></div>
-                <p className="text-[9px] font-mono uppercase tracking-[0.4em] text-foreground">
-                  Scroll to explore
-                </p>
               </div>
             </div>
           </div>
@@ -297,8 +275,8 @@ const MasterExperience = () => {
           </div>
         </div>
 
-        <div ref={modulesRef} className="absolute inset-0 z-30 bg-transparent opacity-0 pointer-events-none pt-[20vh] md:pt-[10vh]">
-          <ModuleNavPanel modules={modules} onModuleClick={handleModuleClick} />
+        <div ref={modulesRef} className="absolute inset-0 z-30 bg-transparent pt-[20vh] md:pt-[10vh]">
+          <ModuleNavPanel modules={modules} />
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
@@ -32,8 +33,11 @@ const ResalePage = () => {
   const categoriesRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') ?? '';
+  const activeCategory = searchParams.get('category') ?? null;
+  const setSearchQuery = (q: string) => setSearchParams(prev => { if (q) prev.set('q', q); else prev.delete('q'); return new URLSearchParams(prev); }, { replace: true });
+  const setActiveCategory = (cat: string | null) => setSearchParams(prev => { if (cat) prev.set('category', cat); else prev.delete('category'); return new URLSearchParams(prev); }, { replace: true });
   const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 5000]);
   const { canPerform } = useRestriction();
   const { isAuthenticated } = useAuth();
@@ -159,7 +163,7 @@ const ResalePage = () => {
         <div className="relative z-20 h-full flex flex-col justify-end pb-20 px-4 sm:px-8 md:px-16">
           <div className="max-w-4xl">
             <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-4">
-              Module 01
+              Module 04
             </p>
             <h1 className="text-portal-foreground font-display text-4xl sm:text-5xl md:text-8xl lg:text-9xl font-bold leading-none mb-6">
               <SplitText animation="fadeUp" trigger="load" delay={0.3}>

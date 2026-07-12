@@ -1,4 +1,5 @@
 import { useRef, useLayoutEffect } from 'react';
+import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { APP_VERSION } from '@/lib/app-meta';
@@ -16,7 +17,12 @@ const STATS = [
   { label: 'Users',       value: 'MCTRGIT Students Only' },
 ];
 
-const MODULES = ['Resale', 'Requests', 'Accommodation', 'Essentials', 'Hospital', 'Mess'];
+const MODULES = [
+  { label: 'Resale', path: '/resale' },
+  { label: 'Accommodation', path: '/accommodation' },
+  { label: 'Academics', path: '/academics' },
+  { label: 'Essentials', path: '/essentials' },
+];
 
 const FooterSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
@@ -172,12 +178,13 @@ const FooterSection = () => {
         {/* ── Modules Quick Links ────────────────────────────────────────────── */}
         <div className="ftr-modules flex flex-wrap justify-center gap-x-10 gap-y-6 mb-20 py-8 border-y border-portal-foreground/5">
           {MODULES.map((mod) => (
-            <span
-              key={mod}
-              className="ftr-module font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] text-portal-foreground/60"
+            <Link
+              key={mod.path}
+              to={mod.path}
+              className="ftr-module font-mono text-[10px] md:text-xs uppercase tracking-[0.4em] text-portal-foreground/60 hover:text-portal-foreground/90 transition-colors"
             >
-              {mod}
-            </span>
+              {mod.label}
+            </Link>
           ))}
         </div>
 
@@ -214,9 +221,9 @@ const FooterSection = () => {
             </p>
 
             <div className="ftr-bottom-text flex gap-8 order-2 lg:order-3">
-              <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em]">Privacy</span>
-              <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em]">Security</span>
-              <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em]">Governance</span>
+              <span className="text-portal-foreground/50 font-mono text-[9px] uppercase tracking-[0.2em]">Privacy</span>
+              <span className="text-portal-foreground/50 font-mono text-[9px] uppercase tracking-[0.2em]">Security</span>
+              <span className="text-portal-foreground/50 font-mono text-[9px] uppercase tracking-[0.2em]">Governance</span>
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@
  */
 
 import { FastifyInstance, FastifyRequest } from 'fastify';
+import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { authenticate } from '@/middleware/authenticate';
 import { authorize } from '@/middleware/authorize';
@@ -59,7 +60,10 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /** POST /users/:userId/status — ban/verify user */
-  app.post('/users/:userId/status', async (request, reply) => {
+  const updateUserStatusSchema = z.object({
+    action: z.enum(['ban', 'verify', 'unban']),
+  });
+  app.post('/users/:userId/status', { preValidation: [validate(updateUserStatusSchema)] }, async (request, reply) => {
     const { userId } = request.params as { userId: string };
     const body = request.body as { action: 'ban' | 'verify' | 'unban' };
     const result = await adminService.updateUserStatus(userId, body);

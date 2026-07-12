@@ -1,10 +1,12 @@
 /**
  * BErozgar — Database Seed Script
  *
- * Creates test data for development and staging environments.
+ * Creates test data for development and staging environments ONLY.
+ * DO NOT run in production — use production guards below.
  * Idempotent — safe to run multiple times (uses upsert).
  *
- * Usage: npm run db:seed
+ * Usage: npm run db:seed  (dev/staging only)
+ * Passwords below are DEV-ONLY placeholders — never use in production.
  */
 
 import 'dotenv/config';
@@ -14,6 +16,13 @@ import * as argon2 from 'argon2';
 const prisma = new PrismaClient();
 
 async function main() {
+  // ── Production guard ───────────────────────────────────
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ SEED ABORTED: Refusing to seed a production database.');
+    console.error('   NODE_ENV is set to "production". Seed scripts must only run in dev/staging.');
+    process.exit(1);
+  }
+
   console.log('🌱 Seeding database...\n');
 
   // ── RGIT College Student Registry ─────────────────

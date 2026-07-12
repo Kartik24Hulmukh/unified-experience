@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import GlitchText from '@/components/GlitchText';
-import AnimatedCounter from '@/components/AnimatedCounter';
 import WordMarquee from '@/components/WordMarquee';
 import essentialsPreview from '@/assets/essentials-preview.jpg';
 import {
@@ -24,11 +23,6 @@ const modules = [
     subtitle: 'Food services, tiffin delivery, campus canteens — verified, priced, reviewed.',
     accent: 'amber',
     path: '/mess',
-    stats: [
-      { value: '18+', label: 'Verified Services' },
-      { value: '4.5', label: 'Avg Rating' },
-      { value: '₹2.2k', label: 'Starting From' },
-    ],
     features: ['Hygiene Scores', 'Live Menus', 'Price Comparison', 'Student Reviews', 'Delivery Tracking', 'Diet Filters'],
     icon: Utensils,
   },
@@ -39,11 +33,6 @@ const modules = [
     subtitle: 'Hospitals, clinics, pharmacies, emergency services — mapped and accessible.',
     accent: 'emerald',
     path: '/hospital',
-    stats: [
-      { value: '11+', label: 'Medical Facilities' },
-      { value: '2', label: '24/7 Hospitals' },
-      { value: '5 km', label: 'Max Distance' },
-    ],
     features: ['Emergency Contacts', 'Student Discounts', 'Distance Mapping', 'Service Categories', 'Insurance Info', '24/7 Pharmacy'],
     icon: Stethoscope,
   },
@@ -52,7 +41,7 @@ const modules = [
 const quickLinks = [
   { icon: Ambulance, label: 'Ambulance', value: '102', type: 'emergency', href: 'tel:102' },
   { icon: Phone, label: 'Emergency', value: '112', type: 'emergency', href: 'tel:112' },
-  { icon: Pill, label: '24/7 Pharmacy', value: '0.3 km', type: 'info', href: '/hospital' },
+  { icon: Pill, label: '24/7 Pharmacy', value: 'Nearby', type: 'info', href: '/hospital' },
   { icon: Truck, label: 'Tiffin Delivery', value: 'Active', type: 'info', href: '/mess' },
 ];
 
@@ -105,6 +94,9 @@ const EssentialsPage = () => {
         ease: 'none',
         scrollTrigger: { trigger: heroRef.current, start: 'top top', end: 'bottom top', scrub: true },
       });
+
+      // CSS fallback: ensure hero text visible even if GSAP fails
+      gsap.set('.ess-title-word, .ess-subtitle, .quick-link', { opacity: 1 });
 
       // Title words
       gsap.fromTo('.ess-title-word', { y: 120, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.12, duration: 1, ease: 'power4.out', delay: 0.5 });
@@ -185,18 +177,18 @@ const EssentialsPage = () => {
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
-                <span className="ess-title-word block text-white font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
+                <span className="ess-title-word block text-white font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   CAMPUS
                 </span>
               </div>
               <div className="overflow-hidden">
-                <span className="ess-title-word block font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0, textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
+                <span className="ess-title-word block font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-300">ESSENTIALS</span>
                 </span>
               </div>
             </div>
 
-            <div className="ess-subtitle max-w-xl" style={{ opacity: 0 }}>
+            <div className="ess-subtitle max-w-xl">
               <div className="flex items-center gap-4 mb-4">
                 <div className="h-px w-12 bg-gradient-to-r from-violet-400/60 to-transparent" />
                 <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-violet-400/60">
@@ -223,7 +215,6 @@ const EssentialsPage = () => {
                         ? 'border-red-500/20 bg-red-500/[0.03] hover:border-red-500/40 hover:bg-red-500/[0.06]'
                         : 'border-white/5 bg-white/[0.02] hover:border-violet-400/20 hover:bg-violet-400/[0.03]'
                     }`}
-                    style={{ opacity: 0 }}
                   >
                     <Icon className={`w-4 h-4 ${isEmergency ? 'text-red-400/60' : 'text-white/25 group-hover:text-violet-400/70'} transition-colors`} />
                     <div>
@@ -322,17 +313,6 @@ const EssentialsPage = () => {
                     </p>
                   </div>
 
-                  {/* Stats */}
-                  <div className="px-8 md:px-10 pb-6">
-                    <div className="flex gap-8">
-                      {mod.stats.map((stat, i) => (
-                        <div key={i}>
-                          <p className="text-white font-display text-2xl font-bold">{stat.value}</p>
-                          <p className="text-white/20 text-[9px] uppercase tracking-[0.3em] font-mono mt-1">{stat.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
 
                   {/* Feature tags */}
                   <div className="px-8 md:px-10 pb-6">

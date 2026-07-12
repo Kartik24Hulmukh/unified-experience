@@ -88,18 +88,18 @@ function PremiumIDCard() {
             
             <div className="flex flex-col gap-3">
               <div>
-                <p className="text-[7px] text-[#00BCD4] font-bold tracking-[0.2em] uppercase">Authorized Identity</p>
-                <p className="text-[16px] font-bold text-white tracking-wide mt-0.5">ADMINISTRATOR</p>
+                <p className="text-[7px] text-[#00BCD4] font-bold tracking-[0.2em] uppercase">Campus Identity</p>
+                <p className="text-[16px] font-bold text-white tracking-wide mt-0.5">CAMPUS MEMBER</p>
               </div>
               <div>
-                <p className="text-[7px] text-[#00BCD4] font-bold tracking-[0.2em] uppercase">Department / Sector</p>
-                <p className="text-[12px] font-medium text-white/80 mt-0.5">System Operations</p>
+                <p className="text-[7px] text-[#00BCD4] font-bold tracking-[0.2em] uppercase">Institution</p>
+                <p className="text-[12px] font-medium text-white/80 mt-0.5">MCTRGIT Campus</p>
               </div>
               <div>
-                <p className="text-[7px] text-[#00BCD4] font-bold tracking-[0.2em] uppercase">Clearance Level</p>
+                <p className="text-[7px] text-[#00BCD4] font-bold tracking-[0.2em] uppercase">Platform</p>
                 <div className="mt-1 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#00ff88] shadow-[0_0_8px_#00ff88]" />
-                  <p className="text-[11px] font-bold text-[#00ff88] tracking-widest">LEVEL 5 OMNI</p>
+                  <div className="w-2 h-2 rounded-full bg-[#00BCD4] shadow-[0_0_8px_#00BCD4]" />
+                  <p className="text-[11px] font-bold text-[#00BCD4] tracking-widest">BErozgar ID</p>
                 </div>
               </div>
             </div>

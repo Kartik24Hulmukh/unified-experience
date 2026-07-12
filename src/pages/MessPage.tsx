@@ -13,20 +13,15 @@ import WordMarquee from '@/components/WordMarquee';
 const messHero = '/Mess.webp';
 import { getBrowseVisibleListings } from '@/lib/browse-listings';
 import ScanlineOverlay from '@/components/ScanlineOverlay';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
-  Search, X, ArrowRight, Star, Clock, Utensils, Leaf,
-  ChefHat, Flame, IndianRupee, Users, ChevronDown, ChevronUp,
-  MapPin, Truck, ShieldCheck, Heart, Loader2
+  Search, X, ArrowRight, Star, Utensils, Leaf,
+  ChefHat, Flame, IndianRupee, Truck, ShieldCheck, Heart
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { SEO } from '@/components/SEO';
 
 // ScrollTrigger registered in lib/gsap-init.ts
 
 /* ── Data ─────────────────────────────────────────────── */
-
-const messServices = [   { id: 'm1', title: 'Digitiffin - Andheri Tiffin', price: '3000', category: 'Tiffin', institution: 'Verified', meals: 'Lunch+Dinner' },  { id: 'm2', title: 'KTR (Karnataka Tiffin Room)', price: '3500', category: 'Mess', institution: 'Premium', meals: 'All' },  { id: 'm3', title: 'Balanced Meal', price: '2800', category: 'Tiffin', institution: 'Verified', meals: 'Lunch+Dinner' },  { id: 'm4', title: 'Mummas Tiffin & Cakes', price: '2500', category: 'Tiffin', institution: 'Home Cooked', meals: 'Lunch' },  { id: 'm5', title: 'Gharondaa Tiffin Services', price: '3200', category: 'Tiffin', institution: 'Verified', meals: 'Lunch+Dinner' },  { id: 'm6', title: 'Homefoodi', price: '4000', category: 'Delivery', institution: 'Premium', meals: 'Flexible' }];
 
 const highlights = [
   {
@@ -55,32 +50,7 @@ const highlights = [
   },
 ];
 
-const mealPlans = [
-  {
-    name: 'Basic',
-    price: '₹2,200',
-    period: '/month',
-    meals: ['Lunch', 'Dinner'],
-    features: ['Standard menu', 'Fixed timings', 'Veg only'],
-    popular: false,
-  },
-  {
-    name: 'Standard',
-    price: '₹3,000',
-    period: '/month',
-    meals: ['Lunch', 'Dinner'],
-    features: ['Rotating menu', 'Flexible timings', 'Veg + Non-veg options', 'Weekend specials'],
-    popular: true,
-  },
-  {
-    name: 'Premium',
-    price: '₹3,500',
-    period: '/month',
-    meals: ['Breakfast', 'Lunch', 'Dinner'],
-    features: ['Custom diet plans', 'All-day access', 'Veg + Non-veg', 'Festival specials', 'Tiffin delivery'],
-    popular: false,
-  },
-];
+
 
 const faqs = [
   {
@@ -119,7 +89,6 @@ const MessPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 5000]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch mess providers from API
   const { data: messProvidersResponse, isLoading: isMessLoading } = useMessProviders();
@@ -130,17 +99,6 @@ const MessPage = () => {
 
   const dbMesses = useMemo(() => {
     const list = messProvidersResponse?.data || [];
-    if (list.length === 0) {
-      // Fallback seed data if DB is empty or offline
-      return messServices.map((s, index) => ({
-        id: s.id,
-        title: s.title,
-        price: s.price,
-        category: s.category,
-        institution: s.institution,
-        image: index % 2 === 0 ? '/mess/DabbaGo.jpeg' : '/mess/happyGrub.jpeg',
-      }));
-    }
     return list.map((s, index) => ({
       id: s.id,
       title: s.name,
@@ -203,26 +161,15 @@ const MessPage = () => {
     browseRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  const handleFeedbackSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Simulate network delay
-    await new Promise(res => setTimeout(res, 800));
-    
-    toast.success('Feedback Submitted', {
-      description: 'Your review has been successfully submitted for verification.',
-      position: 'top-center'
-    });
-    
-    setIsSubmitting(false);
-    (e.target as HTMLFormElement).reset();
-  };
+
 
   /* GSAP Animations */
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
+      // CSS fallback: ensure content is visible even if GSAP fails
+      gsap.set('.mess-title-word, .mess-subtitle, .mess-stat', { opacity: 1 });
+
       // Hero image reveal + parallax
       gsap.fromTo('.mess-hero-img', { scale: 1.05, opacity: 0 }, { scale: 1, opacity: 0.45, duration: 1, ease: 'power2.out' });
       gsap.to('.mess-hero-img', {
@@ -256,12 +203,6 @@ const MessPage = () => {
       gsap.fromTo('.highlight-card', { y: 80, opacity: 0, scale: 0.95 }, {
         y: 0, opacity: 1, scale: 1, stagger: 0.1, duration: 0.9, ease: 'power3.out',
         scrollTrigger: { trigger: '.highlight-grid', start: 'top 80%', toggleActions: 'play none none none' },
-      });
-
-      // Pricing cards
-      gsap.fromTo('.price-card', { y: 60, opacity: 0 }, {
-        y: 0, opacity: 1, stagger: 0.15, duration: 0.8, ease: 'power3.out',
-        scrollTrigger: { trigger: '.pricing-grid', start: 'top 80%', toggleActions: 'play none none none' },
       });
     }, mainRef);
     return () => ctx.revert();
@@ -322,19 +263,19 @@ const MessPage = () => {
             {/* nvg8-style big words stacking */}
             <div className="space-y-2 mb-8">
               <div className="overflow-hidden">
-                <span className="mess-title-word block text-white font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0 }}>
+                <span className="mess-title-word block text-white font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight">
                   MESS &
                 </span>
               </div>
               <div className="overflow-hidden">
-                <span className="mess-title-word block font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight" style={{ opacity: 0 }}>
+                <span className="mess-title-word block font-display text-[clamp(3.1rem,14vw,5rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.95] tracking-tight">
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-300">TIFFIN</span>
                 </span>
               </div>
             </div>
 
             {/* Subtitle — nvg8 style descriptive block */}
-            <div className="mess-subtitle max-w-xl" style={{ opacity: 0 }}>
+            <div className="mess-subtitle max-w-xl">
               <div className="flex items-center gap-4 mb-4">
                 <div className="h-px w-12 bg-gradient-to-r from-amber-400/60 to-transparent" />
                 <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-amber-400/60">
@@ -347,26 +288,14 @@ const MessPage = () => {
               </p>
             </div>
 
-            {/* Stats row */}
+            {/* Stats row — live data only */}
             <div className="flex flex-wrap gap-8 md:gap-16 mt-12">
-              <div className="mess-stat" style={{ opacity: 0 }}>
+              <div className="mess-stat">
                 <p className="text-white font-display text-4xl md:text-5xl font-bold">
-                  <AnimatedCounter target={18} />
-                  <span className="text-amber-400">+</span>
+                  <AnimatedCounter target={dbMesses.length + visibleItems.length} />
+                  {(dbMesses.length + visibleItems.length) > 0 && <span className="text-amber-400">+</span>}
                 </p>
-                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Verified Services</p>
-              </div>
-              <div className="mess-stat" style={{ opacity: 0 }}>
-                <p className="text-white font-display text-4xl md:text-5xl font-bold">
-                  <AnimatedCounter target={4} duration={1000} suffix=".5" />
-                </p>
-                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Avg Rating</p>
-              </div>
-              <div className="mess-stat hidden md:block" style={{ opacity: 0 }}>
-                <p className="text-white font-display text-4xl md:text-5xl font-bold">
-                  ₹<AnimatedCounter target={2200} />
-                </p>
-                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Starting From</p>
+                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Listed Services</p>
               </div>
             </div>
           </div>
@@ -473,81 +402,12 @@ const MessPage = () => {
         </div>
       </section>
 
-      {/* ═══════════════ MEAL PLANS (nvg8 Products-style) ═══════════════ */}
-      <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="h-px w-8 bg-white/10" />
-              <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Pricing Matrix</span>
-              <div className="h-px w-8 bg-white/10" />
-            </div>
-            <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4 inline-block" accentColorClass="text-amber-400/30">
-              MEAL PLANS
-            </GlitchText>
-            <p className="text-white/25 text-sm font-body max-w-md mx-auto mt-4">
-              Average monthly costs across verified services. Actual prices vary by provider.
-            </p>
-          </div>
 
-          <div className="pricing-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-            {mealPlans.map(plan => (
-              <div
-                key={plan.name}
-                className={`price-card group relative p-8 md:p-10 border transition-all duration-500 ${
-                  plan.popular
-                    ? 'border-amber-400/30 bg-amber-400/[0.03]'
-                    : 'border-white/5 bg-white/[0.01] hover:border-white/15'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-8 px-4 py-1 bg-amber-400 text-black text-[9px] font-mono font-bold uppercase tracking-widest">
-                    Most Popular
-                  </div>
-                )}
-
-                <h3 className="text-white font-display text-xl font-bold uppercase mb-1">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-white font-display text-3xl sm:text-4xl md:text-5xl font-bold">{plan.price}</span>
-                  <span className="text-white/30 text-sm font-mono">{plan.period}</span>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {plan.meals.map(meal => (
-                    <span key={meal} className="px-3 py-1 text-[9px] font-mono uppercase tracking-widest bg-white/5 border border-white/10 text-white/50">
-                      {meal}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="space-y-3 mb-8">
-                  {plan.features.map(feat => (
-                    <div key={feat} className="flex items-center gap-3">
-                      <div className={`w-1 h-1 rounded-full ${plan.popular ? 'bg-amber-400' : 'bg-white/20'}`} />
-                      <span className="text-white/40 text-xs font-body">{feat}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={scrollToBrowse}
-                  className={`w-full py-3 text-[10px] font-mono uppercase tracking-widest border transition-all duration-300 ${
-                  plan.popular
-                    ? 'border-amber-400/50 text-amber-400 hover:bg-amber-400/10'
-                    : 'border-white/10 text-white/40 hover:border-white/30 hover:text-white/70'
-                }`}>
-                  View Services
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ═══════════════ DAILY MENU & FEEDBACK ═══════════════ */}
       <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 mess-reveal">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* Menu Schedule */}
+          {/* Menu Schedule — Coming Soon */}
           <div>
             <div className="flex items-center gap-4 mb-4">
               <Utensils className="w-4 h-4 text-amber-400/60" />
@@ -556,36 +416,16 @@ const MessPage = () => {
             <h2 className="text-white font-display text-3xl md:text-5xl font-bold mb-8">
               DAILY <span className="text-amber-400">SCHEDULE</span>
             </h2>
-            <div className="p-6 border border-white/10 bg-white/[0.02]">
-              <Tabs defaultValue="mon" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 bg-transparent border-b border-white/10 mb-6">
-                  <TabsTrigger value="mon" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Mon</TabsTrigger>
-                  <TabsTrigger value="tue" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Tue</TabsTrigger>
-                  <TabsTrigger value="wed" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Wed</TabsTrigger>
-                  <TabsTrigger value="thu" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Thu</TabsTrigger>
-                  <TabsTrigger value="fri" className="data-[state=active]:bg-amber-400/10 data-[state=active]:text-amber-400">Fri</TabsTrigger>
-                </TabsList>
-                {['mon', 'tue', 'wed', 'thu', 'fri'].map(day => (
-                  <TabsContent key={day} value={day} className="space-y-4">
-                    <div className="flex justify-between items-center py-3 border-b border-white/5">
-                      <span className="text-white/40 font-mono text-xs">08:00 AM - 10:00 AM</span>
-                      <span className="text-white font-body text-sm font-semibold text-right">Idli Sambar<br/><span className="text-[10px] text-white/50 font-normal">Chutney, Tea/Coffee</span></span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 border-b border-white/5">
-                      <span className="text-white/40 font-mono text-xs">12:30 PM - 02:30 PM</span>
-                      <span className="text-white font-body text-sm font-semibold text-right">Dal Makhani Paneer<br/><span className="text-[10px] text-white/50 font-normal">Roti, Rice, Salad</span></span>
-                    </div>
-                    <div className="flex justify-between items-center py-3 border-b border-white/5">
-                      <span className="text-white/40 font-mono text-xs">07:30 PM - 09:30 PM</span>
-                      <span className="text-white font-body text-sm font-semibold text-right">Aloo Gobi<br/><span className="text-[10px] text-white/50 font-normal">Dal Fry, Jeera Rice, Chapati</span></span>
-                    </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
+            <div className="p-8 border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center text-center min-h-[280px] gap-4">
+              <Utensils className="w-8 h-8 text-amber-400/30" />
+              <p className="text-white/40 font-mono text-sm uppercase tracking-widest">Daily Menus Coming Soon</p>
+              <p className="text-white/20 text-xs font-body max-w-xs">
+                Live mess menus will be available here once services connect their schedules.
+              </p>
             </div>
           </div>
 
-          {/* Feedback Form */}
+          {/* Feedback — Coming Soon */}
           <div>
             <div className="flex items-center gap-4 mb-4">
               <Star className="w-4 h-4 text-amber-400/60" />
@@ -594,37 +434,13 @@ const MessPage = () => {
             <h2 className="text-white font-display text-3xl md:text-5xl font-bold mb-8">
               SUBMIT <span className="text-amber-400">FEEDBACK</span>
             </h2>
-            <form onSubmit={handleFeedbackSubmit} className="space-y-4 p-6 border border-white/10 bg-white/[0.02]">
-              <div>
-                <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Select Service</label>
-                <select required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-amber-400/50">
-                  <option value="">-- Choose Mess/Tiffin --</option>
-                  <option value="ktr">KTR Mess</option>
-                  <option value="dabba">Mummas Tiffin</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Rating</label>
-                <select required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-amber-400/50">
-                  <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                  <option value="4">⭐⭐⭐⭐ Good</option>
-                  <option value="3">⭐⭐⭐ Average</option>
-                  <option value="2">⭐⭐ Poor</option>
-                  <option value="1">⭐ Terrible</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Your Review</label>
-                <textarea required rows={3} placeholder="Tell us about food quality, hygiene, and timing..." className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-amber-400/50 resize-none"></textarea>
-              </div>
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center py-4 mt-2 bg-amber-400 text-black font-display text-sm font-bold uppercase hover:bg-amber-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit Review'}
-              </button>
-            </form>
+            <div className="p-8 border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center text-center min-h-[280px] gap-4">
+              <Star className="w-8 h-8 text-amber-400/30" />
+              <p className="text-white/40 font-mono text-sm uppercase tracking-widest">Reviews Coming Soon</p>
+              <p className="text-white/20 text-xs font-body max-w-xs">
+                Student review and rating system is under development. Check back soon.
+              </p>
+            </div>
           </div>
         </div>
       </section>

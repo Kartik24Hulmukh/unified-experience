@@ -54,12 +54,15 @@ const ContextNav = memo(function ContextNav() {
       { label: 'Essentials', path: '/essentials', number: '03' },
       { label: 'Resale', path: '/resale', number: '04' },
     ];
+    if (user) {
+      base.push({ label: 'Profile', path: '/profile', number: '05' });
+    }
     if (user?.role === 'admin') {
-      base.push({ label: 'Agency', path: '/agency', number: '05' });
-      base.push({ label: 'Admin', path: '/admin', number: '06' });
+      base.push({ label: 'Agency', path: '/agency', number: '06' });
+      base.push({ label: 'Admin', path: '/admin', number: '07' });
     }
     return base;
-  }, [user?.role]);
+  }, [user?.role, user]);
 
   // Kill ScrollTriggers when leaving animated pages (runs on all routes)
   useScrollTriggerCleanup();
@@ -315,7 +318,7 @@ const ContextNav = memo(function ContextNav() {
               </button>
             )}
 
-            <div className="hidden sm:block">
+            <div>
               <NotificationCenter isDark={isNavDark} />
             </div>
 

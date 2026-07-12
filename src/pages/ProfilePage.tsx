@@ -352,9 +352,15 @@ function RequestsInbox({ userId }: { userId: string }) {
    ═══════════════════════════════════════════════════ */
 
 
-function MyListings({ userId }: { userId: string }) {
-  const { data: res, isLoading } = useListings({ ownerId: userId });
-  const listings = res?.data ?? [];
+function MyListings({ listings, isLoading }: { listings: Array<{title?: string; category?: string; price?: string | number; status?: string; id?: string; module?: string; createdAt?: string; [key: string]: unknown}>; isLoading: boolean }) {
+  const PAGE_SIZE = 8;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Reset pagination when listings change
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [listings.length]);
+
+  const visibleListings = listings.slice(0, visibleCount);
+  const hasMore = visibleCount < listings.length;
 
   return (
     <div className="space-y-6">
@@ -377,28 +383,46 @@ function MyListings({ userId }: { userId: string }) {
           <p className="text-white/30 text-[10px] uppercase tracking-widest">No listings created yet</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {listings.map((item) => (
-            <Link key={item.id} to={`/listing/${item.id}`} className="block p-4 border border-white/10 bg-black/20 space-y-3 group hover:border-primary/30 transition-all">
-              <div className="flex justify-between items-start">
-                <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${
-                  item.status === 'APPROVED' ? 'border-emerald-500/30 text-emerald-400' : 
-                  item.status === 'PENDING_REVIEW' ? 'border-amber-500/30 text-amber-400' : 
-                  item.status === 'INTEREST_RECEIVED' || item.status === 'IN_TRANSACTION' ? 'border-blue-500/30 text-blue-400' :
-                  'border-red-500/30 text-red-400'
-                }`}>
-                  {item.status.replace(/_/g, ' ')}
-                </Badge>
-                <span className="text-[10px] font-mono text-white/20 uppercase">{item.module}</span>
-              </div>
-              <p className="text-xs font-bold text-white group-hover:text-primary transition-colors truncate">{item.title}</p>
-              <div className="flex justify-between items-center text-[10px] font-mono">
-                <span className="text-white/40">₹{item.price}</span>
-                <span className="text-white/20">{new Date(item.createdAt).toLocaleDateString()}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visibleListings.map((item) => {
+              const createdAtDate = item.createdAt ? new Date(item.createdAt as string) : null;
+              const dateStr = createdAtDate && !isNaN(createdAtDate.getTime())
+                ? createdAtDate.toLocaleDateString()
+                : null;
+              return (
+                <Link key={item.id} to={`/listing/${item.id}`} className="block p-4 border border-white/10 bg-black/20 space-y-3 group hover:border-primary/30 transition-all">
+                  <div className="flex justify-between items-start">
+                    <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${
+                      item.status === 'APPROVED' ? 'border-emerald-500/30 text-emerald-400' : 
+                      item.status === 'PENDING_REVIEW' ? 'border-amber-500/30 text-amber-400' : 
+                      item.status === 'INTEREST_RECEIVED' || item.status === 'IN_TRANSACTION' ? 'border-blue-500/30 text-blue-400' :
+                      'border-red-500/30 text-red-400'
+                    }`}>
+                      {(item.status as string).replace(/_/g, ' ')}
+                    </Badge>
+                    <span className="text-[10px] font-mono text-white/20 uppercase">{item.module}</span>
+                  </div>
+                  <p className="text-xs font-bold text-white group-hover:text-primary transition-colors truncate">{item.title}</p>
+                  <div className="flex justify-between items-center text-[10px] font-mono">
+                    <span className="text-white/40">₹{item.price}</span>
+                    {dateStr && <span className="text-white/20">{dateStr}</span>}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                className="px-6 py-2 border border-white/10 text-[10px] font-mono uppercase tracking-widest text-white/40 hover:border-primary/30 hover:text-primary/70 transition-all"
+              >
+                Show {Math.min(PAGE_SIZE, listings.length - visibleCount)} More
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -407,9 +431,14 @@ function MyListings({ userId }: { userId: string }) {
 function StudentSections({ profile, userId }: { profile: Profile; userId: string }) {
   if (!isStudentProfile(profile)) return null;
 
+  // Lift listings fetch here so both Activity Summary and MyListings use the same count
+  const { data: listingsRes, isLoading: listingsLoading } = useListings({ ownerId: userId });
+  const listings = listingsRes?.data ?? [];
+
   const { data } = profile;
   const stats = [
-    { label: 'Listings', value: data.listingsCount.toString(), icon: Package },
+    // Use actual fetched count so this matches MyListings TOTAL badge
+    { label: 'Listings', value: listings.length.toString(), icon: Package },
     { label: 'Requests', value: data.requestsCount.toString(), icon: BookOpen },
     { label: 'Exchanges', value: data.exchangesCompleted.toString(), icon: ArrowLeftRight },
     { label: 'Value Circulated', value: `₹${data.valueCirculated.toLocaleString()}`, icon: TrendingUp },
@@ -452,8 +481,8 @@ function StudentSections({ profile, userId }: { profile: Profile; userId: string
         </div>
       </div>
 
-      {/* My Listings */}
-      <MyListings userId={userId} />
+      {/* My Listings — same data as Activity Summary count */}
+      <MyListings listings={listings} isLoading={listingsLoading} />
 
       {/* Requests Inbox */}
       <RequestsInbox userId={userId} />

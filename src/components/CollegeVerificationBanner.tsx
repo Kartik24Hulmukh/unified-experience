@@ -11,8 +11,20 @@ import { ShieldCheck, X } from 'lucide-react';
  */
 export function CollegeVerificationBanner() {
   const { user, isAuthenticated } = useAuth();
-  const [dismissed, setDismissed] = useState(false);
+  const STORAGE_KEY = 'berozgar_verify_banner_dismissed';
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [loading, setLoading] = useState(false);
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    try { localStorage.setItem(STORAGE_KEY, 'true'); } catch { /* ignore */ }
+  };
 
   // Only show for authenticated public users
   if (!isAuthenticated || !user || user.role !== 'public_user' || dismissed) {
@@ -61,7 +73,7 @@ export function CollegeVerificationBanner() {
         {loading ? 'Checking…' : 'Verify Now'}
       </button>
       <button
-        onClick={() => setDismissed(true)}
+        onClick={handleDismiss}
         className="shrink-0 text-amber-400/40 hover:text-amber-400/70 transition-colors"
         aria-label="Dismiss banner"
       >

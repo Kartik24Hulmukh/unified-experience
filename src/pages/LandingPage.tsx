@@ -60,12 +60,12 @@ const LandingPage = () => {
         onComplete: () => setLoadComplete(true),
       });
 
-      // Counter from 0 → 100
+      // Counter from 0 → 100 (shortened for better LCP)
       tl.to(
         { val: 0 },
         {
           val: 100,
-          duration: 1.0,
+          duration: 0.4,
           ease: 'power2.inOut',
           onUpdate: function () {
             if (counterRef.current) {
@@ -81,7 +81,7 @@ const LandingPage = () => {
         barRef.current,
         {
           scaleX: 1,
-          duration: 1.0,
+          duration: 0.4,
           ease: 'power2.inOut',
         },
         0
@@ -98,6 +98,14 @@ const LandingPage = () => {
           }
         }
       });
+
+      // CSS fallback: ensure all content is visible even if GSAP fails
+      gsap.set(
+        [navBrandRef.current, navStatusRef.current, line1Ref.current, line2Ref.current,
+         line3Ref.current, taglineRef.current, ctaRef.current, portalContainerRef.current,
+         metaLeftRef.current, metaRightRef.current],
+        { opacity: 1 }
+      );
 
       // Content reveal — stagger from bottom
       tl.fromTo(
@@ -269,7 +277,7 @@ const LandingPage = () => {
           {/* Main heading — oversized type, cappen-style */}
           <div className="text-center space-y-0">
             <div className="overflow-hidden">
-              <div ref={line1Ref} className="opacity-0">
+              <div ref={line1Ref}>
                 <span className="text-white/30 font-display text-[clamp(2rem,12vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
                   BUILDING
                 </span>
@@ -277,7 +285,7 @@ const LandingPage = () => {
             </div>
 
             <div className="overflow-hidden">
-              <div ref={line2Ref} className="opacity-0">
+              <div ref={line2Ref}>
                 <span className="text-white font-display text-[clamp(2rem,12vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
                   CAMPUS
                 </span>
@@ -285,7 +293,7 @@ const LandingPage = () => {
             </div>
 
             <div className="overflow-hidden flex items-center justify-center gap-4 md:gap-8">
-              <div ref={line3Ref} className="opacity-0">
+              <div ref={line3Ref}>
                 <span className="text-white font-display text-[clamp(2rem,12vw,7rem)] md:text-[clamp(4rem,12vw,10rem)] font-bold uppercase leading-[0.85] tracking-tighter block">
                   TRUST
                 </span>
@@ -304,14 +312,14 @@ const LandingPage = () => {
           </div>
 
           {/* Tagline */}
-          <div ref={taglineRef} className="mt-8 md:mt-12 text-center opacity-0">
+          <div ref={taglineRef} className="mt-8 md:mt-12 text-center">
             <p className="text-white/40 text-sm md:text-base font-body max-w-lg mx-auto leading-relaxed tracking-wide">
               A trust-centric digital ecosystem crafting secure &amp; seamless interactions for campus life.
             </p>
           </div>
 
           {/* CTA Button */}
-          <div ref={ctaRef} className="mt-10 md:mt-14 opacity-0">
+          <div ref={ctaRef} className="mt-10 md:mt-14">
             <Button
               onClick={handleEnter}
               variant="primary"

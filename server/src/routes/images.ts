@@ -51,8 +51,14 @@ export async function imageRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(400).send({ error: 'Only JPEG, PNG, GIF, and WEBP images are allowed', code: 'BAD_REQUEST' });
       }
 
-      // Generate a unique filename
-      const ext = path.extname(data.filename) || '.jpg';
+      // Generate a unique filename — derive extension from validated MIME type, never from filename
+      const MIME_EXT_MAP: Record<string, string> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp',
+      };
+      const ext = MIME_EXT_MAP[data.mimetype] ?? '.jpg';
       const filename = `${listingId}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
       const filepath = path.join(UPLOADS_DIR, filename);
 

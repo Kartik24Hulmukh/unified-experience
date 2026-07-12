@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Mail, Shield, ArrowRight, Check, ChevronDown } from "lucide-react";
+import { User, Mail, Shield, ArrowRight, Check, ChevronDown, Eye, EyeOff } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { safeNavigate } from "@/lib/utils";
@@ -34,6 +34,7 @@ const SignupPage = () => {
     const { signup, googleSignIn, isAuthenticated, isLoading: authLoading } = useAuth();
     const { promptSignIn, isLoading: isGoogleLoading, hasRealGIS } = useGoogleIdentity();
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [showEmailForm, setShowEmailForm] = useState(!hasRealGIS);
     const hasRedirected = useRef(false);
 
@@ -217,11 +218,19 @@ const SignupPage = () => {
                                                         id="password"
                                                         data-testid="signup-password-input"
                                                         autoComplete="new-password"
-                                                        type="password"
+                                                        type={showPassword ? 'text' : 'password'}
                                                         placeholder="••••••••"
                                                         {...field}
-                                                        className="bg-black/50 border-white/10 text-white h-12 rounded-none border-b-2 border-x-0 border-t-0 pl-8 focus-visible:ring-0 focus-visible:border-primary transition-all duration-300"
+                                                        className="bg-black/50 border-white/10 text-white h-12 rounded-none border-b-2 border-x-0 border-t-0 pl-8 pr-10 focus-visible:ring-0 focus-visible:border-primary transition-all duration-300"
                                                     />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(p => !p)}
+                                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                        className="absolute right-0 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                                                    >
+                                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                    </button>
                                                 </div>
                                             </FormControl>
                                             <FormMessage className="text-red-400 text-[11px]" />

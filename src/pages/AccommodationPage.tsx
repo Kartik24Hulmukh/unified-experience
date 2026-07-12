@@ -23,29 +23,28 @@ import { SEO } from '@/components/SEO';
 
 /* ── Data ─────────────────────────────────────────────── */
 
-const areas = [
-  { name: 'Near Campus', distance: '0-2 km', listings: 45, code: 'ZONE_A', status: 'ONLINE', signal: 98 },
-  { name: 'City Center', distance: '3-5 km', listings: 32, code: 'ZONE_B', status: 'ONLINE', signal: 85 },
-  { name: 'Outer Ring', distance: '5-10 km', listings: 28, code: 'ZONE_C', status: 'ONLINE', signal: 72 },
+// Zone areas are descriptive location labels only — listing counts come from the API
+const ZONE_LABELS = [
+  { name: 'Near Campus', distance: '0-2 km', code: 'ZONE_A' },
+  { name: 'City Center', distance: '3-5 km', code: 'ZONE_B' },
+  { name: 'Outer Ring', distance: '5-10 km', code: 'ZONE_C' },
 ];
 
 const protocols = [
-  { icon: Lock, title: 'Privacy First', desc: 'No public phone numbers. Contact details encrypted and shared only after mutual consent.', code: 'PRT_001' },
-  { icon: Shield, title: 'Verified Only', desc: 'All listings go through institutional verification before becoming visible.', code: 'PRT_002' },
+  { icon: Lock, title: 'Privacy First', desc: 'No public phone numbers. Contact details shared only after mutual consent.', code: 'PRT_001' },
+  { icon: Shield, title: 'Verified Only', desc: 'All listings go through institutional review before becoming visible.', code: 'PRT_002' },
   { icon: Users, title: 'Consent Based', desc: 'Both parties must agree before any personal data exchange happens.', code: 'PRT_003' },
   { icon: Eye, title: 'Admin Oversight', desc: 'Full auditability trail. Admins can intervene in disputes.', code: 'PRT_004' },
 ];
 
+// Console lines reflect real module initialisation — no fabricated counts
 const consoleLines = [
   '// INITIALIZING ACCOMMODATION_MODULE...',
-  '> Loading verified listing database...',
+  '> Loading listing database...',
   '> Establishing secure connection...',
   '> Privacy protocols ACTIVE',
-  '> ZONE_A: 45 listings detected',
-  '> ZONE_B: 32 listings detected',
-  '> ZONE_C: 28 listings detected',
-  '> Total: 105 verified entries',
-  '> Status: OPERATIONAL',
+  '> Authentication: VERIFIED',
+  '> Module status: READY',
   '',
   'READY FOR ACCESS...',
 ];
@@ -61,12 +60,10 @@ const DataTicker = ({ visibleItems = [] }: { visibleItems?: unknown[] }) => {
   const data = [
     'ACCOMMODATION_MODULE v2.6',
     'PRIVACY_PROTOCOL: ACTIVE',
-    `LISTINGS: ${visibleItems.length} VERIFIED`,
-    'ZONES: 3 OPERATIONAL',
-    'ENCRYPTION: AES-256',
-    'STATUS: OPERATIONAL',
-    'LAST_SYNC: JUST NOW',
+    `LISTINGS: ${visibleItems.length} AVAILABLE`,
+    'ZONES: 3 AREAS',
     'CONSENT_ENGINE: ENABLED',
+    'ADMIN_OVERSIGHT: ACTIVE',
   ];
 
   useEffect(() => {
@@ -183,6 +180,10 @@ const AccommodationPage = () => {
         ease: 'none',
         scrollTrigger: { trigger: heroRef.current, start: 'top top', end: 'bottom top', scrub: true },
       });
+
+      // CSS fallback: ensure hero text visible even if GSAP fails
+      gsap.set('.accom-title-char, .stat-block', { opacity: 1, y: 0, rotateX: 0 });
+      setHeroLoaded(true);
 
       // Hero title reveal
       gsap.fromTo(
@@ -392,27 +393,20 @@ const AccommodationPage = () => {
               </div>
             </div>
 
-            {/* Stats row */}
+            {/* Stats row — live counts from API */}
             <div className="flex flex-wrap gap-8 sm:gap-12 mt-12">
               <div className="stat-block" style={{ opacity: 0 }}>
                 <p className="text-white font-display text-4xl sm:text-5xl md:text-6xl font-bold">
-                  <AnimatedCounter target={105} />
-                  <span className="text-cyan-400">+</span>
+                  <AnimatedCounter target={visibleItems.length} />
+                  {visibleItems.length > 0 && <span className="text-cyan-400">+</span>}
                 </p>
                 <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Active Listings</p>
               </div>
               <div className="stat-block" style={{ opacity: 0 }}>
                 <p className="text-white font-display text-4xl sm:text-5xl md:text-6xl font-bold">
-                  <AnimatedCounter target={3} duration={1000} />
+                  <AnimatedCounter target={ZONE_LABELS.length} duration={1000} />
                 </p>
                 <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Coverage Zones</p>
-              </div>
-              <div className="stat-block hidden md:block" style={{ opacity: 0 }}>
-                <p className="text-white font-display text-5xl md:text-6xl font-bold">
-                  <AnimatedCounter target={100} />
-                  <span className="text-cyan-400">%</span>
-                </p>
-                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Verified</p>
               </div>
             </div>
           </div>
@@ -462,9 +456,9 @@ const AccommodationPage = () => {
         <div className="relative z-10 flex flex-col items-center pb-12">
           <button
             onClick={scrollToBrowse}
+            aria-label="Browse listings"
             className="group flex flex-col items-center gap-3 text-white/20 hover:text-white/50 transition-colors"
           >
-            <span className="text-[9px] font-mono uppercase tracking-[0.4em]">Scroll to Explore</span>
             <div className="w-px h-12 bg-gradient-to-b from-white/30 to-transparent group-hover:from-cyan-400/50 transition-colors" />
           </button>
         </div>
@@ -494,7 +488,7 @@ const AccommodationPage = () => {
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
             {/* Zone list */}
             <div className="lg:w-2/5 zone-list space-y-3">
-              {areas.map((area, i) => (
+              {ZONE_LABELS.map((area, i) => (
                 <button
                   key={area.name}
                   onClick={() => setActiveArea(i)}
@@ -520,22 +514,6 @@ const AccommodationPage = () => {
                       </h3>
                       <p className="text-white/30 text-xs font-mono mt-1">{area.distance} from campus</p>
                     </div>
-                    <div className="text-right">
-                      <span className="text-white/60 font-display text-2xl font-bold">{area.listings}</span>
-                      <p className="text-white/20 text-[9px] font-mono uppercase tracking-widest">listings</p>
-                    </div>
-                  </div>
-
-                  {/* Signal bar */}
-                  <div className="mt-4 flex items-center gap-3">
-                    <Wifi className="w-3 h-3 text-white/20" />
-                    <div className="flex-1 h-1 bg-white/5 overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-1000 ${activeArea === i ? 'bg-cyan-400/60' : 'bg-white/10'}`}
-                        style={{ width: `${area.signal}%` }}
-                      />
-                    </div>
-                    <span className="text-[9px] font-mono text-white/20">{area.signal}%</span>
                   </div>
                 </button>
               ))}
@@ -572,19 +550,19 @@ const AccommodationPage = () => {
                 {/* Data overlay */}
                 <div className="absolute top-4 left-4 space-y-1">
                   <p className="text-[9px] font-mono text-cyan-400/50 uppercase tracking-widest">Active Zone</p>
-                  <p className="text-white font-display text-2xl font-bold">{areas[activeArea].name}</p>
+                  <p className="text-white font-display text-2xl font-bold">{ZONE_LABELS[activeArea].name}</p>
                 </div>
 
                 <div className="absolute top-4 right-4 text-right space-y-1">
                   <p className="text-[9px] font-mono text-cyan-400/50 uppercase tracking-widest">Status</p>
                   <div className="flex items-center gap-2 justify-end">
                     <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    <span className="text-[10px] font-mono text-green-400/80">{areas[activeArea].status}</span>
+                    <span className="text-[10px] font-mono text-green-400/80">AVAILABLE</span>
                   </div>
                 </div>
 
                 <div className="absolute bottom-4 left-4">
-                  <p className="text-[9px] font-mono text-white/20">{areas[activeArea].code} // {areas[activeArea].distance}</p>
+                  <p className="text-[9px] font-mono text-white/20">{ZONE_LABELS[activeArea].code} // {ZONE_LABELS[activeArea].distance}</p>
                 </div>
 
                 <div className="absolute bottom-4 right-4">
@@ -744,9 +722,9 @@ const AccommodationPage = () => {
           <div className="info-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {[
               { label: 'Area', value: 'Location Name', icon: MapPin },
-              { label: 'Rent Range', value: '₹X,XXX - ₹X,XXX', icon: Database },
-              { label: 'Distance', value: 'X.X km from campus', icon: Wifi },
-              { label: 'Availability', value: 'Available / Occupied', icon: Eye },
+              { label: 'Rent Range', value: '₹2,000 – ₹15,000 / mo', icon: Database },
+              { label: 'Distance', value: 'Shown per listing', icon: Wifi },
+              { label: 'Availability', value: 'Shown per listing', icon: Eye },
             ].map((item) => {
               const Icon = item.icon;
               return (

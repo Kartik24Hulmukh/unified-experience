@@ -1,4 +1,5 @@
 import { useRef, useLayoutEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from '@/components/SplitText';
@@ -84,7 +85,11 @@ const resources = [
 const AcademicsPage = () => {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
   const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') ?? '';
+  const activeCategory = searchParams.get('category') ?? null;
+  const setSearchQuery = (q: string) => setSearchParams(prev => { if (q) prev.set('q', q); else prev.delete('q'); return new URLSearchParams(prev); }, { replace: true });
+  const setActiveCategory = (cat: string | null) => setSearchParams(prev => { if (cat) prev.set('category', cat); else prev.delete('category'); return new URLSearchParams(prev); }, { replace: true });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -94,8 +99,7 @@ const AcademicsPage = () => {
   const { canPerform } = useRestriction();
   const canCreateListing = canPerform('CREATE_LISTING');
 
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 1000]);
+
 
   // Fetch listings from API
   const { data: listingsResponse, isLoading, isError, error, refetch } = useListings({ 
@@ -133,20 +137,15 @@ const AcademicsPage = () => {
       const itemSemester = (item as unknown).semester?.toString() || '';
       const matchesSemester = !selectedSemester || itemSemester === selectedSemester.toString();
 
-      const rawPrice = item.price ? Number(item.price) : 0;
-      const matchesPrice = rawPrice >= priceFilter[0] && rawPrice <= priceFilter[1];
-
-      return matchesSearch && matchesCategory && matchesBranch && matchesSemester && matchesPrice;
+      return matchesSearch && matchesCategory && matchesBranch && matchesSemester;
     });
-  }, [searchQuery, activeCategory, selectedBranch, selectedSemester, priceFilter, visibleItems]);
+  }, [searchQuery, activeCategory, selectedBranch, selectedSemester, visibleItems]);
 
   const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
     if (filters.categories !== undefined) {
       setActiveCategory(filters.categories.length > 0 ? filters.categories[0] : null);
     }
-    if (filters.price !== undefined) {
-      setPriceFilter(filters.price);
-    }
+    // price filter not persisted to URL — ignored
   };
 
   // useLayoutEffect for GSAP animations to prevent flash of unstyled content
@@ -245,7 +244,7 @@ const AcademicsPage = () => {
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30">
-              Module 04 — Academics
+              Module 01 — Academics
             </span>
           </div>
           <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20 hidden md:block">
@@ -257,7 +256,7 @@ const AcademicsPage = () => {
         <div className="relative z-10 min-h-[calc(100dvh-var(--nav-height))] flex flex-col justify-center px-4 sm:px-8 md:px-16 py-20">
           <div className="max-w-4xl">
             <p className="text-portal-foreground/50 text-sm uppercase tracking-widest mb-4">
-              Module 04
+              Module 01
             </p>
 
             <h1 className="text-portal-foreground font-display text-4xl sm:text-5xl md:text-8xl lg:text-9xl font-bold leading-none mb-8">

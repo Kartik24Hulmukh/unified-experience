@@ -26,7 +26,7 @@ import { SEO } from '@/components/SEO';
 
 /* ── Data ─────────────────────────────────────────────── */
 
-const hospitals = [   { id: 'hp1', title: 'Thunga STH Hospital', price: '500', category: 'Hospital', institution: 'Premium', distance: '500m' },  { id: 'hp2', title: 'Bhartiya Arogya Nidhi', price: '300', category: 'Hospital', institution: 'Premium', distance: '2km' },  { id: 'hp3', title: 'Bellevue Multidisciplinary', price: '400', category: 'Hospital', institution: 'General', distance: '2km' },  { id: 'hp4', title: 'BSES MG Hospital', price: '200', category: 'Hospital', institution: 'General', distance: '2.9km' },  { id: 'hp5', title: 'Dr. R.N. Cooper Hospital', price: '0', category: 'Hospital', institution: 'Public', distance: '3.0km' }];
+// Hardcoded hospital fallback removed — empty state shown when API returns no data.
 
 const emergencyContacts = [
   { label: 'Campus Medical', number: '108 (On Campus)', icon: Cross, priority: 'high' },
@@ -41,28 +41,24 @@ const serviceCategories = [
     title: 'General Checkup',
     desc: 'Routine health examinations, seasonal illness, fever, cold, basic consultations available near campus.',
     code: 'SVC_GEN',
-    facilities: 4,
   },
   {
     icon: Siren,
     title: 'Emergency Care',
     desc: '24/7 emergency services with ambulance support. Two hospitals within 5km radius offer emergency rooms.',
     code: 'SVC_EMR',
-    facilities: 2,
   },
   {
     icon: Pill,
     title: 'Pharmacy',
     desc: 'Round-the-clock pharmacies near campus. Student discounts available at selected partners.',
     code: 'SVC_PHR',
-    facilities: 3,
   },
   {
     icon: Thermometer,
     title: 'Diagnostics',
     desc: 'Blood work, imaging, and pathology labs with student-friendly pricing and quick turnaround.',
     code: 'SVC_DIA',
-    facilities: 2,
   },
 ];
 
@@ -76,7 +72,7 @@ const healthTips = [
 const faqs = [
   {
     q: 'What medical facilities are available on campus?',
-    a: 'The campus has a medical center open from 9 AM to 5 PM on weekdays. It handles general consultations, first aid, and basic tests. For emergencies outside hours, the nearest 24/7 hospital is 4.2 km away.',
+    a: 'The campus has a medical center open from 9 AM to 5 PM on weekdays. It handles general consultations, first aid, and basic tests. For emergencies outside hours, the nearest 24/7 hospital is available nearby.',
   },
   {
     q: 'Is there ambulance access to campus?',
@@ -150,17 +146,7 @@ const HospitalPage = () => {
 
   const dbHospitals = useMemo(() => {
     const list = hospitalsResponse?.data || [];
-    if (list.length === 0) {
-      // Fallback seed data if DB is empty or offline
-      return hospitals.map(h => ({
-        id: h.id, 
-        title: h.title, 
-        price: h.price, 
-        category: h.category, 
-        institution: h.institution, 
-        image: '/Hospital.webp'
-      }));
-    }
+    // When the API returns no data, show empty state instead of fake fallback data
     return list.map(h => ({
       id: h.id,
       title: h.name,
@@ -254,6 +240,9 @@ const HospitalPage = () => {
         scrollTrigger: { trigger: heroRef.current, start: 'top top', end: 'bottom top', scrub: true },
       });
 
+      // Ensure hero elements are visible even if GSAP stalls (CSS fallback)
+      gsap.set('.hosp-title-word, .hosp-subtitle, .hosp-stat', { opacity: 1 });
+
       // Title word reveal
       gsap.fromTo('.hosp-title-word', { y: 100, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.12, duration: 1, ease: 'power4.out', delay: 0.4 });
 
@@ -344,18 +333,18 @@ const HospitalPage = () => {
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
               <div className="overflow-hidden">
-                <span className="hosp-title-word block text-white font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0 }}>
+                <span className="hosp-title-word block text-white font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight">
                   HEALTH
                 </span>
               </div>
               <div className="overflow-hidden">
-                <span className="hosp-title-word block font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight" style={{ opacity: 0 }}>
+                <span className="hosp-title-word block font-display text-[clamp(3.5rem,15vw,6rem)] sm:text-7xl md:text-[7rem] lg:text-[9rem] font-extrabold leading-[0.85] tracking-tight">
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">CARE</span>
                 </span>
               </div>
             </div>
 
-            <div className="hosp-subtitle max-w-xl" style={{ opacity: 0 }}>
+            <div className="hosp-subtitle max-w-xl">
               <div className="flex items-center gap-4 mb-4">
                 <div className="h-px w-12 bg-gradient-to-r from-emerald-400/60 to-transparent" />
                 <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-emerald-400/60">
@@ -368,26 +357,14 @@ const HospitalPage = () => {
               </p>
             </div>
 
-            {/* Stats */}
+            {/* Stats — live listing count */}
             <div className="flex flex-wrap gap-8 md:gap-16 mt-12">
-              <div className="hosp-stat" style={{ opacity: 0 }}>
+              <div className="hosp-stat">
                 <p className="text-white font-display text-4xl md:text-5xl font-bold">
-                  <AnimatedCounter target={11} />
-                  <span className="text-emerald-400">+</span>
+                  <AnimatedCounter target={visibleItems.length} />
+                  {visibleItems.length > 0 && <span className="text-emerald-400">+</span>}
                 </p>
-                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Medical Facilities</p>
-              </div>
-              <div className="hosp-stat" style={{ opacity: 0 }}>
-                <p className="text-white font-display text-4xl md:text-5xl font-bold">
-                  <AnimatedCounter target={2} duration={1000} />
-                </p>
-                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">24/7 Hospitals</p>
-              </div>
-              <div className="hosp-stat hidden md:block" style={{ opacity: 0 }}>
-                <p className="text-white font-display text-4xl md:text-5xl font-bold">
-                  <AnimatedCounter target={5} duration={1000} suffix=" km" />
-                </p>
-                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Max Distance</p>
+                <p className="text-white/25 text-[10px] uppercase tracking-[0.3em] font-mono mt-2">Medical Listings</p>
               </div>
             </div>
           </div>
@@ -499,10 +476,7 @@ const HospitalPage = () => {
                   <h3 className="text-white font-display text-lg font-bold uppercase mb-3 group-hover:text-emerald-400/90 transition-colors duration-500">{svc.title}</h3>
                   <p className="text-white/25 text-xs font-body leading-relaxed group-hover:text-white/40 transition-colors duration-500 mb-4">{svc.desc}</p>
 
-                  <div className="flex items-center gap-2 mt-auto">
-                    <MapPin className="w-3 h-3 text-white/15" />
-                    <span className="text-[9px] font-mono text-white/25 uppercase tracking-widest">{svc.facilities} facilities nearby</span>
-                  </div>
+
 
                   <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-400/0 to-transparent group-hover:via-emerald-400/30 transition-all duration-700" />
                 </div>
@@ -548,7 +522,7 @@ const HospitalPage = () => {
       {/* ═══════════════ APPOINTMENTS & DOCTORS ═══════════════ */}
       <section className="py-16 sm:py-24 md:py-32 px-4 sm:px-8 md:px-16 border-t border-white/5 hosp-reveal">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* Availability Grids */}
+          {/* Doctor Schedule — coming soon */}
           <div>
             <div className="flex items-center gap-4 mb-4">
               <Stethoscope className="w-4 h-4 text-emerald-400/60" />
@@ -557,51 +531,13 @@ const HospitalPage = () => {
             <h2 className="text-white font-display text-3xl md:text-5xl font-bold mb-8">
               AVAILABILITY <span className="text-emerald-400">GRID</span>
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Doctor 1 */}
-              <div className="p-4 border border-white/10 bg-white/[0.02] hover:border-emerald-400/30 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-white font-display font-bold uppercase">Dr. A. Sharma</h3>
-                    <p className="text-emerald-400/70 text-[10px] font-mono uppercase tracking-widest">General Physician</p>
-                  </div>
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-white/40">Mon - Wed</span>
-                    <span className="text-white/80">09:00 - 14:00</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-white/40">Thu - Fri</span>
-                    <span className="text-white/80">14:00 - 19:00</span>
-                  </div>
-                </div>
-              </div>
-              {/* Doctor 2 */}
-              <div className="p-4 border border-white/10 bg-white/[0.02] hover:border-emerald-400/30 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-white font-display font-bold uppercase">Dr. M. Patel</h3>
-                    <p className="text-emerald-400/70 text-[10px] font-mono uppercase tracking-widest">Psychologist</p>
-                  </div>
-                  <div className="w-2 h-2 bg-white/20 rounded-full" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-white/40">Tue, Thu</span>
-                    <span className="text-white/80">10:00 - 16:00</span>
-                  </div>
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-white/40">Saturday</span>
-                    <span className="text-white/80">09:00 - 13:00</span>
-                  </div>
-                </div>
-              </div>
+            <div className="p-8 border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center text-center min-h-[200px] gap-4">
+              <p className="text-white/40 font-mono text-sm uppercase tracking-widest">Doctor Schedule Coming Soon</p>
+              <p className="text-white/20 text-xs font-body max-w-xs">Live doctor availability will be listed here once facilities register on the platform.</p>
             </div>
           </div>
 
-          {/* Appointment Form */}
+          {/* Appointment Booking — coming soon */}
           <div>
             <div className="flex items-center gap-4 mb-4">
               <Clock className="w-4 h-4 text-emerald-400/60" />
@@ -610,47 +546,13 @@ const HospitalPage = () => {
             <h2 className="text-white font-display text-3xl md:text-5xl font-bold mb-8">
               APPOINTMENT <span className="text-emerald-400">BOOKING</span>
             </h2>
-            <form onSubmit={handleAppointmentSubmit} className="space-y-4 p-6 border border-white/10 bg-white/[0.02]">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Facility</label>
-                  <select required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50">
-                    <option value="">-- Choose Center --</option>
-                    <option value="campus">Campus Medical Center</option>
-                    <option value="cooper">Dr. R.N. Cooper Hospital</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Doctor</label>
-                  <select required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50">
-                    <option value="">-- Any Available --</option>
-                    <option value="sharma">Dr. A. Sharma</option>
-                    <option value="patel">Dr. M. Patel</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Date</label>
-                  <input type="date" required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50 [color-scheme:dark]" />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Time</label>
-                  <input type="time" required className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50 [color-scheme:dark]" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-mono text-white/50 mb-2 uppercase">Symptoms / Reason</label>
-                <textarea required rows={2} placeholder="Briefly describe why you are visiting..." className="w-full bg-black border border-white/10 text-white p-3 font-body text-sm outline-none focus:border-emerald-400/50 resize-none"></textarea>
-              </div>
-              <button 
-                type="submit" 
-                disabled={isBooking}
-                className="w-full flex items-center justify-center py-4 mt-2 bg-emerald-400 text-black font-display text-sm font-bold uppercase hover:bg-emerald-500 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isBooking ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Booking'}
-              </button>
-            </form>
+            <div className="p-8 border border-white/10 bg-white/[0.02] flex flex-col items-center justify-center text-center min-h-[280px] gap-4">
+              <span className="text-4xl">🏥</span>
+              <p className="text-white/40 font-mono text-sm uppercase tracking-widest">Appointment Booking Coming Soon</p>
+              <p className="text-white/20 text-xs font-body max-w-xs">
+                Online appointment booking is under development. Contact facilities directly for now.
+              </p>
+            </div>
           </div>
         </div>
       </section>

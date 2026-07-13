@@ -55,6 +55,17 @@ const SignupPage = () => {
         },
     });
 
+    const onFormError = (errors: any) => {
+        const firstInvalidField = Object.keys(errors)[0];
+        if (firstInvalidField) {
+            const element = document.getElementById(firstInvalidField);
+            if (element) {
+                element.focus();
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    };
+
     async function onSubmit(values: z.infer<typeof signupSchema>) {
         if (hasRedirected.current) return;
         
@@ -156,7 +167,7 @@ const SignupPage = () => {
                         >
                             <div className="overflow-hidden">
                         <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <form onSubmit={form.handleSubmit(onSubmit, onFormError)} className="space-y-6">
                                 <FormField
                                     control={form.control}
                                     name="fullName"

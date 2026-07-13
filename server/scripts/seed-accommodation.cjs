@@ -3,6 +3,12 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
+    // Production environment guard
+    if (process.env.NODE_ENV === 'production') {
+        console.error('❌ SEED ABORTED: Refusing to seed a production database.');
+        process.exit(1);
+    }
+
     // Find a user to own the listing
     const user = await prisma.user.findFirst();
     if (!user) {

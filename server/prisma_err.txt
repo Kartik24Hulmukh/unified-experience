@@ -1,0 +1,16 @@
+PrismaClientInitializationError: 
+Invalid `prisma.listing.findMany()` invocation in
+C:\Users\praja\OneDrive\Desktop\Berozgar\unified-experience\server\tests\test.ts:7:38
+
+  4 const prisma = new PrismaClient();
+  5 async function run() {
+  6   try {
+→ 7     const res = await prisma.listing.findMany(
+Can't reach database server at `127.0.0.1:5433`
+
+Please make sure your database server is running at `127.0.0.1:5433`.
+    at ei.handleRequestError (C:\Users\praja\OneDrive\Desktop\Berozgar\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:242:13)
+    at ei.handleAndLogRequestError (C:\Users\praja\OneDrive\Desktop\Berozgar\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (C:\Users\praja\OneDrive\Desktop\Berozgar\unified-experience\server\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (C:\Users\praja\OneDrive\Desktop\Berozgar\unified-experience\server\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async run (C:\Users\praja\OneDrive\Desktop\Berozgar\unified-experience\server\tests\test.ts:7:17)

@@ -165,11 +165,13 @@ const MasterExperience = () => {
   const handleModuleClick = useCallback((path: string) => safeNavigate(navigate, location.pathname, path, { replace: false }), [navigate, location.pathname]);
 
   useLayoutEffect(() => {
-    // CSS fallback: ensure module cards are visible if GSAP fails or user prefers reduced motion
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) {
+    
+    // Disable heavy scroll transitions on mobile and reduced-motion environments
+    if (prefersReduced || isMobile) {
       const items = modulesRef.current?.querySelectorAll('.module-item');
-      if (items) gsap.set(items, { opacity: 1, y: 0, rotateX: 0, clearProps: 'all' });
+      if (items) gsap.set(items, { opacity: 1, y: 0, rotateX: 0, scale: 1, clearProps: 'all' });
+      gsap.set(heroContainerRef.current, { opacity: 1, scale: 1, y: 0, clearProps: 'all' });
       return;
     }
 
@@ -202,10 +204,10 @@ const MasterExperience = () => {
   }, []);
 
   return (
-    <div ref={containerRef} className="h-[200vh] bg-portal">
-      <div ref={stickyRef} className="sticky top-0 h-[100dvh] w-full overflow-hidden bg-portal">
+    <div ref={containerRef} className={isMobile ? "h-auto bg-portal flex flex-col" : "h-[200vh] bg-portal"}>
+      <div ref={stickyRef} className={isMobile ? "relative h-auto w-full flex flex-col" : "sticky top-0 h-[100dvh] w-full overflow-hidden bg-portal"}>
 
-        <div ref={baseLayerRef} className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
+        <div ref={baseLayerRef} className={isMobile ? "relative w-full h-[60vh] min-h-[420px]" : "absolute inset-0 z-20 flex items-center justify-center pointer-events-auto"}>
           <div ref={heroContainerRef} className="w-full h-full relative overflow-hidden bg-background">
             {/* WebGL fluid splash — desktop only; mobile skips the heavy GPU sim */}
             {isHeavyMounted && (
@@ -277,13 +279,15 @@ const MasterExperience = () => {
           </div>
         </div>
 
-        <div ref={portalRef} className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
-          <div ref={symbolRef} className="will-change-transform -mt-[10vh] md:mt-0" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
-            {/* Logo/Shield completely removed from homepage (Explore section) */}
+        {!isMobile && (
+          <div ref={portalRef} className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none" style={{ clipPath: 'circle(0% at 50% 50%)' }}>
+            <div ref={symbolRef} className="will-change-transform -mt-[10vh] md:mt-0" style={{ width: '160px', height: '160px', transformStyle: 'preserve-3d' }}>
+              {/* Logo/Shield completely removed from homepage (Explore section) */}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div ref={modulesRef} className="absolute inset-0 z-30 bg-transparent pt-[20vh] md:pt-[10vh]">
+        <div ref={modulesRef} className={isMobile ? "relative w-full bg-portal py-12" : "absolute inset-0 z-30 bg-transparent pt-[20vh] md:pt-[10vh]"}>
           <ModuleNavPanel modules={modules} />
         </div>
       </div>

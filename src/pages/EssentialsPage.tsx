@@ -176,12 +176,13 @@ const EssentialsPage = () => {
         <div className="relative z-10 w-full px-4 sm:px-8 md:px-16 pb-20 md:pb-28">
           <div className="max-w-5xl">
             <div className="space-y-1 mb-8">
-              <div className="overflow-hidden">
-                <h1 className="ess-title-word block text-white font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
+              <h1 className="sr-only">CAMPUS ESSENTIALS</h1>
+              <div className="overflow-hidden" aria-hidden="true">
+                <span className="ess-title-word block text-white font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   CAMPUS
-                </h1>
+                </span>
               </div>
-              <div className="overflow-hidden">
+              <div className="overflow-hidden" aria-hidden="true">
                 <span className="ess-title-word block font-display text-[clamp(2.9rem,13vw,4.75rem)] sm:text-6xl md:text-[5.5rem] lg:text-[7rem] font-extrabold leading-[0.95] tracking-tight" style={{ textShadow: '0 2px 40px rgba(0,0,0,0.6)' }}>
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-300">ESSENTIALS</span>
                 </span>
@@ -239,6 +240,7 @@ const EssentialsPage = () => {
             <Wifi className="w-4 h-4 text-violet-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Essential Modules</span>
           </div>
+          <h2 className="sr-only">What We Cover</h2>
           <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-violet-400/30">
             WHAT WE COVER
           </GlitchText>
@@ -361,6 +363,7 @@ const EssentialsPage = () => {
               <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Pro Tips</span>
               <div className="h-px w-8 bg-white/10" />
             </div>
+            <h2 className="sr-only">Good to Know</h2>
             <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4 inline-block" accentColorClass="text-violet-400/30">
               GOOD TO KNOW
             </GlitchText>

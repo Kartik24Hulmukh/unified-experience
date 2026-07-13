@@ -112,7 +112,6 @@ const AccommodationPage = () => {
   const mainRef = useRef<HTMLDivElement>(null);
   const [activeArea, setActiveArea] = useState(0);
   const [heroLoaded, setHeroLoaded] = useState(false);
-  const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 30000]);
 
   // URL-persisted search/filter state (survives refresh and enables deep links)
   const [searchParams, setSearchParams] = useSearchParams();
@@ -120,6 +119,18 @@ const AccommodationPage = () => {
   const activeCategory = searchParams.get('category') ?? null;
   const setSearchQuery = (q: string) => setSearchParams(prev => { if (q) prev.set('q', q); else prev.delete('q'); return new URLSearchParams(prev); }, { replace: true });
   const setActiveCategory = (cat: string | null) => setSearchParams(prev => { if (cat) prev.set('category', cat); else prev.delete('category'); return new URLSearchParams(prev); }, { replace: true });
+
+  const minPrice = searchParams.get('min_price') ? Number(searchParams.get('min_price')) : 0;
+  const maxPrice = searchParams.get('max_price') ? Number(searchParams.get('max_price')) : 30000;
+  const priceFilter: [number, number] = [minPrice, maxPrice];
+
+  const setPriceFilter = (val: [number, number]) => {
+    setSearchParams(prev => {
+      prev.set('min_price', val[0].toString());
+      prev.set('max_price', val[1].toString());
+      return new URLSearchParams(prev);
+    }, { replace: true });
+  };
 
   const { displayedLines, isComplete } = useTypewriter(consoleLines, 25, 150, 800);
 
@@ -298,6 +309,14 @@ const AccommodationPage = () => {
 
     return () => ctx.revert();
   }, []);
+
+  // Dynamically calculate the rent range from visible listings instead of hardcoding
+  const rentValues = visibleItems.map(item => Number(item.price)).filter(p => !isNaN(p) && p > 0);
+  const minRent = rentValues.length ? Math.min(...rentValues) : null;
+  const maxRent = rentValues.length ? Math.max(...rentValues) : null;
+  const dynamicRentRange = minRent && maxRent 
+    ? `₹${minRent.toLocaleString()} – ₹${maxRent.toLocaleString()} / mo` 
+    : 'Contact for pricing';
 
   return (
     <>
@@ -485,6 +504,7 @@ const AccommodationPage = () => {
               Zone Classification
             </span>
           </div>
+          <h2 className="sr-only">Coverage Zones</h2>
           <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4">
             COVERAGE ZONES
           </GlitchText>
@@ -614,6 +634,7 @@ const AccommodationPage = () => {
 
           <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-16">
             <div>
+              <h2 className="sr-only">Security Protocols</h2>
               <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4">
                 SECURITY PROTOCOLS
               </GlitchText>
@@ -675,6 +696,7 @@ const AccommodationPage = () => {
               Database Query
             </span>
           </div>
+          <h2 className="sr-only">Browse Listings</h2>
           <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4">
             BROWSE LISTINGS
           </GlitchText>
@@ -727,6 +749,7 @@ const AccommodationPage = () => {
               </span>
               <div className="h-px w-8 bg-white/10" />
             </div>
+            <h2 className="sr-only">What You'll See</h2>
             <GlitchText className="text-white font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-4 inline-block">
               WHAT YOU'LL SEE
             </GlitchText>
@@ -739,7 +762,7 @@ const AccommodationPage = () => {
           <div className="info-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {[
               { label: 'Area', value: 'Location Name', icon: MapPin },
-              { label: 'Rent Range', value: '₹2,000 – ₹15,000 / mo', icon: Database },
+              { label: 'Rent Range', value: dynamicRentRange, icon: Database },
               { label: 'Distance', value: 'Shown per listing', icon: Wifi },
               { label: 'Availability', value: 'Shown per listing', icon: Eye },
             ].map((item) => {

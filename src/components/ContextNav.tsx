@@ -391,6 +391,23 @@ const ContextNav = memo(function ContextNav() {
 
           {/* Menu footer */}
           <div className="mt-16 md:mt-24 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+            {isAuthenticated && (
+              <div className="flex flex-col gap-4 sm:hidden">
+                <p className="text-portal-foreground/40 text-xs uppercase tracking-widest">Mobile Shortcuts</p>
+                <div className="flex items-center gap-4">
+                  <Link
+                    to="/profile"
+                    onClick={(e) => handleNavClick(e, '/profile')}
+                    className="text-xs uppercase font-mono tracking-widest text-primary hover:underline tap-target flex items-center"
+                    style={{ minHeight: 44 }}
+                  >
+                    Your Profile
+                  </Link>
+                  <div className="h-3 w-px bg-white/20" />
+                  <NotificationCenter isDark={true} />
+                </div>
+              </div>
+            )}
             <div className="flex flex-col gap-4">
               <p className="text-portal-foreground/40 text-xs uppercase tracking-widest">Controls</p>
               <div className="flex items-center gap-4">

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { useAuth } from '@/contexts/AuthContext';
 import { safeNavigate } from '@/lib/utils';
@@ -265,12 +265,12 @@ const LandingPage = () => {
 
           <div className="pointer-events-auto hidden md:block">
             {isAuthenticated ? (
-              <Button variant="primary" size="sm" onClick={() => safeNavigate(navigate, location.pathname, '/home')}>
-                OPEN HOME
+              <Button variant="primary" size="sm" asChild>
+                <Link to="/home">OPEN HOME</Link>
               </Button>
             ) : (
-              <Button variant="primary" size="sm" onClick={() => safeNavigate(navigate, location.pathname, '/login')}>
-                LOGIN
+              <Button variant="primary" size="sm" asChild>
+                <Link to="/login">LOGIN</Link>
               </Button>
             )}
           </div>
@@ -325,17 +325,19 @@ const LandingPage = () => {
           {/* CTA Button */}
           <div ref={ctaRef} className="mt-10 md:mt-14">
             <Button
-              onClick={handleEnter}
+              asChild
               variant="primary"
               size="lg"
               className="group relative z-30 overflow-hidden px-8 py-4 font-display text-xs tracking-[0.3em] text-white/80 transition-all duration-500 hover:tracking-[0.45em] md:px-12 md:py-5 md:text-sm md:tracking-[0.4em]"
             >
-              <span className="relative z-10 flex items-center gap-3 transition-colors duration-500 group-hover:text-black md:gap-4">
-                ENTER CAMPUS OS
-                <span className="inline-block transition-transform duration-500 group-hover:translate-x-3 text-lg md:text-xl leading-none">→</span>
-              </span>
-              {/* Fill animation on hover */}
-              <div className="absolute inset-0 bg-white scale-x-0 origin-left transition-transform duration-600 group-hover:scale-x-100" />
+              <Link to={isAuthenticated ? '/home' : '/login'}>
+                <span className="relative z-10 flex items-center gap-3 transition-colors duration-500 group-hover:text-black md:gap-4">
+                  ENTER CAMPUS OS
+                  <span className="inline-block transition-transform duration-500 group-hover:translate-x-3 text-lg md:text-xl leading-none">→</span>
+                </span>
+                {/* Fill animation on hover */}
+                <div className="absolute inset-0 bg-white scale-x-0 origin-left transition-transform duration-600 group-hover:scale-x-100" />
+              </Link>
             </Button>
           </div>
         </div>

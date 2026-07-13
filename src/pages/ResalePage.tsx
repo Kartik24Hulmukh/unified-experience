@@ -38,7 +38,17 @@ const ResalePage = () => {
   const activeCategory = searchParams.get('category') ?? null;
   const setSearchQuery = (q: string) => setSearchParams(prev => { if (q) prev.set('q', q); else prev.delete('q'); return new URLSearchParams(prev); }, { replace: true });
   const setActiveCategory = (cat: string | null) => setSearchParams(prev => { if (cat) prev.set('category', cat); else prev.delete('category'); return new URLSearchParams(prev); }, { replace: true });
-  const [priceFilter, setPriceFilter] = useState<[number, number]>([0, 5000]);
+  const minPrice = searchParams.get('min_price') ? Number(searchParams.get('min_price')) : 0;
+  const maxPrice = searchParams.get('max_price') ? Number(searchParams.get('max_price')) : 5000;
+  const priceFilter: [number, number] = [minPrice, maxPrice];
+
+  const setPriceFilter = (val: [number, number]) => {
+    setSearchParams(prev => {
+      prev.set('min_price', val[0].toString());
+      prev.set('max_price', val[1].toString());
+      return new URLSearchParams(prev);
+    }, { replace: true });
+  };
   const { canPerform } = useRestriction();
   const { isAuthenticated } = useAuth();
   const canCreateListing = canPerform('CREATE_LISTING');

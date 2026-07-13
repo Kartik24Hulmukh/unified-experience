@@ -84,7 +84,7 @@ const faqs = [
   },
   {
     q: 'Where can I get medicines late at night?',
-    a: 'LifeLine Pharmacy (0.3 km from campus) operates 24/7. There is also a medical shop near the main gate that stays open until midnight.',
+    a: 'LifeLine Pharmacy (within walking distance of campus) operates 24/7. There is also a medical shop near the main gate that stays open until midnight.',
   },
   {
     q: 'Does the college provide health insurance?',
@@ -434,6 +434,7 @@ const HospitalPage = () => {
             <Activity className="w-4 h-4 text-emerald-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Service Matrix</span>
           </div>
+          <h2 className="sr-only">Medical Services</h2>
           <GlitchText className="text-white font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-emerald-400/30">
             MEDICAL SERVICES
           </GlitchText>
@@ -480,6 +481,7 @@ const HospitalPage = () => {
               <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Quick Reference</span>
               <div className="h-px w-8 bg-white/10" />
             </div>
+            <h2 className="sr-only">Emergency Protocols</h2>
             <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4 inline-block" accentColorClass="text-emerald-400/30">
               HEALTH ESSENTIALS
             </GlitchText>
@@ -550,6 +552,7 @@ const HospitalPage = () => {
             <Search className="w-4 h-4 text-emerald-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Facility Database</span>
           </div>
+          <h2 className="sr-only">Browse Directory</h2>
           <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-emerald-400/30">
             BROWSE FACILITIES
           </GlitchText>
@@ -600,6 +603,7 @@ const HospitalPage = () => {
             <BriefcaseMedical className="w-4 h-4 text-emerald-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">You Ask, We Answer</span>
           </div>
+          <h2 className="sr-only">Common Questions</h2>
           <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-12" accentColorClass="text-emerald-400/30">
             COMMON QUESTIONS
           </GlitchText>

@@ -226,7 +226,7 @@ function RequestsInbox({ userId }: { userId: string }) {
                     key={`${req.id}-${action.event}`}
                     onClick={() => handleAction(req, action.event)}
                     disabled={updateEvent.isPending || createDispute.isPending}
-                    className={`px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest border transition-colors ${
+                    className={`tap-target px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest border transition-colors ${
                       action.variant === 'destructive'
                         ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
                         : 'border-primary/30 text-primary hover:bg-primary/10'
@@ -393,7 +393,7 @@ function MyListings({ listings, isLoading }: { listings: Array<{title?: string; 
               return (
                 <Link key={item.id} to={`/listing/${item.id}`} className="block p-4 border border-white/10 bg-black/20 space-y-3 group hover:border-primary/30 transition-all">
                   <div className="flex justify-between items-start">
-                    <Badge variant="outline" className={`text-[8px] uppercase tracking-widest ${
+                    <Badge variant="outline" className={`text-sm md:text-[8px] uppercase tracking-widest ${
                       item.status === 'APPROVED' ? 'border-emerald-500/30 text-emerald-400' : 
                       item.status === 'PENDING_REVIEW' ? 'border-amber-500/30 text-amber-400' : 
                       item.status === 'INTEREST_RECEIVED' || item.status === 'IN_TRANSACTION' ? 'border-blue-500/30 text-blue-400' :
@@ -401,10 +401,10 @@ function MyListings({ listings, isLoading }: { listings: Array<{title?: string; 
                     }`}>
                       {(item.status as string).replace(/_/g, ' ')}
                     </Badge>
-                    <span className="text-[10px] font-mono text-white/20 uppercase">{item.module}</span>
+                    <span className="text-sm md:text-[10px] font-mono text-white/20 uppercase">{item.module}</span>
                   </div>
-                  <p className="text-xs font-bold text-white group-hover:text-primary transition-colors truncate">{item.title}</p>
-                  <div className="flex justify-between items-center text-[10px] font-mono">
+                  <p className="text-sm md:text-xs font-bold text-white group-hover:text-primary transition-colors truncate">{item.title}</p>
+                  <div className="flex justify-between items-center text-sm md:text-[10px] font-mono">
                     <span className="text-white/40">₹{item.price}</span>
                     {dateStr && <span className="text-white/20">{dateStr}</span>}
                   </div>
@@ -438,7 +438,11 @@ function StudentSections({ profile, userId }: { profile: Profile; userId: string
   const { data } = profile;
   const stats = [
     // Use actual fetched count so this matches MyListings TOTAL badge
-    { label: 'Listings', value: listings.length.toString(), icon: Package },
+    { 
+      label: 'Listings', 
+      value: listingsLoading ? '...' : listings.length.toString(), 
+      icon: Package 
+    },
     { label: 'Requests', value: data.requestsCount.toString(), icon: BookOpen },
     { label: 'Exchanges', value: data.exchangesCompleted.toString(), icon: ArrowLeftRight },
     { label: 'Value Circulated', value: `₹${data.valueCirculated.toLocaleString()}`, icon: TrendingUp },

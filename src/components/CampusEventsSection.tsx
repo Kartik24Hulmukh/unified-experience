@@ -52,14 +52,22 @@ const events = [
   },
 ];
 
-/** Returns 'UPCOMING', 'TODAY', or 'COMPLETED' based on the event's date */
+/** Returns 'UPCOMING', 'TODAY', or 'COMPLETED' based on the event's date under Asia/Kolkata timezone */
 function getEventStatus(fullDate: string): 'UPCOMING' | 'TODAY' | 'COMPLETED' {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const eventDate = new Date(fullDate);
+  const [year, month, day] = fullDate.split('-').map(Number);
+  
+  // Current time in Asia/Kolkata
+  const now = new Date();
+  const kolkataDateStr = now.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' });
+  const todayIST = new Date(kolkataDateStr);
+  todayIST.setHours(0, 0, 0, 0);
+
+  // Target event date
+  const eventDate = new Date(year, month - 1, day);
   eventDate.setHours(0, 0, 0, 0);
-  if (eventDate.getTime() === today.getTime()) return 'TODAY';
-  return eventDate > today ? 'UPCOMING' : 'COMPLETED';
+
+  if (eventDate.getTime() === todayIST.getTime()) return 'TODAY';
+  return eventDate > todayIST ? 'UPCOMING' : 'COMPLETED';
 }
 
 const TYPE_COLORS: Record<string, string> = {

@@ -2,6 +2,12 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
+  // Production environment guard
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ SEED ABORTED: Refusing to seed a production database.');
+    process.exit(1);
+  }
+
   console.log('Seeding Resale and Skills data...');
 
   // 1. Get or create a seed user

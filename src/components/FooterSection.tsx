@@ -151,7 +151,7 @@ const FooterSection = () => {
         >
           A Trust-Centric
           <br />
-          <span className="text-portal-foreground/40">Campus Ecosystem</span>
+          <span className="text-portal-foreground/55">Campus Ecosystem</span>
         </h2>
 
         {/* ── Description ────────────────────────────────────────────────────── */}
@@ -165,7 +165,7 @@ const FooterSection = () => {
         <div className="ftr-stats grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-6 mb-24 max-w-4xl mx-auto w-full">
           {STATS.map((s) => (
             <div key={s.label} className="ftr-stat flex flex-col items-center text-center px-4">
-              <p className="text-portal-foreground/25 font-mono text-[9px] uppercase tracking-[0.4em] mb-3">
+              <p className="text-portal-foreground/55 font-mono text-[9px] uppercase tracking-[0.4em] mb-3">
                 {s.label}
               </p>
               <p className="text-portal-foreground font-display text-xl uppercase tracking-wide">
@@ -212,16 +212,18 @@ const FooterSection = () => {
               <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-[hsl(var(--color-accent-secondary))] font-display text-[12px] font-bold text-black">B</div>
                <div className="flex flex-col">
                   <span className="text-portal-foreground font-display text-[11px] uppercase tracking-tighter leading-none">BErozgar</span>
-                <span className="mt-1 font-mono text-[8px] uppercase leading-none tracking-[0.2em] text-portal-foreground/30">Campus Portal {APP_VERSION}</span>
+                <span className="mt-1 font-mono text-[8px] uppercase leading-none tracking-[0.2em] text-portal-foreground/55">Campus Portal {APP_VERSION}</span>
                </div>
             </div>
 
-            <p className="ftr-bottom-text text-portal-foreground/40 font-mono text-[9px] uppercase tracking-[0.3em] order-3 lg:order-2">
+            <p className="ftr-bottom-text text-portal-foreground/55 font-mono text-[9px] uppercase tracking-[0.3em] order-3 lg:order-2">
               © 2026 BErozgar — Rozgar for Resources
             </p>
 
-            <div className="ftr-bottom-text flex gap-8 order-2 lg:order-3">
-              <span className="text-portal-foreground/30 font-mono text-[9px] uppercase tracking-[0.2em] italic">Policies Coming Soon</span>
+            <div className="ftr-bottom-text flex gap-6 order-2 lg:order-3 text-[10px] uppercase font-mono tracking-widest text-portal-foreground/55">
+              <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+              <span>·</span>
+              <Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>

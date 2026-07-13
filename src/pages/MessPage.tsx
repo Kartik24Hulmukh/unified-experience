@@ -371,6 +371,7 @@ const MessPage = () => {
             <Flame className="w-4 h-4 text-amber-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Trust Architecture</span>
           </div>
+          <h2 className="sr-only">Why Trust Us</h2>
           <GlitchText className="text-white font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-amber-400/30">
             WHY TRUST US
           </GlitchText>
@@ -453,6 +454,7 @@ const MessPage = () => {
             <Search className="w-4 h-4 text-amber-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">Service Database</span>
           </div>
+          <h2 className="sr-only">Browse Services</h2>
           <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-4" accentColorClass="text-amber-400/30">
             BROWSE SERVICES
           </GlitchText>
@@ -503,6 +505,7 @@ const MessPage = () => {
             <ChefHat className="w-4 h-4 text-amber-400/60" />
             <span className="text-[10px] font-mono uppercase tracking-[0.4em] text-white/30">You Ask, We Answer</span>
           </div>
+          <h2 className="sr-only">Common Questions</h2>
           <GlitchText className="text-white font-display text-4xl md:text-6xl font-bold mb-12" accentColorClass="text-amber-400/30">
             COMMON QUESTIONS
           </GlitchText>

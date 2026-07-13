@@ -49,6 +49,8 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showEmailForm, setShowEmailForm] = useState(true);
     const hasRedirected = useRef(false);
+    const state = location.state as { from?: string } | null;
+    const isSessionExpired = state?.from && !isAuthenticated;
 
     const isAdminRole = (role: unknown) => String(role ?? '').trim().toLowerCase() === 'admin';
     const requestedDestination = typeof (location.state as { from?: unknown } | null)?.from === 'string'
@@ -77,15 +79,23 @@ const LoginPage = () => {
         defaultValues: { email: "", password: "" },
     });
 
+    const onFormError = (errors: any) => {
+        const firstInvalidField = Object.keys(errors)[0];
+        if (firstInvalidField) {
+            const element = document.getElementById(firstInvalidField);
+            if (element) {
+                element.focus();
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    };
+
     async function onSubmit(values: z.infer<typeof loginSchema>) {
         setIsLoading(true);
         try {
             const loggedInUser = await login(values.email, values.password);
             toast({ title: "Access Granted", description: "Welcome to the BErozgar Trust Exchange." });
-            
-            // Immediately navigate here as a fallback
-            const destination = getPostLoginDestination(loggedInUser?.role);
-            navigate(destination, { replace: true });
+            // Redirection is handled deterministically via the useEffect auth watcher below.
         } catch (err: unknown) {
             hasRedirected.current = false;
             const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Invalid credentials. Please try again.");
@@ -99,11 +109,9 @@ const LoginPage = () => {
         if (isGoogleLoading) return;
         try {
             const result = await promptSignIn();
-            const loggedInUser = await googleSignIn(result.credential);
+            await googleSignIn(result.credential);
             toast({ title: "Google Sign-In Successful", description: `Signed in as ${result.email || 'your Google account'}` });
-            
-            const destination = getPostLoginDestination(loggedInUser?.role);
-            navigate(destination, { replace: true });
+            // Redirection is handled deterministically via the useEffect auth watcher below.
         } catch (err: unknown) {
             hasRedirected.current = false;
             const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not authenticate with Google.");
@@ -157,6 +165,11 @@ const LoginPage = () => {
                         <div className="absolute -inset-2 bg-primary/10 rounded-[2rem] blur-2xl" />
 
                         <div className="relative bg-black/60 border border-white/5 p-6 sm:p-10 rounded-[1.5rem] shadow-2xl backdrop-blur-2xl">
+                            {isSessionExpired && (
+                              <div className="p-3 border border-yellow-500/20 bg-yellow-500/5 text-yellow-500 text-xs uppercase tracking-widest mb-6">
+                                Your session has expired. Please log in again to access the requested page.
+                              </div>
+                            )}
                             {hasRealGIS && (
                             <Button
                                 type="button"
@@ -189,7 +202,7 @@ const LoginPage = () => {
                             <div className="grid transition-all duration-300 grid-rows-[1fr] opacity-100 mb-6">
                                 <div className="overflow-hidden">
                                     <Form {...form}>
-                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                        <form onSubmit={form.handleSubmit(onSubmit, onFormError)} className="space-y-4">
                                             <FormField control={form.control} name="email" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="text-white/60 text-xs uppercase tracking-widest">Campus Email</FormLabel>

@@ -1,4 +1,4 @@
-import { lazy, Suspense, memo, useEffect, useRef } from 'react';
+import { lazy, Suspense, memo, useEffect, useRef, useState } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,7 +11,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PageTransition from "./components/PageTransition";
 import SkipToContent from "./components/SkipToContent";
-import { FullPageLoader } from "./components/FallbackUI";
+import { FullPageLoader, OfflineBanner } from "./components/FallbackUI";
 import { handleApiError } from "@/lib/error-handler";
 import { ApiError } from "@/lib/api-client";
 import { trackPageView } from "@/lib/monitoring";
@@ -168,6 +168,23 @@ function AuthLogoutRedirectSyncer() {
   return null;
 }
 
+function OfflineWatcher() {
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
+  return isOffline ? <OfflineBanner /> : null;
+}
+
 const App = () => (
   <HelmetProvider>
     <ErrorBoundary>
@@ -188,6 +205,7 @@ const App = () => (
               <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                 <PageViewTracker />
                 <AuthLogoutRedirectSyncer />
+                <OfflineWatcher />
                 <SkipToContent />
                 <Suspense fallback={null}>
                   <GooeyCursor size={28} />

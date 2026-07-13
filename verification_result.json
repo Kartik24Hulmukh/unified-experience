@@ -1,8 +1,15 @@
 {
   "success": true,
   "statusCode": 200,
-  "consoleErrors": [],
-  "consoleLogs": [],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 ()"
+  ],
+  "consoleLogs": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 ()"
+    }
+  ],
   "bodyStyles": {
     "htmlClass": "lenis light",
     "bg": "rgb(255, 255, 255)",
@@ -11,7 +18,7 @@
   },
   "darkStyles": {
     "htmlClass": "lenis dark",
-    "bg": "rgb(255, 255, 255)",
+    "bg": "rgb(0, 0, 0)",
     "color": "rgb(255, 255, 255)"
   }
 }

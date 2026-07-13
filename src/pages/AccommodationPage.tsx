@@ -873,7 +873,7 @@ const AccommodationPage = () => {
           <div className="mt-20 flex items-center justify-center gap-6">
             <div className="h-px w-16 bg-white/5" />
             <span className="text-[9px] font-mono text-white/10 uppercase tracking-[0.3em]">
-              ACCOM_MODULE // v2.6 // ENCRYPTED
+              ACCOM_MODULE // v2.6 // SECURE
             </span>
             <div className="h-px w-16 bg-white/5" />
           </div>

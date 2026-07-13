@@ -175,6 +175,10 @@ const MasterExperience = () => {
       return;
     }
 
+    // CSS fallback for desktop: ensure module items are visible if GSAP/ScrollTrigger fails
+    const allItems = modulesRef.current?.querySelectorAll('.module-item');
+    if (allItems) gsap.set(allItems, { opacity: 1, y: 0, rotateX: 0 });
+
     const ctx = gsap.context(() => {
       // MED-06 FIX: ScrollTrigger.refresh() forces synchronous style/layout recalculation.
       // Calling it via tl.add() at position 1.0 runs it mid-scrub while the timeline
@@ -255,7 +259,7 @@ const MasterExperience = () => {
                 <div className="flex-col items-end pt-4 ml-8 hidden lg:flex">
                    <div className="w-[1px] h-12 bg-foreground/30 mb-4"></div>
                    <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-foreground/40 max-w-[140px] text-right leading-relaxed">
-                     Admin Authenticated
+                     Secure Session
                    </span>
                 </div>
               </div>

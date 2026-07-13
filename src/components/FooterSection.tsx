@@ -205,22 +205,37 @@ const FooterSection = () => {
         {/* ── Bottom Section ─────────────────────────────────────────────────── */}
         <div className="ftr-bottom mt-auto">
           <div className="ftr-divider h-px bg-portal-foreground/15 mb-10" />
-          
+
           <div className="flex flex-col lg:flex-row justify-between items-center gap-6 pb-4">
             {/* Logo/Context Branding */}
             <div className="ftr-bottom-text flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-[hsl(var(--color-accent-secondary))] font-display text-[12px] font-bold text-black">B</div>
-               <div className="flex flex-col">
-                  <span className="text-portal-foreground font-display text-[11px] uppercase tracking-tighter leading-none">BErozgar</span>
+              <div className="flex flex-col">
+                <span className="text-portal-foreground font-display text-[11px] uppercase tracking-tighter leading-none">BErozgar</span>
                 <span className="mt-1 font-mono text-[8px] uppercase leading-none tracking-[0.2em] text-portal-foreground/55">Campus Portal {APP_VERSION}</span>
-               </div>
+              </div>
             </div>
 
             <p className="ftr-bottom-text text-portal-foreground/55 font-mono text-[9px] uppercase tracking-[0.3em] order-3 lg:order-2">
               © 2026 BErozgar — Rozgar for Resources
             </p>
 
-
+            {/* Legal links */}
+            <div className="ftr-bottom-text flex items-center gap-4 order-2 lg:order-3">
+              <Link
+                to="/privacy"
+                className="font-mono text-[9px] uppercase tracking-[0.3em] text-portal-foreground/40 hover:text-portal-foreground/70 transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              <span className="text-portal-foreground/20 text-[9px]">·</span>
+              <Link
+                to="/terms"
+                className="font-mono text-[9px] uppercase tracking-[0.3em] text-portal-foreground/40 hover:text-portal-foreground/70 transition-colors"
+              >
+                Terms of Service
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -228,5 +243,6 @@ const FooterSection = () => {
     </footer>
   );
 };
+
 
 export default FooterSection;

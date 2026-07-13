@@ -205,7 +205,7 @@ const MasterExperience = () => {
       tl.to({}, { duration: 0.8 });
     });
     return () => ctx.revert();
-  }, []);
+  }, [isMobile]);
 
   return (
     <div ref={containerRef} className={isMobile ? "h-auto bg-portal flex flex-col" : "h-[200vh] bg-portal"}>

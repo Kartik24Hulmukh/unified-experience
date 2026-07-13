@@ -3,6 +3,15 @@ import { execSync } from 'child_process';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 
+interface MockFilterCondition {
+  email?: { contains?: string; startsWith?: string };
+  fullName?: { contains?: string; startsWith?: string };
+  title?: { contains?: string; startsWith?: string };
+  description?: { contains?: string; startsWith?: string };
+  name?: { contains?: string; startsWith?: string };
+  officialEmail?: { contains?: string; startsWith?: string };
+}
+
 interface MockUser {
   id: string;
   email: string;
@@ -58,12 +67,12 @@ const mockUserDeleteMany = vi.fn().mockImplementation((args) => {
         return !args.where.id.in.includes(u.id);
       }
       if (args.where.OR) {
-        const matchesOr = args.where.OR.some((cond: any) => {
+        const matchesOr = args.where.OR.some((cond: MockFilterCondition) => {
           if (cond.email?.contains) {
-            return u.email.includes(cond.email.contains);
+            return u.email.toLowerCase().includes(cond.email.contains.toLowerCase());
           }
           if (cond.fullName?.contains) {
-            return u.fullName.includes(cond.fullName.contains);
+            return u.fullName.toLowerCase().includes(cond.fullName.contains.toLowerCase());
           }
           return false;
         });
@@ -84,7 +93,7 @@ const mockUserCount = vi.fn().mockImplementation((args) => {
   if (args && args.where) {
     count = dbUsers.filter(u => {
       if (args.where.email?.contains) {
-        return u.email.includes(args.where.email.contains);
+        return u.email.toLowerCase().includes(args.where.email.contains.toLowerCase());
       }
       return true;
     }).length;
@@ -96,7 +105,7 @@ const mockUserFindFirst = vi.fn().mockImplementation((args) => {
   if (args && args.where) {
     const found = dbUsers.find(u => {
       if (args.where.email?.contains) {
-        return u.email.includes(args.where.email.contains);
+        return u.email.toLowerCase().includes(args.where.email.contains.toLowerCase());
       }
       return true;
     });
@@ -110,18 +119,18 @@ const mockUserFindMany = vi.fn().mockImplementation((args) => {
   if (args && args.where) {
     if (args.where.OR) {
       results = dbUsers.filter(u => {
-        return args.where.OR.some((cond: any) => {
+        return args.where.OR.some((cond: MockFilterCondition) => {
           if (cond.fullName?.startsWith) {
-            return u.fullName.startsWith(cond.fullName.startsWith);
+            return u.fullName.toLowerCase().startsWith(cond.fullName.startsWith.toLowerCase());
           }
           if (cond.fullName?.contains) {
-            return u.fullName.includes(cond.fullName.contains);
+            return u.fullName.toLowerCase().includes(cond.fullName.contains.toLowerCase());
           }
           if (cond.email?.startsWith) {
-            return u.email.startsWith(cond.email.startsWith);
+            return u.email.toLowerCase().startsWith(cond.email.startsWith.toLowerCase());
           }
           if (cond.email?.contains) {
-            return u.email.includes(cond.email.contains);
+            return u.email.toLowerCase().includes(cond.email.contains.toLowerCase());
           }
           return false;
         });
@@ -149,12 +158,12 @@ const mockListingDeleteMany = vi.fn().mockImplementation((args) => {
         return !args.where.id.in.includes(l.id);
       }
       if (args.where.OR) {
-        const matchesOr = args.where.OR.some((cond: any) => {
+        const matchesOr = args.where.OR.some((cond: MockFilterCondition) => {
           if (cond.title?.contains) {
-            return l.title.includes(cond.title.contains);
+            return l.title.toLowerCase().includes(cond.title.contains.toLowerCase());
           }
           if (cond.description?.contains) {
-            return l.description.includes(cond.description.contains);
+            return l.description.toLowerCase().includes(cond.description.contains.toLowerCase());
           }
           return false;
         });
@@ -175,7 +184,7 @@ const mockListingCount = vi.fn().mockImplementation((args) => {
   if (args && args.where) {
     count = dbListings.filter(l => {
       if (args.where.title?.contains) {
-        return l.title.includes(args.where.title.contains);
+        return l.title.toLowerCase().includes(args.where.title.contains.toLowerCase());
       }
       return true;
     }).length;
@@ -187,7 +196,7 @@ const mockListingFindFirst = vi.fn().mockImplementation((args) => {
   if (args && args.where) {
     const found = dbListings.find(l => {
       if (args.where.title?.contains) {
-        return l.title.includes(args.where.title.contains);
+        return l.title.toLowerCase().includes(args.where.title.contains.toLowerCase());
       }
       return true;
     });
@@ -201,18 +210,18 @@ const mockListingFindMany = vi.fn().mockImplementation((args) => {
   if (args && args.where) {
     if (args.where.OR) {
       results = dbListings.filter(l => {
-        return args.where.OR.some((cond: any) => {
+        return args.where.OR.some((cond: MockFilterCondition) => {
           if (cond.title?.startsWith) {
-            return l.title.startsWith(cond.title.startsWith);
+            return l.title.toLowerCase().startsWith(cond.title.startsWith.toLowerCase());
           }
           if (cond.title?.contains) {
-            return l.title.includes(cond.title.contains);
+            return l.title.toLowerCase().includes(cond.title.contains.toLowerCase());
           }
           if (cond.description?.startsWith) {
-            return l.description.startsWith(cond.description.startsWith);
+            return l.description.toLowerCase().startsWith(cond.description.startsWith.toLowerCase());
           }
           if (cond.description?.contains) {
-            return l.description.includes(cond.description.contains);
+            return l.description.toLowerCase().includes(cond.description.contains.toLowerCase());
           }
           return false;
         });
@@ -237,18 +246,18 @@ const mockStudentDeleteMany = vi.fn().mockImplementation((args) => {
     const initialCount = dbStudents.length;
     dbStudents = dbStudents.filter(s => {
       if (args.where.OR) {
-        const matchesOr = args.where.OR.some((cond: any) => {
+        const matchesOr = args.where.OR.some((cond: MockFilterCondition) => {
           if (cond.name?.startsWith) {
-            return s.name.startsWith(cond.name.startsWith);
+            return s.name.toLowerCase().startsWith(cond.name.startsWith.toLowerCase());
           }
           if (cond.name?.contains) {
-            return s.name.includes(cond.name.contains);
+            return s.name.toLowerCase().includes(cond.name.contains.toLowerCase());
           }
           if (cond.officialEmail?.startsWith) {
-            return s.officialEmail.startsWith(cond.officialEmail.startsWith);
+            return s.officialEmail.toLowerCase().startsWith(cond.officialEmail.startsWith.toLowerCase());
           }
           if (cond.officialEmail?.contains) {
-            return s.officialEmail.includes(cond.officialEmail.contains);
+            return s.officialEmail.toLowerCase().includes(cond.officialEmail.contains.toLowerCase());
           }
           return false;
         });
@@ -269,7 +278,7 @@ const mockStudentCount = vi.fn().mockImplementation((args) => {
   if (args && args.where) {
     count = dbStudents.filter(s => {
       if (args.where.officialEmail?.contains) {
-        return s.officialEmail.includes(args.where.officialEmail.contains);
+        return s.officialEmail.toLowerCase().includes(args.where.officialEmail.contains.toLowerCase());
       }
       return true;
     }).length;
@@ -281,7 +290,7 @@ const mockStudentFindFirst = vi.fn().mockImplementation((args) => {
   if (args && args.where) {
     const found = dbStudents.find(s => {
       if (args.where.officialEmail?.contains) {
-        return s.officialEmail.includes(args.where.officialEmail.contains);
+        return s.officialEmail.toLowerCase().includes(args.where.officialEmail.contains.toLowerCase());
       }
       return true;
     });
@@ -358,11 +367,12 @@ describe('Data & Content Integrity Verification', () => {
             env: { ...process.env, NODE_ENV: 'production', FORCE_PURGE: '' },
             stdio: 'pipe'
           }).toString();
-        } catch (error: any) {
+        } catch (error) {
           errorOccurred = true;
-          exitCode = error.status;
-          stdout = error.stdout?.toString() || '';
-          stderr = error.stderr?.toString() || '';
+          const err = error as { status: number; stdout?: Buffer | string; stderr?: Buffer | string };
+          exitCode = err.status;
+          stdout = err.stdout?.toString() || '';
+          stderr = err.stderr?.toString() || '';
         }
 
         expect(errorOccurred).toBe(true);
@@ -373,7 +383,7 @@ describe('Data & Content Integrity Verification', () => {
   });
 
   describe('purge-test-records.ts functionality', () => {
-    let testUserIds: string[] = [];
+    const testUserIds: string[] = [];
     let validUserId: string = '';
 
     beforeAll(async () => {
@@ -521,7 +531,7 @@ describe('Data & Content Integrity Verification', () => {
       process.env.NODE_ENV = 'development';
       const originalExit = process.exit;
       const exitMock = vi.fn();
-      process.exit = exitMock as any;
+      process.exit = exitMock as unknown as (code?: number) => never;
 
       try {
         vi.resetModules();

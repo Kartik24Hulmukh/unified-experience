@@ -62,7 +62,7 @@ const ContextNav = memo(function ContextNav() {
       base.push({ label: 'Admin', path: '/admin', number: '07' });
     }
     return base;
-  }, [user?.role, user]);
+  }, [user]);
 
   // Kill ScrollTriggers when leaving animated pages (runs on all routes)
   useScrollTriggerCleanup();

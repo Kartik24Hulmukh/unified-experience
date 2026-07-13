@@ -40,7 +40,7 @@ const ResalePage = () => {
   const setActiveCategory = (cat: string | null) => setSearchParams(prev => { if (cat) prev.set('category', cat); else prev.delete('category'); return new URLSearchParams(prev); }, { replace: true });
   const minPrice = searchParams.get('min_price') ? Number(searchParams.get('min_price')) : 0;
   const maxPrice = searchParams.get('max_price') ? Number(searchParams.get('max_price')) : 5000;
-  const priceFilter: [number, number] = [minPrice, maxPrice];
+  const priceFilter = useMemo<[number, number]>(() => [minPrice, maxPrice], [minPrice, maxPrice]);
 
   const setPriceFilter = (val: [number, number]) => {
     setSearchParams(prev => {

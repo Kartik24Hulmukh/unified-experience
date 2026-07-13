@@ -220,11 +220,7 @@ const FooterSection = () => {
               © 2026 BErozgar — Rozgar for Resources
             </p>
 
-            <div className="ftr-bottom-text flex gap-6 order-2 lg:order-3 text-[10px] uppercase font-mono tracking-widest text-portal-foreground/55">
-              <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-              <span>·</span>
-              <Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
-            </div>
+
           </div>
         </div>
 

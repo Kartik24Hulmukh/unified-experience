@@ -198,7 +198,7 @@ const HospitalPage = () => {
         return matchesSearch && matchesCategory && matchesPrice;
       }
     );
-  }, [searchQuery, activeCategory, priceFilter, visibleItems]);
+  }, [searchQuery, activeCategory, priceFilter, visibleItems, dbHospitals]);
 
   const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
     if (filters.categories !== undefined) {

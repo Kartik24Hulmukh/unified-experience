@@ -429,10 +429,11 @@ function MyListings({ listings, isLoading }: { listings: Array<{title?: string; 
 }
 
 function StudentSections({ profile, userId }: { profile: Profile; userId: string }) {
-  if (!isStudentProfile(profile)) return null;
-
   // Lift listings fetch here so both Activity Summary and MyListings use the same count
   const { data: listingsRes, isLoading: listingsLoading } = useListings({ ownerId: userId });
+
+  if (!isStudentProfile(profile)) return null;
+
   const listings = listingsRes?.data ?? [];
 
   const { data } = profile;
@@ -672,7 +673,9 @@ function AdminDrilldownView({ view }: { view: AdminStudentView }) {
           </div>
         </div>
         <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.4em]">
-          BErozgar Campus Identity — {view.identity.verified ? 'Verified' : 'Unverified'}
+          BErozgar Campus Identity — {view.identity.role === 'public_user'
+            ? (view.identity.verified ? 'Email Verified · College Pending' : 'Unverified')
+            : (view.identity.verified ? 'Verified' : 'Unverified')}
         </p>
       </div>
 
@@ -920,7 +923,9 @@ const ProfilePage = () => {
               </div>
             </div>
             <p className="text-white/40 text-[10px] uppercase font-bold tracking-[0.4em]">
-              BErozgar Campus Identity — {profile.identity.verified ? 'Verified' : 'Unverified'}
+              BErozgar Campus Identity — {profile.role === 'public_user'
+                ? (profile.identity.verified ? 'Email Verified · College Pending' : 'Unverified')
+                : (profile.identity.verified ? 'Verified' : 'Unverified')}
             </p>
           </div>
 

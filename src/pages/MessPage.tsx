@@ -146,7 +146,7 @@ const MessPage = () => {
         return matchesSearch && matchesCategory && matchesPrice;
       }
     );
-  }, [searchQuery, activeCategory, priceFilter, visibleItems]);
+  }, [searchQuery, activeCategory, priceFilter, visibleItems, dbMesses]);
 
   const handleFilterChange = (filters: { categories?: string[]; price?: [number, number] }) => {
     if (filters.categories !== undefined) {

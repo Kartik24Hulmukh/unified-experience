@@ -153,9 +153,15 @@ export async function refresh(request: FastifyRequest, reply: FastifyReply) {
     ipAddress: request.ip,
   });
 
-  const accessToken = result.tokens?.accessToken || (result as any).accessToken;
-  const refreshToken = result.tokens?.refreshToken || (result as any).refreshToken;
-  const user = result.user || (result as any).user;
+  const typedResult = result as {
+    tokens?: { accessToken: string; refreshToken: string };
+    accessToken?: string;
+    refreshToken?: string;
+    user?: unknown;
+  };
+  const accessToken = typedResult.tokens?.accessToken || typedResult.accessToken;
+  const refreshToken = typedResult.tokens?.refreshToken || typedResult.refreshToken;
+  const user = typedResult.user;
 
   setRefreshCookie(reply, refreshToken);
 
@@ -181,7 +187,8 @@ export async function logout(request: FastifyRequest, reply: FastifyReply) {
 
 export async function me(request: FastifyRequest, reply: FastifyReply) {
   const result = await authService.getCurrentUser(request.userId!);
-  if (result && (result as any).user) {
+  const typedResult = result as { user?: unknown };
+  if (typedResult && typedResult.user) {
     return reply.status(200).send(normalize(result));
   }
   return reply.status(200).send(normalize({ user: result }));

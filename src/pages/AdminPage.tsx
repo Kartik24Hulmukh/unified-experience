@@ -67,7 +67,7 @@ import {
     useMessProviders, useCreateMessProvider, useUpdateMessProvider, useDeleteMessProvider,
     useHospitals, useCreateHospital, useUpdateHospital, useDeleteHospital
 } from '@/hooks/api/useApi';
-import type { PendingItem, Dispute, AuditLogEntry } from '@/hooks/api/useApi';
+import type { PendingItem, Dispute, AuditLogEntry, MessProvider, Hospital } from '@/hooks/api/useApi';
 import {
     createListingMachine,
     type ListingMachine,
@@ -89,8 +89,8 @@ const AdminPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [confirmation, setConfirmation] = useState<ConfirmationState>(null);
     const [isConfirmationLocked, setIsConfirmationLocked] = useState(false);
-    const [editingMess, setEditingMess] = useState<any>(null);
-    const [editingHospital, setEditingHospital] = useState<any>(null);
+    const [editingMess, setEditingMess] = useState<MessProvider | null>(null);
+    const [editingHospital, setEditingHospital] = useState<Hospital | null>(null);
     const [isMessFormOpen, setIsMessFormOpen] = useState(false);
     const [isHospitalFormOpen, setIsHospitalFormOpen] = useState(false);
     // Track which detail dialog is open (keyed by listing id) so we can close it after actions

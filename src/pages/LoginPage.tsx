@@ -79,7 +79,7 @@ const LoginPage = () => {
         defaultValues: { email: "", password: "" },
     });
 
-    const onFormError = (errors: any) => {
+    const onFormError = (errors: Record<string, unknown>) => {
         const firstInvalidField = Object.keys(errors)[0];
         if (firstInvalidField) {
             const element = document.getElementById(firstInvalidField);

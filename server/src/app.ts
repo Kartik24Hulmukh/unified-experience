@@ -45,8 +45,11 @@ export async function buildApp() {
   // ── Sentry (optional — only when DSN is configured) ──
   if (env.SENTRY_DSN) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Sentry = require('@sentry/node') as {
+      // PROD-FIX: dynamic import instead of require() — this server runs as an
+      // ES module ("type": "module"), where require() is undefined and would
+      // crash the process at boot whenever SENTRY_DSN is configured.
+      const sentrySpecifier = '@sentry/node';
+      const Sentry = (await import(sentrySpecifier)) as {
         init: (opts: Record<string, unknown>) => void;
       };
       Sentry.init({
@@ -73,7 +76,12 @@ export async function buildApp() {
     // Use the TRUST_PROXY env var in production to supply the real proxy CIDR
     // (e.g. "10.0.0.0/8" for AWS VPC, or the specific nginx/LB address).
     trustProxy: env.TRUST_PROXY ?? 'loopback,linklocal,uniquelocal',
-    bodyLimit: 10_240, // 10 KB — reject oversized payloads early
+    // PROD-FIX: 64 KB default for JSON payloads (was 10 KB, which rejected
+    // longer listing descriptions). Image uploads use a per-route bodyLimit
+    // override (see routes/images.ts) — Fastify enforces this global limit
+    // against Content-Length BEFORE multipart parsing, so a small global
+    // limit silently 413s every image upload.
+    bodyLimit: 64 * 1024,
   });
 
   // ── Global Plugins ──────────────────────────────

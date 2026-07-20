@@ -48,8 +48,13 @@ services:
   # ── BErozgar API (Fastify) ───────────────────────
   api:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      # PROD-FIX: context must be the repo root (not ./server) because
+      # server/package.json depends on "@berozgar/shared": "file:../shared",
+      # which lives OUTSIDE the ./server build context. With the old context
+      # npm ci inside the image could never resolve the shared package and
+      # the API image build failed on every clean deploy.
+      context: .
+      dockerfile: server/Dockerfile
       target: production
     container_name: berozgar-api-prod
     restart: always
@@ -85,6 +90,11 @@ services:
       CSRF_ENFORCE: "true"
       # Optional monitoring
       SENTRY_DSN: ${SENTRY_DSN:-}
+    volumes:
+      # PROD-FIX: persist uploaded listing images. Without this volume every
+      # deploy/restart recreated the container and silently DELETED all
+      # user-uploaded photos.
+      - uploads-data:/app/server/uploads
     networks:
       - backend
       - frontend
@@ -157,4 +167,6 @@ volumes:
   pgdata:
     driver: local
   certbot-webroot:
+    driver: local
+  uploads-data:
     driver: local

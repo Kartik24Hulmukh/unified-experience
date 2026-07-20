@@ -74,3 +74,10 @@ bun.lock
 # Generic backups
 *.bak
 
+# Archive files (zip bundles should not be committed)
+*.zip
+
+# Server build artifacts
+server/dist/
+server/prisma_err.txt
+

@@ -55,7 +55,7 @@ async function main(): Promise<void> {
     }
   }
 
-  // Fire once after 30s startup delay, then every 6h
+  // Fire once after 30s startup delay, then every 30 minutes
   const startupDelay = setTimeout(async () => {
     await runRecovery();
     recoveryTimer = setInterval(runRecovery, STALE_RECOVERY_INTERVAL_MS);

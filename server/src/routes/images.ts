@@ -27,7 +27,14 @@ export async function imageRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/listings/:listingId/images — Upload image for listing
   app.post(
     '/listings/:listingId/images',
-    { preHandler: [authenticate, requireVerifiedStudent] },
+    {
+      preHandler: [authenticate, requireVerifiedStudent],
+      // PROD-FIX: per-route bodyLimit override. The global app bodyLimit (64 KB)
+      // is enforced against Content-Length before multipart parsing, so without
+      // this override every image upload was rejected with 413 even though the
+      // multipart plugin allows files up to 5 MB.
+      bodyLimit: 6 * 1024 * 1024,
+    },
     async (request, reply) => {
       const { listingId } = request.params as { listingId: string };
       

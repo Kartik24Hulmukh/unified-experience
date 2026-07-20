@@ -63,7 +63,10 @@ export default defineConfig(({ mode }) => {
       // Strip console.log/debug/info/warn and debugger in production builds
       ...(isProd && {
         drop: ['debugger'],
-        pure: ['console.log', 'console.debug', 'console.info', 'console.warn', 'console.error'],
+        // PROD-FIX: keep console.error and console.warn in production builds.
+        // Stripping them made real production failures invisible and
+        // impossible to debug in the browser console.
+        pure: ['console.log', 'console.debug', 'console.info'],
       }),
     },
   };

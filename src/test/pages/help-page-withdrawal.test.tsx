@@ -40,6 +40,7 @@ const MATCHED = {
   entry: { id: QUESTION.id, question: QUESTION.question, topic: 'directory', source: QUESTION.source },
   related: [],
   disclaimer: 'Reviewed answers only.',
+  corpusRevision: 0,
 };
 
 const WITHDRAWN = {
@@ -50,13 +51,14 @@ const WITHDRAWN = {
   entry: null,
   related: [],
   disclaimer: 'Reviewed answers only.',
+  corpusRevision: 0,
 };
 
 describe('HelpPage withdrawal regression', () => {
   beforeEach(() => {
     mockAsk.mockReset();
     mockFetchQuestions.mockReset();
-    mockFetchQuestions.mockResolvedValue([QUESTION]);
+    mockFetchQuestions.mockResolvedValue({ questions: [QUESTION], corpusRevision: 0 });
   });
 
   it('expanding a question always re-asks the live API and replaces a withdrawn answer', async () => {

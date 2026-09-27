@@ -7,6 +7,7 @@ import { safeNavigate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { APP_VERSION } from '@/lib/app-meta';
 import { PublicListingsStrip } from '@/components/PublicListingsStrip';
+import { CampusQaSearch } from '@/components/CampusQaSearch';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
 
@@ -341,6 +342,9 @@ const LandingPage = () => {
               </Link>
             </Button>
           </div>
+
+          {/* APODEX campus Q&A: anonymous, deterministic, cited search for signed-out visitors */}
+          {!isAuthenticated && !authLoading && <CampusQaSearch />}
 
           {/* APODEX P6: real, minimal public supply for signed-out visitors */}
           {!isAuthenticated && !authLoading && <PublicListingsStrip />}

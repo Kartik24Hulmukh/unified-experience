@@ -44,6 +44,7 @@ const CreateListingPage = lazy(() => import('./pages/CreateListingPage'));
 const AgentsHub = lazy(() => import('./components/AgentsHub'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
 
 const queryClient = new QueryClient({
   // M2-FIX: global QueryCache error handler catches unrecoverable 401s from
@@ -267,6 +268,7 @@ const App = () => (
                         {/* Legal pages — publicly accessible */}
                         <Route path="/privacy" element={<RouteErrorBoundary name="Privacy"><PrivacyPage /></RouteErrorBoundary>} />
                         <Route path="/terms" element={<RouteErrorBoundary name="Terms"><TermsPage /></RouteErrorBoundary>} />
+                        <Route path="/help" element={<RouteErrorBoundary name="Help"><HelpPage /></RouteErrorBoundary>} />
 
                         <Route path="*" element={<NotFound />} />
                       </Routes>

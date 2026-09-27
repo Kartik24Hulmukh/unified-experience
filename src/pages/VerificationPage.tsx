@@ -195,7 +195,7 @@ const VerificationPage = () => {
 
                     <div className="flex flex-col items-center space-y-4 w-full max-w-sm">
                         <Button
-                            onClick={handleVerify}
+                            onClick={() => void handleVerify()}
                             disabled={isBusy || otp.length < 6}
                             variant="primary"
                             className="group relative h-14 w-full overflow-hidden rounded-none border-white/25 font-bold text-white transition-all duration-500 hover:border-white hover:bg-white hover:text-black"

@@ -81,7 +81,8 @@ const SignupPage = () => {
             // programmatic redirect. isLoading already guards against double-submission.
             navigate("/verify", { replace: false });
         } catch (err: unknown) {
-            const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not create your account. Please try again.");
+            const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
+            const msg = apiErr?.response?.data?.error || apiErr?.response?.data?.message || (err instanceof Error ? err.message : "Could not create your account. Please try again.");
             toast({
                 title: "Registration Failed",
                 description: msg,
@@ -103,7 +104,8 @@ const SignupPage = () => {
                 description: `Signed in as ${result.email || 'your Google account'}. Your Google account has been verified.`,
             });
         } catch (err: unknown) {
-            const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not authenticate with Google.");
+            const apiErr = err as { response?: { data?: { error?: string; message?: string } } };
+            const msg = apiErr?.response?.data?.error || apiErr?.response?.data?.message || (err instanceof Error ? err.message : "Could not authenticate with Google.");
             toast({
                 title: "Google Sign-In Failed",
                 description: msg,

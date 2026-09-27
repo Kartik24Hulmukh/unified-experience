@@ -16,7 +16,8 @@ import {
     RefreshCw,
     Home,
     Heart,
-    Coffee
+    Coffee,
+    HelpCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -74,6 +75,7 @@ import {
     InvalidTransitionError,
 } from '@/lib/fsm';
 import { toast } from '@/components/ui/use-toast';
+import { AdminCampusQaGaps } from '@/components/AdminCampusQaGaps';
 
 type ConfirmationState = {
     title: string;
@@ -363,6 +365,7 @@ const AdminPage = () => {
                         { id: 'activity', label: 'Live Metrics', icon: Activity },
                         { id: 'mess', label: 'Mess Directory', icon: Coffee },
                         { id: 'hospital', label: 'Hospital Directory', icon: Heart },
+                        { id: 'qa-gaps', label: 'Q&A Demand Gaps', icon: HelpCircle },
                     ].map((item) => (
                         <button
                             key={item.id}
@@ -1121,6 +1124,8 @@ const AdminPage = () => {
                     )}
 
                     {/* ═══ HOSPITAL TAB ═══ */}
+                    {activeTab === 'qa-gaps' && <AdminCampusQaGaps />}
+
                     {activeTab === 'hospital' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">

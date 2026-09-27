@@ -16,7 +16,7 @@ export function AdminCampusQaMetrics() {
   return <section aria-labelledby="qa-evidence-title" className="border border-white/15 p-4 space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h4 id="qa-evidence-title" className="text-sm font-bold uppercase tracking-widest">Weekly Q&amp;A evidence</h4>
-      <Button variant="outline" onClick={() => void refetch()} disabled={isFetching}>
+      <Button variant="outline" className="bg-transparent text-white border-white/30 hover:bg-white/10 hover:text-white" onClick={() => void refetch()} disabled={isFetching}>
         {isFetching ? 'Refreshing metrics' : 'Refresh metrics'}
       </Button>
     </div>

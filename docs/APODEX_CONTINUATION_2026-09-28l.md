@@ -16,7 +16,10 @@ Base: `fb6d96c` (PR #14). Scope follows the supplied continuation-k report's exp
 - Frontend final full suite: 581 passed in 28 files, including 5 component tests (loading, values, empty, failure/retry, malformed payload).
 - Real PostgreSQL 16.4: all 8 migrations replayed from empty DB; 11/11 integration tests passed, including 4 new tests for concurrent counters/reopening, admin access and live route writes.
 - Backend production build/typecheck and frontend app-project typecheck: exit 0. Vite production build passed (existing large chunk warning). Targeted frontend ESLint passed.
+- Real Chromium + local migrated DB: synthetic admin password login → admin session reload → Demand Gaps → metrics/gaps/answers all 200. Desktop and 390px mobile screenshots captured; mobile document overflow check false. An opt-in Playwright smoke test is included in `e2e/campus-qa-metrics.spec.ts`. Local API uses same-origin `/api` proxy as required by CSP; no mocked network or production identities.
 - No live production deployment or student traction verified. Check PR CI before merge.
+
+![Local synthetic administrator viewing weekly Q&A evidence; these are test counts, not traction](evidence/qa-weekly-local.png)
 
 ## Review council (one agent, explicit perspectives)
 No independent multi-agent facility was available. Parallel installs/build/test jobs are not AI agents.

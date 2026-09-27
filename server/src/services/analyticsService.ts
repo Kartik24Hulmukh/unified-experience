@@ -1,79 +1,29 @@
-/**
- * BErozgar — Analytics Service
- *
- * Persists and aggregates analytics events.
- * Supports funnel analysis (conversion tracking) and TTL cleanup.
- */
-
 import { prisma } from '@/lib/prisma';
 
-export interface CreateAnalyticsEventInput {
-  name: string;
-  level?: 'info' | 'warning' | 'error';
-  userId?: string;
-  userRole?: string;
-  properties?: Record<string, unknown>;
-  context?: Record<string, unknown>;
-  timestamp?: number;
-}
+export const ANALYTICS_RETENTION_DAYS = 30;
 
-/**
- * Persist a single analytics event.
- * Automatically calculates 180-day TTL.
- */
-export async function createEvent(input: CreateAnalyticsEventInput): Promise<void> {
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000); // 180 days
-
-  await prisma.analyticsEvent.create({
-    data: {
-      name: input.name,
-      level: input.level ?? 'info',
-      userId: input.userId,
-      userRole: input.userRole,
-      properties: input.properties,
-      context: input.context,
-      timestamp: input.timestamp ? new Date(input.timestamp) : now,
-      expiresAt,
-    },
+export async function pruneAnalyticsEvents(now = new Date()) {
+  return prisma.analyticsEvent.deleteMany({
+    where: { receivedAt: { lt: new Date(now.getTime() - ANALYTICS_RETENTION_DAYS * 86400000) } },
   });
 }
 
-/**
- * Get funnel metrics for a sequence of events.
- * Returns count of events by name.
- *
- * Example:
- *   getFunnelMetrics(['listing_created', 'request_sent', 'request_completed'], 7)
- *   Returns: { 'listing_created': 42, 'request_sent': 28, 'request_completed': 15 }
- */
-export async function getFunnelMetrics(eventNames: string[], days: number = 7) {
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-
-  const results = await Promise.all(
-    eventNames.map(async (eventName) => {
-      const count = await prisma.analyticsEvent.count({
-        where: {
-          name: eventName,
-          timestamp: { gte: since },
-        },
-      });
-      return { event: eventName, count };
-    })
-  );
-
-  return Object.fromEntries(results.map((r) => [r.event, r.count]));
-}
-
-/**
- * Delete events older than 180 days (GDPR cleanup).
- */
-export async function pruneExpired(): Promise<number> {
-  const now = new Date();
-  const result = await prisma.analyticsEvent.deleteMany({
-    where: {
-      expiresAt: { lt: now },
-    },
-  });
-  return result.count;
+/** Activity counts, NOT a cohort conversion funnel. Client telemetry is untrusted. */
+export async function getAnalyticsFunnel(days: number, now = new Date()) {
+  const since = new Date(now.getTime() - days * 86400000);
+  const createdAt = { gte: since, lte: now };
+  const [registeredUsers, verifiedUsers, listingsCreated, requestsCreated, completedRequests, events] = await prisma.$transaction([
+    prisma.user.count({ where: { createdAt } }),
+    prisma.user.count({ where: { createdAt, verified: true } }),
+    prisma.listing.count({ where: { createdAt } }),
+    prisma.request.count({ where: { createdAt } }),
+    prisma.request.count({ where: { createdAt, status: 'COMPLETED' } }),
+    prisma.$queryRaw<Array<{ name: string; count: number }>>`SELECT name, count(*)::int AS count FROM analytics_events WHERE received_at >= ${since} AND received_at <= ${now} GROUP BY name ORDER BY name`,
+  ], { isolationLevel: 'RepeatableRead' });
+  return {
+    since: since.toISOString(), until: now.toISOString(), days,
+    methodology: 'Records created in the window; verified/completed reflect current status, not transition time. These are activity counts, not sequential cohort conversion rates. Client events are untrusted and may include retries.',
+    registeredUsers, verifiedUsers, listingsCreated, requestsCreated, completedRequests,
+    clientEvents: events,
+  };
 }

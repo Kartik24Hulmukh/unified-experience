@@ -1,3 +1,4 @@
+import { ExchangeThread } from '@/components/ExchangeThread';
 /**
  * BErozgar — Profile Page
  *
@@ -219,6 +220,7 @@ function RequestsInbox({ userId }: { userId: string }) {
                 <span className="text-[9px] font-bold text-white/20">{new Date(req.updatedAt).toLocaleDateString()}</span>
               </div>
             </div>
+            <ExchangeThread requestId={req.id} userId={userId} status={req.status} />
             {actions.length > 0 && (
               <div className="flex gap-2 flex-wrap pt-2 border-t border-white/5">
                 {actions.map((action) => (

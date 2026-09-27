@@ -16,7 +16,7 @@ FROM base AS deps
 # shared must sit at /app/shared so that "file:../shared" resolves from /app/server
 COPY shared /app/shared
 COPY server/package.json server/package-lock.json* ./
-RUN npm ci --ignore-scripts
+RUN npm ci
 COPY server/prisma ./prisma
 RUN npx prisma generate
 
@@ -24,16 +24,7 @@ FROM base AS build
 COPY --from=deps /app/server/node_modules ./node_modules
 COPY shared /app/shared
 COPY server .
-RUN npx esbuild src/server.ts \
-    --bundle \
-    --platform=node \
-    --target=node20 \
-    --format=cjs \
-    --outfile=dist/server.cjs \
-    --alias:@=./src \
-    --external:./node_modules/* \
-    --external:@prisma/client \
-    --external:dotenv
+RUN npm run build
 
 FROM base AS production
 ENV NODE_ENV=production

@@ -7,6 +7,8 @@
  * PATCH  /api/requests/:id/event — Apply FSM event
  */
 
+import { z } from 'zod';
+import * as messageService from '@/services/messageService';
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '@/middleware/authenticate';
 import { requireVerifiedStudent } from '@/middleware/requireVerifiedStudent';
@@ -24,6 +26,26 @@ const safeParseInt = (s: string | undefined) => {
 };
 
 export async function requestRoutes(app: FastifyInstance): Promise<void> {
+  const messageBody = z.object({ body: z.string().trim().min(1).max(2000), clientId: z.string().uuid() }).strict();
+  const messageParams = z.object({ id: z.string().uuid() });
+  const messageQuery = z.object({ before: z.string().uuid().optional() }).strict();
+  app.get('/requests/:id/messages', { preHandler: authenticate }, async (request, reply) => {
+    if (!messageParams.safeParse(request.params).success) return reply.status(400).send({ error: 'Invalid request ID', code: 'VALIDATION_ERROR' });
+    const parsed = messageQuery.safeParse(request.query);
+    if (!parsed.success) return reply.status(400).send({ error: 'Invalid message cursor', code: 'VALIDATION_ERROR' });
+    const { id } = request.params as { id: string };
+    return reply.header('Cache-Control', 'private, no-store').send(apiData(await messageService.listMessages(id, request.userId!, parsed.data.before)));
+  });
+  app.post('/requests/:id/messages', {
+    preHandler: [authenticate, requireVerifiedStudent],
+    preValidation: validate(messageBody),
+    config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!messageParams.safeParse(request.params).success) return reply.status(400).send({ error: 'Invalid request ID', code: 'VALIDATION_ERROR' });
+    return reply.status(201).send(apiData(await messageService.sendMessage(id, request.userId!, request.body as { body: string; clientId: string })));
+  });
+
   /** GET /requests — list user's requests */
   app.get(
     '/requests',
@@ -76,6 +98,7 @@ export async function requestRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      if (!messageParams.safeParse(request.params).success) return reply.status(400).send({ error: 'Invalid request ID', code: 'VALIDATION_ERROR' });
       const req = await requestService.updateRequestEvent(
         id,
         request.body as UpdateRequestEventInput,

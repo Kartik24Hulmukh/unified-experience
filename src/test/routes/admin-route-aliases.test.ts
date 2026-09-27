@@ -1,10 +1,13 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 import { describe, expect, it } from "vitest";
 
 describe("Admin route aliases", () => {
   it("keeps expected admin subpaths mapped under protected admin routing", () => {
-    const appTsxPath = join(process.cwd(), "src", "App.tsx");
+    const appTsxPath = join(repoRoot, "src", "App.tsx");
     const source = readFileSync(appTsxPath, "utf8");
 
     const requiredPaths = [

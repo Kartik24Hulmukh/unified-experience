@@ -81,7 +81,34 @@ function buildIndex(entries: readonly KnowledgeEntry[]): { indexed: IndexedEntry
   return { indexed, idf };
 }
 
-const { indexed: INDEX, idf: IDF } = buildIndex(CAMPUS_KNOWLEDGE);
+/**
+ * Active corpus = static reviewed in-repo entries + admin-reviewed DB answers
+ * (APODEX continuation k). Static entries always win an id collision, and the
+ * index is rebuilt atomically so a query never sees a half-built corpus.
+ */
+let ACTIVE_ENTRIES: readonly KnowledgeEntry[] = CAMPUS_KNOWLEDGE;
+let { indexed: INDEX, idf: IDF } = buildIndex(ACTIVE_ENTRIES);
+
+/** Replace the DB-sourced part of the corpus. Returns the number of reviewed entries accepted. */
+export function setReviewedAnswers(entries: readonly KnowledgeEntry[]): number {
+  const staticIds = new Set(CAMPUS_KNOWLEDGE.map((e) => e.id));
+  const seen = new Set<string>();
+  const accepted = entries.filter((e) => {
+    if (!e || staticIds.has(e.id) || seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  });
+  const next = [...CAMPUS_KNOWLEDGE, ...accepted];
+  const built = buildIndex(next);
+  ACTIVE_ENTRIES = next;
+  INDEX = built.indexed;
+  IDF = built.idf;
+  return accepted.length;
+}
+
+export function activeKnowledge(): readonly KnowledgeEntry[] {
+  return ACTIVE_ENTRIES;
+}
 
 function scoreEntry(queryTokens: string[], candidate: IndexedEntry): number {
   let score = 0;
@@ -97,7 +124,7 @@ function scoreEntry(queryTokens: string[], candidate: IndexedEntry): number {
 
 /** Public, reviewed question list - powers suggestion chips and SEO pages. */
 export function listCampusQuestions(): { id: string; question: string; topic: KnowledgeEntry['topic']; source: string }[] {
-  return CAMPUS_KNOWLEDGE.map(({ id, question, topic, source }) => ({ id, question, topic, source }));
+  return ACTIVE_ENTRIES.map(({ id, question, topic, source }) => ({ id, question, topic, source }));
 }
 
 export function answerCampusQuestion(rawQuery: string): CampusAnswer {

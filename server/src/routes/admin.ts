@@ -20,6 +20,12 @@ import { createAuditLogSchema, type CreateAuditLogInput } from '@/shared/validat
 import { apiData } from '@/shared/response';
 import { getAnalyticsFunnel } from '@/services/analyticsService';
 import { topCampusQaGaps } from '@/services/campusQaGapService';
+import {
+  createReviewedAnswer,
+  createReviewedAnswerSchema,
+  listReviewedAnswers,
+  setReviewedAnswerPublished,
+} from '@/services/campusQaCorpusService';
 import * as adminService from '@/services/adminService';
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
@@ -35,9 +41,47 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
 
   /** GET /campus-qa/gaps — top unmatched-query demand gaps (corpus growth queue). */
   app.get('/campus-qa/gaps', async (request, reply) => {
-    const parsed = z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) }).safeParse(request.query);
-    if (!parsed.success) return reply.status(400).send({ error: 'limit must be an integer between 1 and 50', code: 'VALIDATION_ERROR' });
+    // Upper bound matches the admin console request (limit=100); a lower cap here broke the tab with a 400.
+    const parsed = z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) }).safeParse(request.query);
+    if (!parsed.success) return reply.status(400).send({ error: 'limit must be an integer between 1 and 100', code: 'VALIDATION_ERROR' });
     return reply.header('Cache-Control', 'private, no-store').send(apiData(await topCampusQaGaps(parsed.data.limit)));
+  });
+
+  /** GET /campus-qa/answers — admin-reviewed answers stored in the database. */
+  app.get('/campus-qa/answers', async (_request, reply) => {
+    return reply.header('Cache-Control', 'private, no-store').send(apiData(await listReviewedAnswers(100)));
+  });
+
+  /** POST /campus-qa/answers — publish a cited answer (optionally resolving a demand gap). */
+  app.post('/campus-qa/answers', async (request, reply) => {
+    const parsed = createReviewedAnswerSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        code: 'VALIDATION_ERROR',
+        message: parsed.error.issues.map((i) => `${i.path.join('.') || 'body'}: ${i.message}`).join('; '),
+      });
+    }
+    const created = await createReviewedAnswer(parsed.data, request.userId ?? null);
+    return reply.status(201).header('Cache-Control', 'private, no-store').send(apiData(created));
+  });
+
+  /** PATCH /campus-qa/answers/:id — publish / unpublish (unpublish reopens linked gaps). */
+  app.patch('/campus-qa/answers/:id', async (request, reply) => {
+    const params = z.object({ id: z.string().uuid() }).safeParse(request.params);
+    const body = z.object({ published: z.boolean() }).safeParse(request.body ?? {});
+    if (!params.success || !body.success) {
+      return reply.status(400).send({ error: 'Bad Request', code: 'VALIDATION_ERROR', message: 'id must be a uuid and published a boolean' });
+    }
+    try {
+      const row = await setReviewedAnswerPublished(params.data.id, body.data.published);
+      return reply.header('Cache-Control', 'private, no-store').send(apiData(row));
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+        return reply.status(404).send({ error: 'Not Found', code: 'NOT_FOUND', message: 'Answer not found' });
+      }
+      throw err;
+    }
   });
 
   /** GET /pending — listings awaiting review */

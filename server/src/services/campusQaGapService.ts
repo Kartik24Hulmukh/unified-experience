@@ -23,7 +23,7 @@ import { prisma } from '@/lib/prisma';
 export const MAX_GAP_QUERY_LENGTH = 200;
 const MIN_GAP_TOKENS = 2;
 
-const PII_PATTERNS = [
+export const PII_PATTERNS = [
   /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i, // email address
   /\+?\d[\d\s-]{7,}\d/,                     // phone-shaped digit run
   /\b\d{12,}\b/,                            // aadhaar / id-number run
@@ -55,7 +55,9 @@ export async function recordUnmatchedQuery(raw: string): Promise<boolean> {
     await prisma.campusQaGap.upsert({
       where: { queryHash },
       create: { queryHash, queryText: normalized, hits: 1, lastSeenAt: new Date() },
-      update: { hits: { increment: 1 }, lastSeenAt: new Date() },
+      // A resolved gap asked again unmatched means the published answer does not
+      // actually match how students phrase it: reopen it in the queue.
+      update: { hits: { increment: 1 }, lastSeenAt: new Date(), resolvedAt: null },
     });
     return true;
   } catch {
@@ -66,6 +68,7 @@ export async function recordUnmatchedQuery(raw: string): Promise<boolean> {
 /** Top demand gaps for admins: where the reviewed corpus must grow next. */
 export async function topCampusQaGaps(limit: number) {
   return prisma.campusQaGap.findMany({
+    where: { resolvedAt: null },
     orderBy: [{ hits: 'desc' }, { lastSeenAt: 'desc' }],
     take: limit,
     select: { queryText: true, hits: true, lastSeenAt: true },

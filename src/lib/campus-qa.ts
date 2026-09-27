@@ -33,6 +33,12 @@ export interface CampusAnswer {
   entry: CampusQaSource | null;
   related: CampusQaRelated[];
   disclaimer: string;
+  corpusRevision: number;
+}
+
+export interface CampusQuestionsResponse {
+  questions: CampusQuestion[];
+  corpusRevision: number;
 }
 
 export interface CampusQuestion {
@@ -46,6 +52,11 @@ export const MAX_QA_QUERY_LENGTH = 200;
 
 function clampText(value: unknown, max: number): string {
   return typeof value === 'string' ? value.slice(0, max) : '';
+}
+
+export function clampRevision(value: unknown): number {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : -1;
 }
 
 function clampConfidence(value: unknown): number {
@@ -91,6 +102,7 @@ export function sanitizeCampusAnswer(raw: unknown): CampusAnswer | null {
     entry: r.matched === true ? entry : null,
     related: sanitizeRelated(r.related).slice(0, 3),
     disclaimer: clampText(r.disclaimer, 400),
+    corpusRevision: clampRevision(r.corpusRevision),
   };
 }
 
@@ -129,11 +141,11 @@ export async function askCampusQuestion(query: string, signal?: AbortSignal): Pr
 }
 
 /** Fetch the reviewed question list for suggestion chips / help index. */
-export async function fetchCampusQuestions(signal?: AbortSignal): Promise<CampusQuestion[]> {
+export async function fetchCampusQuestions(signal?: AbortSignal): Promise<CampusQuestionsResponse> {
   const res = await api.get<{ data: unknown }>('/public/campus-qa/questions', {
     skipAuth: true,
     signal,
     timeout: 8000,
   });
-  return sanitizeCampusQuestions(res?.data);
+  return { questions: sanitizeCampusQuestions(res?.data), corpusRevision: clampRevision((res as Record<string, unknown>)?.corpusRevision) };
 }

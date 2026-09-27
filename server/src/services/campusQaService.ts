@@ -21,6 +21,7 @@ export interface CampusAnswer {
   entry: { id: string; question: string; topic: KnowledgeEntry['topic']; source: string } | null;
   related: { id: string; question: string; topic: KnowledgeEntry['topic'] }[];
   disclaimer: string;
+  corpusRevision: number;
 }
 
 const STOPWORDS = new Set([
@@ -88,6 +89,8 @@ function buildIndex(entries: readonly KnowledgeEntry[]): { indexed: IndexedEntry
  */
 let ACTIVE_ENTRIES: readonly KnowledgeEntry[] = CAMPUS_KNOWLEDGE;
 let { indexed: INDEX, idf: IDF } = buildIndex(ACTIVE_ENTRIES);
+let CORPUS_REVISION = 0;
+export function corpusRevision(): number { return CORPUS_REVISION; }
 
 /** Replace the DB-sourced part of the corpus. Returns the number of reviewed entries accepted. */
 export function setReviewedAnswers(entries: readonly KnowledgeEntry[]): number {
@@ -103,6 +106,7 @@ export function setReviewedAnswers(entries: readonly KnowledgeEntry[]): number {
   ACTIVE_ENTRIES = next;
   INDEX = built.indexed;
   IDF = built.idf;
+  CORPUS_REVISION += 1;
   return accepted.length;
 }
 
@@ -134,7 +138,7 @@ export function answerCampusQuestion(rawQuery: string): CampusAnswer {
   const fallbackRelated = CAMPUS_KNOWLEDGE.slice(0, 3).map(({ id, question, topic }) => ({ id, question, topic }));
 
   if (tokens.length === 0) {
-    return { matched: false, confidence: 0, query, answer: null, entry: null, related: fallbackRelated, disclaimer: DISCLAIMER };
+    return { matched: false, confidence: 0, query, answer: null, entry: null, related: fallbackRelated, disclaimer: DISCLAIMER, corpusRevision: CORPUS_REVISION };
   }
 
   const ranked = INDEX.map((candidate) => ({ candidate, score: scoreEntry(tokens, candidate) })).sort(
@@ -156,6 +160,7 @@ export function answerCampusQuestion(rawQuery: string): CampusAnswer {
       entry: null,
       related: related.length > 0 ? related : fallbackRelated,
       disclaimer: DISCLAIMER,
+      corpusRevision: CORPUS_REVISION,
     };
   }
 
@@ -168,5 +173,6 @@ export function answerCampusQuestion(rawQuery: string): CampusAnswer {
     entry: { id: entry.id, question: entry.question, topic: entry.topic, source: entry.source },
     related,
     disclaimer: DISCLAIMER,
+    corpusRevision: CORPUS_REVISION,
   };
 }

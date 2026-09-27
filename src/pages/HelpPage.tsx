@@ -31,6 +31,7 @@ const TOPIC_ORDER = ['account', 'exchange', 'safety', 'privacy', 'directory', 's
 export default function HelpPage() {
   const [questions, setQuestions] = useState<CampusQuestion[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [indexRevision, setIndexRevision] = useState(-1);
   const [openId, setOpenId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, CampusAnswer>>({});
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -38,7 +39,7 @@ export default function HelpPage() {
   useEffect(() => {
     const ctrl = new AbortController();
     fetchCampusQuestions(ctrl.signal)
-      .then(setQuestions)
+      .then((result) => { setQuestions(result.questions); setIndexRevision(result.corpusRevision); })
       .catch(() => setLoadFailed(true));
     return () => ctrl.abort();
   }, []);
@@ -71,7 +72,14 @@ export default function HelpPage() {
       // never treated as durable: if an admin withdraws an answer mid-session,
       // matched:false replaces the stale paragraph instead of keeping it.
       const answer = await askCampusQuestion(q.question);
-      setAnswers((prev) => ({ ...prev, [q.id]: answer }));
+      if (indexRevision >= 0 && answer.corpusRevision >= 0 && answer.corpusRevision !== indexRevision) {
+        const refreshed = await fetchCampusQuestions();
+        setQuestions(refreshed.questions);
+        setIndexRevision(refreshed.corpusRevision);
+        setAnswers((prev) => { const next = { ...prev }; delete next[q.id]; return next; });
+      } else {
+        setAnswers((prev) => ({ ...prev, [q.id]: answer }));
+      }
     } catch {
       // Leave the answer absent; the row shows a retry hint.
     } finally {

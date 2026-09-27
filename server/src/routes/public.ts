@@ -11,7 +11,7 @@
 import type { FastifyInstance } from 'fastify';
 import { ListingModule } from '@prisma/client';
 import * as listingService from '@/services/listingService';
-import { answerCampusQuestion, listCampusQuestions } from '@/services/campusQaService';
+import { answerCampusQuestion, corpusRevision, listCampusQuestions } from '@/services/campusQaService';
 import { recordCampusQaOutcome } from '@/services/campusQaMetricsService';
 import { recordUnmatchedQuery } from '@/services/campusQaGapService';
 import { ensureReviewedAnswersFresh } from '@/services/campusQaCorpusService';

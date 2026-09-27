@@ -330,3 +330,15 @@ model Message {
   @@index([requestId, createdAt, id])
   @@map("messages")
 }
+
+model CampusQaGap {
+  id         String   @id @default(uuid()) @db.Uuid
+  queryHash  String   @unique @map("query_hash") @db.VarChar(64)
+  queryText  String   @map("query_text") @db.VarChar(200)
+  hits       Int      @default(1)
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([hits])
+  @@map("campus_qa_gaps")
+}

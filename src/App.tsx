@@ -269,6 +269,8 @@ const App = () => (
                         <Route path="/privacy" element={<RouteErrorBoundary name="Privacy"><PrivacyPage /></RouteErrorBoundary>} />
                         <Route path="/terms" element={<RouteErrorBoundary name="Terms"><TermsPage /></RouteErrorBoundary>} />
                         <Route path="/help" element={<RouteErrorBoundary name="Help"><HelpPage /></RouteErrorBoundary>} />
+                        <Route path="/faq" element={<Navigate to="/help" replace />} />
+                        <Route path="/support" element={<Navigate to="/help" replace />} />
 
                         <Route path="*" element={<NotFound />} />
                       </Routes>

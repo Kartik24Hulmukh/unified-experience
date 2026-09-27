@@ -19,6 +19,7 @@ import { validate } from '@/middleware/validate';
 import { createAuditLogSchema, type CreateAuditLogInput } from '@/shared/validation';
 import { apiData } from '@/shared/response';
 import { getAnalyticsFunnel } from '@/services/analyticsService';
+import { topCampusQaGaps } from '@/services/campusQaGapService';
 import * as adminService from '@/services/adminService';
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
@@ -30,6 +31,13 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     const parsed = z.object({ days: z.coerce.number().int().min(1).max(30).default(7) }).safeParse(request.query);
     if (!parsed.success) return reply.status(400).send({ error: 'days must be an integer between 1 and 30', code: 'VALIDATION_ERROR' });
     return reply.header('Cache-Control', 'private, no-store').send(apiData(await getAnalyticsFunnel(parsed.data.days)));
+  });
+
+  /** GET /campus-qa/gaps — top unmatched-query demand gaps (corpus growth queue). */
+  app.get('/campus-qa/gaps', async (request, reply) => {
+    const parsed = z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) }).safeParse(request.query);
+    if (!parsed.success) return reply.status(400).send({ error: 'limit must be an integer between 1 and 50', code: 'VALIDATION_ERROR' });
+    return reply.header('Cache-Control', 'private, no-store').send(apiData(await topCampusQaGaps(parsed.data.limit)));
   });
 
   /** GET /pending — listings awaiting review */

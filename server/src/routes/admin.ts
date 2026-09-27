@@ -18,12 +18,19 @@ import { authorize } from '@/middleware/authorize';
 import { validate } from '@/middleware/validate';
 import { createAuditLogSchema, type CreateAuditLogInput } from '@/shared/validation';
 import { apiData } from '@/shared/response';
+import { getAnalyticsFunnel } from '@/services/analyticsService';
 import * as adminService from '@/services/adminService';
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
   // All admin routes require ADMIN role
   app.addHook('preHandler', authenticate);
   app.addHook('preHandler', authorize('ADMIN'));
+
+  app.get('/analytics/funnel', async (request, reply) => {
+    const parsed = z.object({ days: z.coerce.number().int().min(1).max(30).default(7) }).safeParse(request.query);
+    if (!parsed.success) return reply.status(400).send({ error: 'days must be an integer between 1 and 30', code: 'VALIDATION_ERROR' });
+    return reply.header('Cache-Control', 'private, no-store').send(apiData(await getAnalyticsFunnel(parsed.data.days)));
+  });
 
   /** GET /pending — listings awaiting review */
   app.get('/pending', async (_request, reply) => {

@@ -10,6 +10,7 @@ import { buildApp } from '@/app';
 import { env } from '@/config/env';
 import { prisma } from '@/lib/prisma';
 import { recoverStaleTransactions } from '@/services/adminService';
+import { pruneAnalyticsEvents } from '@/services/analyticsService';
 import { pruneIdempotencyKeys } from '@/middleware/idempotency';
 
 // PROD-01: catch unhandled promise rejections and uncaught exceptions.
@@ -46,6 +47,7 @@ async function main(): Promise<void> {
     }
     recoveryRunning = true;
     try {
+      await pruneAnalyticsEvents();
       const result = await recoverStaleTransactions();
       app.log.info(result, 'Stale recovery completed');
     } catch (err) {

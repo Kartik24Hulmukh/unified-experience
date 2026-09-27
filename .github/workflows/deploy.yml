@@ -40,12 +40,18 @@ permissions:
 
 jobs:
   deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     name: Deploy to Production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       # ── Download client dist from CI ─────────────
       - name: Download client artifact
@@ -74,7 +80,7 @@ jobs:
             APP_DIR="${{ secrets.VPS_APP_PATH || '/opt/berozgar' }}"
             COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.production"
             HEALTH_URL="http://localhost:3001/health/ready"
-            DEPLOY_SHA="${{ github.sha }}"
+            DEPLOY_SHA="${{ github.event.workflow_run.head_sha }}"
             DEPLOY_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
             cd "$APP_DIR"
@@ -91,7 +97,7 @@ jobs:
             # ── 2. Pull latest code ─────────────────────
             echo "→ Pulling latest code..."
             git fetch origin main
-            git reset --hard origin/main
+            git reset --hard "$DEPLOY_SHA"
 
             # ── 3. Write env file from secret ───────────
             # (only if DEPLOY_ENV_FILE secret is set)

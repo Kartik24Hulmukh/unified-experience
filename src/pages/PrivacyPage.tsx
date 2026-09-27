@@ -29,7 +29,7 @@ const PrivacyPage = () => {
           Privacy Policy
         </h1>
         <p className="text-foreground/40 text-sm font-mono mb-12">
-          Last updated: July 2026 · Effective immediately
+          Last updated: September 2026 · Effective immediately
         </p>
 
         <div className="prose prose-invert max-w-none space-y-8 text-foreground/70">
@@ -48,7 +48,8 @@ const PrivacyPage = () => {
             <ul className="space-y-2 list-disc list-inside">
               <li><strong>Account data:</strong> Name, institutional email address, and password hash (never stored in plain text).</li>
               <li><strong>Profile data:</strong> Branch, year, optional bio, and listings you create.</li>
-              <li><strong>Usage data:</strong> Page views, feature interactions, and session duration for product analytics.</li>
+              <li><strong>Usage data:</strong> Allow-listed event names, severity and timestamps for product analytics. Events may be linked to your authenticated account; arbitrary properties, URLs, contact details and error contents are not stored in the analytics table.</li>
+              <li><strong>Exchange conversations:</strong> Plain-text messages visible only to exchange participants and authorized campus administrators for safety review. These are not end-to-end encrypted.</li>
               <li><strong>Device data:</strong> Browser type, OS, and approximate location (country/region) for security monitoring.</li>
             </ul>
           </section>
@@ -86,7 +87,7 @@ const PrivacyPage = () => {
             <h2 className="text-xl font-display font-bold uppercase tracking-wider text-foreground mb-3">6. Data Retention</h2>
             <p className="leading-relaxed">
               Account data is retained for the duration of your account. You may request deletion by contacting us.
-              Anonymized usage data may be retained for up to 24 months for analytics.
+              Raw analytics events are removed after 30 days by a scheduled cleanup while the API is running. Exchange messages remain with their request for dispute review; deleting a request or sender removes the associated messages.
             </p>
           </section>
 
@@ -101,7 +102,7 @@ const PrivacyPage = () => {
           <section>
             <h2 className="text-xl font-display font-bold uppercase tracking-wider text-foreground mb-3">8. Security</h2>
             <p className="leading-relaxed">
-              We use HTTPS/TLS for all data in transit. Passwords are stored using bcrypt hashing. Access controls
+              We use HTTPS/TLS for all data in transit. Passwords are stored using Argon2id hashing. Access controls
               restrict data to authenticated and authorised users. We conduct periodic security reviews.
             </p>
           </section>

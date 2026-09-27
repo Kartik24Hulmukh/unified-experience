@@ -1,3 +1,4 @@
+import type { CreateListingInput } from '@berozgar/shared';
 /**
  * BErozgar — React Query Hooks
  *
@@ -11,6 +12,7 @@
 
 import {
   useQuery,
+  useInfiniteQuery,
   useMutation,
   useQueryClient,
   type UseQueryOptions,
@@ -572,11 +574,16 @@ export interface ExchangeRequest {
   listingId: string;
   buyerId: string;
   sellerId: string;
-  // status reflects the Prisma RequestStatus enum — always UPPERCASE from the server
+  // Client FSM contract is UPPERCASE; hooks normalize lowercase HTTP responses.
   status: 'IDLE' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'MEETING_SCHEDULED' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED' | 'WITHDRAWN' | 'DISPUTED' | 'RESOLVED';
   message?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// The HTTP envelope lowercases Prisma enums; the exchange FSM/UI contract is uppercase.
+export function normalizeExchangeRequest(request: ExchangeRequest): ExchangeRequest {
+  return { ...request, status: request.status.toUpperCase() as ExchangeRequest['status'] };
 }
 
 export function useRequests(
@@ -591,7 +598,10 @@ export function useRequests(
 
   return useQuery({
     queryKey: ['requests', 'list', filters || {}],
-    queryFn: ({ signal }) => api.get<ApiResponse<ExchangeRequest[]>>(endpoint, { signal }),
+    queryFn: async ({ signal }) => {
+      const response = await api.get<ApiResponse<ExchangeRequest[]>>(endpoint, { signal });
+      return { ...response, data: response.data.map(normalizeExchangeRequest) };
+    },
     staleTime: 60_000,
     ...options,
   });
@@ -603,7 +613,10 @@ export function useRequest(
 ) {
   return useQuery({
     queryKey: queryKeys.requests.detail(id),
-    queryFn: ({ signal }) => api.get<ApiResponse<ExchangeRequest>>(`/requests/${id}`, { signal }),
+    queryFn: async ({ signal }) => {
+      const response = await api.get<ApiResponse<ExchangeRequest>>(`/requests/${id}`, { signal });
+      return { ...response, data: normalizeExchangeRequest(response.data) };
+    },
     enabled: !!id,
     ...options,
   });
@@ -614,7 +627,7 @@ export function useCreateRequest() {
 
   return useMutation({
     mutationFn: (data: { listingId: string; message?: string }) =>
-      api.post<ApiResponse<ExchangeRequest>>('/requests', data),
+      api.post<ApiResponse<ExchangeRequest>>('/requests', data).then(response => ({ ...response, data: normalizeExchangeRequest(response.data) })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.requests.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.listings.all });
@@ -631,7 +644,7 @@ export function useUpdateRequestEvent() {
     mutationFn: ({ id, event, idempotencyKey }: { id: string; event: string; idempotencyKey?: string }) =>
       api.patch<ApiResponse<ExchangeRequest>>(`/requests/${id}/event`, { event }, {
         headers: idempotencyKey ? { 'x-idempotency-key': idempotencyKey } : {},
-      }),
+      }).then(response => ({ ...response, data: normalizeExchangeRequest(response.data) })),
     onMutate: async ({ id, event }) => {
       // EXCH-UI-02: cancel BOTH list and detail queries to prevent in-flight overwrites
       await queryClient.cancelQueries({ queryKey: queryKeys.requests.all });
@@ -922,5 +935,35 @@ export function useDeleteHospital() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.hospitals });
     },
+  });
+}
+
+
+export interface ExchangeMessage {
+  id: string;
+  requestId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+}
+interface MessagePage { messages: ExchangeMessage[]; nextCursor: string | null }
+export function useExchangeMessages(requestId: string, userId: string) {
+  return useInfiniteQuery({
+    queryKey: ['exchange-messages', userId, requestId],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam, signal }) => api.get<ApiResponse<MessagePage>>(
+      `/requests/${encodeURIComponent(requestId)}/messages${pageParam ? `?before=${encodeURIComponent(pageParam)}` : ''}`, { signal }),
+    getNextPageParam: page => page.data.nextCursor ?? undefined,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+    enabled: !!requestId && !!userId,
+  });
+}
+export function useSendExchangeMessage(requestId: string, userId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { body: string; clientId: string }) =>
+      api.post<ApiResponse<ExchangeMessage>>(`/requests/${encodeURIComponent(requestId)}/messages`, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exchange-messages', userId, requestId] }),
   });
 }

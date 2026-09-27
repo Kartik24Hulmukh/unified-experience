@@ -11,14 +11,19 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   upsert: vi.fn(),
+  updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+  metricUpsert: vi.fn().mockResolvedValue({}),
   findMany: vi.fn(),
 }));
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    campusQaGap: { upsert: mocks.upsert, findMany: mocks.findMany },
-  },
-}));
+vi.mock('@/lib/prisma', () => {
+  const client = {
+    campusQaGap: { upsert: mocks.upsert, findMany: mocks.findMany, updateMany: mocks.updateMany },
+    campusQaDailyMetric: { upsert: mocks.metricUpsert },
+  } as Record<string, unknown>;
+  client.$transaction = (fn: (tx: unknown) => unknown) => fn(client);
+  return { prisma: client };
+});
 
 vi.mock('@/config/env', () => ({
   env: {
@@ -123,5 +128,26 @@ describe('public campus-qa route gap wiring', () => {
     const pii = await app.inject({ method: 'GET', url: '/api/public/campus-qa?q=please call 9820012345 about refund' });
     expect(pii.statusCode).toBe(200);
     expect(mocks.upsert).not.toHaveBeenCalled();
+  });
+});
+
+describe('reopened transition evidence', () => {
+  it('counts only resolved-to-open transitions, not every repeat', async () => {
+    mocks.upsert.mockResolvedValue({});
+    mocks.metricUpsert.mockClear().mockResolvedValue({});
+    mocks.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
+    await recordUnmatchedQuery('library holiday access');
+    await recordUnmatchedQuery('library holiday access');
+    expect(mocks.metricUpsert).toHaveBeenCalledTimes(1);
+    expect(mocks.metricUpsert.mock.calls[0][0].update).toEqual({ reopened: { increment: 1 } });
+  });
+  it('public responses cannot be cached and invalid requests are not counted', async () => {
+    mocks.metricUpsert.mockClear().mockResolvedValue({});
+    const invalid = await app.inject({ url: '/api/public/campus-qa?q=' });
+    expect(invalid.statusCode).toBe(400);
+    expect(mocks.metricUpsert).not.toHaveBeenCalled();
+    const valid = await app.inject({ url: '/api/public/campus-qa?q=how%20do%20i%20get%20verified' });
+    expect(valid.headers['cache-control']).toBe('private, no-store');
+    expect(mocks.metricUpsert).toHaveBeenCalledTimes(1);
   });
 });

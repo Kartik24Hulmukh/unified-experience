@@ -77,3 +77,7 @@ We may revise this policy. Updates are indicated by the Last Updated date.
 ## 11. Contact
 
 For privacy requests, contact the BErozgar admin team through official project channels.
+
+## Campus Q&A aggregate measurement
+
+The service counts valid observed Q&A requests by UTC date and matched/unmatched outcome, plus automatic reopening of previously resolved demand gaps. These daily counters contain no question text, account, session, IP address or visitor identifier and are retained for longitudinal pilot comparison. They are available only to administrators as weekly aggregates. They are best-effort operational measurements, not unique student counts or proof of answer quality. Existing unmatched-query review text is a separate dataset; these counters do not add any text collection or third-party processor.

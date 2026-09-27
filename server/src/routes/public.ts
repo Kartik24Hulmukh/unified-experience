@@ -12,6 +12,7 @@ import type { FastifyInstance } from 'fastify';
 import { ListingModule } from '@prisma/client';
 import * as listingService from '@/services/listingService';
 import { answerCampusQuestion, listCampusQuestions } from '@/services/campusQaService';
+import { recordCampusQaOutcome } from '@/services/campusQaMetricsService';
 import { recordUnmatchedQuery } from '@/services/campusQaGapService';
 import { ensureReviewedAnswersFresh } from '@/services/campusQaCorpusService';
 
@@ -85,6 +86,7 @@ export async function publicRoutes(app: FastifyInstance): Promise<void> {
     '/campus-qa',
     { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
     async (request, reply) => {
+      reply.header('Cache-Control', 'private, no-store');
       const q = (request.query as Record<string, string | undefined>).q;
       if (!q || q.trim().length === 0) {
         return reply.status(400).send({
@@ -104,10 +106,15 @@ export async function publicRoutes(app: FastifyInstance): Promise<void> {
       // Merge admin-reviewed DB answers (TTL-cached; static corpus serves if the DB is down).
       await ensureReviewedAnswersFresh();
       const result = answerCampusQuestion(q);
-      // Demand signal: aggregate honest refusals so the reviewed corpus grows
-      // where students actually ask. Fire-and-forget; never gates the answer.
-      if (!result.matched) void recordUnmatchedQuery(q);
-      reply.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=900');
+      // Wait for best-effort writes rather than losing them on process shutdown.
+      // Both helpers contain DB failures; no visitor/query text in the counters.
+      await Promise.all([
+        recordCampusQaOutcome(result.matched),
+        ...(!result.matched ? [recordUnmatchedQuery(q)] : []),
+      ]);
+      // Shared caches would hide requests from the denominator and can retain
+      // sensitive query URLs / withdrawn answers. Suggestions remain cacheable.
+      reply.header('Cache-Control', 'private, no-store');
       return reply.status(200).send({ data: result });
     },
   );

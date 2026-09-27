@@ -19,6 +19,7 @@ import { validate } from '@/middleware/validate';
 import { createAuditLogSchema, type CreateAuditLogInput } from '@/shared/validation';
 import { apiData } from '@/shared/response';
 import { getAnalyticsFunnel } from '@/services/analyticsService';
+import { getCampusQaWeeklyMetrics } from '@/services/campusQaMetricsService';
 import { topCampusQaGaps } from '@/services/campusQaGapService';
 import {
   createReviewedAnswer,
@@ -37,6 +38,14 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     const parsed = z.object({ days: z.coerce.number().int().min(1).max(30).default(7) }).safeParse(request.query);
     if (!parsed.success) return reply.status(400).send({ error: 'days must be an integer between 1 and 30', code: 'VALIDATION_ERROR' });
     return reply.header('Cache-Control', 'private, no-store').send(apiData(await getAnalyticsFunnel(parsed.data.days)));
+  });
+
+  /** Aggregate pilot evidence, bounded to twelve UTC weeks; admin-only. */
+  app.get('/campus-qa/metrics', async (request, reply) => {
+    reply.header('Cache-Control', 'private, no-store');
+    const parsed = z.object({ weeks: z.coerce.number().int().min(1).max(12).default(8) }).safeParse(request.query);
+    if (!parsed.success) return reply.status(400).send({ error: 'weeks must be an integer between 1 and 12', code: 'VALIDATION_ERROR' });
+    return reply.send(apiData(await getCampusQaWeeklyMetrics(parsed.data.weeks)));
   });
 
   /** GET /campus-qa/gaps — top unmatched-query demand gaps (corpus growth queue). */

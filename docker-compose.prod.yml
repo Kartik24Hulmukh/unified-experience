@@ -47,6 +47,9 @@ services:
 
   # ── BErozgar API (Fastify) ───────────────────────
   api:
+    # Tagged per deploy SHA by .github/workflows/deploy.yml so a failed rollout
+    # can be rolled back to the exact previous image (no registry required).
+    image: berozgar-api:${API_IMAGE_TAG:-latest}
     build:
       # PROD-FIX: context must be the repo root (not ./server) because
       # server/package.json depends on "@berozgar/shared": "file:../shared",

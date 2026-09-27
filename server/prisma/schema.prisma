@@ -41,6 +41,7 @@ model User {
   @@index([email])
   @@index([role])
   @@map("users")
+  analyticsEvents AnalyticsEvent[]
 }
 
 model CollegeStudent {
@@ -263,6 +264,27 @@ model ListingImage {
   @@index([listingId])
   @@map("listing_images")
 }
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid())
+  name      String   // "listing_created", "request_sent", etc.
+  level     String   @default("info")  // "info", "warning", "error"
+  userId    String?  @map("user_id")
+  userRole  String?  @map("user_role")
+  properties Json?
+  context   Json?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([name])
+  @@index([userId])
+  @@index([timestamp(sort: Desc)])
+  @@index([expiresAt])
+  @@map("analytics_events")
+}
+
 
 model MessProvider {
   id           String   @id @default(uuid())

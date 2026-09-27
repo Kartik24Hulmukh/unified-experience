@@ -28,7 +28,7 @@ import { APP_VERSION } from "@/lib/app-meta";
 // file's scope, masking any future import and losing monitoring integration.
 class LoginPageErrorBoundary extends React.Component<{ fallback: React.ReactNode; children: React.ReactNode }, { hasError: boolean, errorMsg: string }> {
     constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) { super(props); this.state = { hasError: false, errorMsg: '' }; }
-    static getDerivedStateFromError(error: unknown) { return { hasError: true, errorMsg: error?.message || String(error) }; }
+    static getDerivedStateFromError(error: unknown) { return { hasError: true, errorMsg: (error instanceof Error ? error.message : String(error)) }; }
     render() { return this.state.hasError ? this.props.fallback : this.props.children; }
 }
 
@@ -98,7 +98,8 @@ const LoginPage = () => {
             // Redirection is handled deterministically via the useEffect auth watcher below.
         } catch (err: unknown) {
             hasRedirected.current = false;
-            const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Invalid credentials. Please try again.");
+            const data = (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
+            const msg = data?.error || data?.message || (err instanceof Error ? err.message : "Invalid credentials. Please try again.");
             toast({ title: "Access Denied", description: msg, variant: "destructive" });
         } finally {
             setIsLoading(false);
@@ -114,7 +115,8 @@ const LoginPage = () => {
             // Redirection is handled deterministically via the useEffect auth watcher below.
         } catch (err: unknown) {
             hasRedirected.current = false;
-            const msg = err?.response?.data?.error || err?.response?.data?.message || (err instanceof Error ? err.message : "Could not authenticate with Google.");
+            const data = (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
+            const msg = data?.error || data?.message || (err instanceof Error ? err.message : "Could not authenticate with [redacted].");
             toast({ title: "Google Sign-In Failed", description: msg, variant: "destructive" });
         }
     }

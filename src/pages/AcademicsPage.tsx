@@ -131,14 +131,14 @@ const AcademicsPage = () => {
       const matchesCategory = !activeCategory ||
         itemCategory === activeCategory.toLowerCase();
       
-      const itemBranch = ((item as unknown).branch || '').toLowerCase();
+      const itemBranch = String((item as { branch?: string }).branch || '').toLowerCase();
       const sb = (selectedBranch || '').toLowerCase();
       const matchesBranch = !selectedBranch ||
         itemBranch === sb ||
         itemCategory.includes(sb) ||
         item.title.toLowerCase().includes(sb);
 
-      const itemSemester = (item as unknown).semester?.toString() || '';
+      const itemSemester = (item as { semester?: string | number }).semester?.toString() || '';
       const matchesSemester = !selectedSemester || itemSemester === selectedSemester.toString();
 
       return matchesSearch && matchesCategory && matchesBranch && matchesSemester;

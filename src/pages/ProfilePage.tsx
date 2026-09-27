@@ -70,6 +70,7 @@ import {
   useRequests,
   useUpdateRequestEvent,
   type ExchangeRequest,
+  type Listing,
 } from '@/hooks/api/useApi';
 
 /* ═══════════════════════════════════════════════════
@@ -354,7 +355,7 @@ function RequestsInbox({ userId }: { userId: string }) {
    ═══════════════════════════════════════════════════ */
 
 
-function MyListings({ listings, isLoading }: { listings: Array<{title?: string; category?: string; price?: string | number; status?: string; id?: string; module?: string; createdAt?: string; [key: string]: unknown}>; isLoading: boolean }) {
+function MyListings({ listings, isLoading }: { listings: Listing[]; isLoading: boolean }) {
   const PAGE_SIZE = 8;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -388,7 +389,7 @@ function MyListings({ listings, isLoading }: { listings: Array<{title?: string; 
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {visibleListings.map((item) => {
-              const createdAtDate = item.createdAt ? new Date(item.createdAt as string) : null;
+              const createdAtDate = item.createdAt ? new Date(item.createdAt) : null;
               const dateStr = createdAtDate && !isNaN(createdAtDate.getTime())
                 ? createdAtDate.toLocaleDateString()
                 : null;
@@ -401,7 +402,7 @@ function MyListings({ listings, isLoading }: { listings: Array<{title?: string; 
                       item.status === 'INTEREST_RECEIVED' || item.status === 'IN_TRANSACTION' ? 'border-blue-500/30 text-blue-400' :
                       'border-red-500/30 text-red-400'
                     }`}>
-                      {(item.status as string).replace(/_/g, ' ')}
+                      {item.status.replace(/_/g, ' ')}
                     </Badge>
                     <span className="text-sm md:text-[10px] font-mono text-white/20 uppercase">{item.module}</span>
                   </div>

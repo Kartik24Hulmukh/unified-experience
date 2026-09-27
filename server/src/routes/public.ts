@@ -65,12 +65,18 @@ export async function publicRoutes(app: FastifyInstance): Promise<void> {
   /**
    * GET /api/public/campus-qa/questions - the full reviewed question set.
    * Powers suggestion chips and indexable help pages.
+   *
+   * Withdrawal regression guard (APODEX continuation n): admins can
+   * unpublish a DB-reviewed answer at any moment, and this list must stop
+   * advertising it within seconds. The corpus TTL is already 60s, so this
+   * cache must be shorter - otherwise a shared browser/CDN cache would
+   * keep a withdrawn question visible for up to an hour.
    */
   app.get(
     '/campus-qa/questions',
     { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
     async (_request, reply) => {
-      reply.header('Cache-Control', 'public, max-age=600, stale-while-revalidate=3600');
+      reply.header('Cache-Control', 'public, max-age=30, stale-while-revalidate=30');
       await ensureReviewedAnswersFresh();
       const questions = listCampusQuestions();
       return reply.status(200).send({ data: questions, meta: { count: questions.length } });

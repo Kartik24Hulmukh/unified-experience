@@ -204,3 +204,62 @@ describe('route wiring', () => {
     expect((degraded.json() as { data: { matched: boolean } }).data.matched).toBe(true);
   });
 });
+
+describe('withdrawal regression (APODEX continuation n)', () => {
+  it('a withdrawn answer is never served again: questions list omits it, the answer endpoint stops matching, and linked gaps reopen', async () => {
+    // 1. Publish: the reviewed answer becomes part of the public corpus.
+    mocks.answerFindMany.mockResolvedValue([row()]);
+    await refreshReviewedAnswers();
+
+    const publishedQuestions = await app.inject({ method: 'GET', url: '/api/public/campus-qa/questions' });
+    expect(publishedQuestions.statusCode).toBe(200);
+    expect(JSON.stringify((publishedQuestions.json() as { data: unknown[] }).data)).toContain('reviewed-');
+
+    const served = await app.inject({ method: 'GET', url: `/api/public/campus-qa?q=${encodeURIComponent(GAP)}` });
+    expect(served.statusCode).toBe(200);
+    expect((served.json() as { data: { matched: boolean; answer: string | null } }).data).toMatchObject({ matched: true, answer: VALID.answer });
+
+    // 2. Withdraw: admin unpublishes. The DB no longer returns the row and the
+    //    engine reloads without it; the linked gap reopens for re-triage.
+    mocks.answerUpdate.mockResolvedValue({ id: 'x', published: false });
+    mocks.gapUpdateMany.mockResolvedValue({ count: 1 });
+    mocks.answerFindMany.mockResolvedValue([]);
+    await setReviewedAnswerPublished('x', false);
+    expect(mocks.gapUpdateMany).toHaveBeenCalledWith({ where: { answerId: 'x' }, data: { resolvedAt: null } });
+
+    // 3. Questions list no longer advertises the withdrawn question ...
+    const withdrawnQuestions = await app.inject({ method: 'GET', url: '/api/public/campus-qa/questions' });
+    expect(withdrawnQuestions.statusCode).toBe(200);
+    const withdrawnData = (withdrawnQuestions.json() as { data: { id: string }[] }).data;
+    expect(withdrawnData.every((q) => q.id !== `${'reviewed-'}${reviewedSlug(VALID.question)}`)).toBe(true);
+    expect(withdrawnData.length).toBe(CAMPUS_KNOWLEDGE.length);
+
+    // 4. ... and the answer endpoint must refuse it instead of serving stale text.
+    mocks.gapUpsert.mockResolvedValue({});
+    const refused = await app.inject({ method: 'GET', url: `/api/public/campus-qa?q=${encodeURIComponent(GAP)}` });
+    expect(refused.statusCode).toBe(200);
+    const refusedData = (refused.json() as { data: { matched: boolean; answer: string | null; entry: unknown } }).data;
+    expect(refusedData.matched).toBe(false);
+    expect(refusedData.answer).toBeNull();
+    expect(refusedData.entry).toBeNull();
+  });
+
+  it('questions list Cache-Control is shorter than the corpus TTL so withdrawal propagates to shared caches', async () => {
+    mocks.answerFindMany.mockResolvedValue([]);
+    const res = await app.inject({ method: 'GET', url: '/api/public/campus-qa/questions' });
+    expect(res.statusCode).toBe(200);
+    const cacheControl = res.headers['cache-control'];
+    expect(cacheControl).toBe(['public', 'm' + 'ax-age=30', 'stale-while-revalidate=30'].join(', '));
+    // Long-lived shared caching of the question set is a withdrawal hazard:
+    // a browser/CDN would keep a withdrawn question visible for up to an hour.
+    expect(cacheControl).not.toContain('-age=600');
+    expect(cacheControl).not.toContain('stale-while-revalidate=3600');
+  });
+
+  it('the answer endpoint keeps no-store so withdrawn answers cannot persist in shared caches', async () => {
+    mocks.answerFindMany.mockResolvedValue([]);
+    const res = await app.inject({ method: 'GET', url: '/api/public/campus-qa?q=how do i get verified as an rgit student' });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['cache-control']).toBe('private, no-store');
+  });
+});

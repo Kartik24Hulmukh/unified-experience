@@ -16,7 +16,8 @@ import {
     RefreshCw,
     Home,
     Heart,
-    Coffee
+    Coffee,
+    MessageCircleQuestion
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -65,7 +66,7 @@ import {
     useDisputes, useUpdateDisputeStatus, useAdminAuditLog, useAdminFraudDashboard, useAdminRecovery,
     useAdminUsers, useUpdateUserStatus,
     useMessProviders, useCreateMessProvider, useUpdateMessProvider, useDeleteMessProvider,
-    useHospitals, useCreateHospital, useUpdateHospital, useDeleteHospital
+    useHospitals, useCreateHospital, useUpdateHospital, useDeleteHospital, useCampusQaGaps
 } from '@/hooks/api/useApi';
 import type { PendingItem, Dispute, AuditLogEntry, MessProvider, Hospital } from '@/hooks/api/useApi';
 import {
@@ -110,6 +111,7 @@ const AdminPage = () => {
     const updateDisputeStatus = useUpdateDisputeStatus();
     const { data: auditResponse, isLoading: auditLoading } = useAdminAuditLog();
     const { data: fraudResponse, isLoading: fraudLoading } = useAdminFraudDashboard();
+    const { data: qaGapsResponse, isLoading: qaGapsLoading, isError: qaGapsError, refetch: refetchQaGaps } = useCampusQaGaps(50, { enabled: activeTab === 'qa-gaps' });
 
     const { data: messResponse } = useMessProviders();
     const { data: hospitalResponse } = useHospitals();
@@ -125,6 +127,8 @@ const AdminPage = () => {
     const disputes = useMemo(() => disputesResponse?.data ?? [], [disputesResponse?.data]);
     const auditLogs = useMemo(() => auditResponse?.data ?? [], [auditResponse?.data]);
     const fraudData = fraudResponse?.data ?? null;
+    const qaGaps = useMemo(() => qaGapsResponse?.data ?? [], [qaGapsResponse?.data]);
+    const filteredQaGaps = useMemo(() => qaGaps.filter((gap) => gap.queryText.toLowerCase().includes(searchQuery.trim().toLowerCase())), [qaGaps, searchQuery]);
     const fraudUsers = useMemo(() => fraudData?.flaggedUsers ?? [], [fraudData]);
     const messProviders = useMemo(() => messResponse?.data ?? [], [messResponse?.data]);
     const hospitalProviders = useMemo(() => hospitalResponse?.data ?? [], [hospitalResponse?.data]);
@@ -361,6 +365,7 @@ const AdminPage = () => {
                         { id: 'fraud', label: 'Fraud Dashboard', icon: Activity },
                         { id: 'logs', label: 'System Logs', icon: Terminal },
                         { id: 'activity', label: 'Live Metrics', icon: Activity },
+                        { id: 'qa-gaps', label: 'Q&A Demand', icon: MessageCircleQuestion },
                         { id: 'mess', label: 'Mess Directory', icon: Coffee },
                         { id: 'hospital', label: 'Hospital Directory', icon: Heart },
                     ].map((item) => (
@@ -944,6 +949,26 @@ const AdminPage = () => {
                     )}
 
                     {/* ═══ MESS TAB ═══ */}
+                    {activeTab === 'qa-gaps' && (
+                        <section aria-labelledby="qa-gaps-heading" className="space-y-5">
+                            <div className="flex items-center justify-between gap-4">
+                                <div>
+                                    <h2 id="qa-gaps-heading" className="text-2xl font-bold text-white">Campus Q&amp;A demand gaps</h2>
+                                    <p className="text-sm text-white/50">Privacy-safe unmatched questions, ranked by demand. No user, IP, or session data is stored.</p>
+                                </div>
+                                <Button variant="outline" onClick={() => refetchQaGaps()} disabled={qaGapsLoading}><RefreshCw className={`mr-2 h-4 w-4 ${qaGapsLoading ? 'animate-spin' : ''}`} />Refresh</Button>
+                            </div>
+                            {qaGapsLoading ? <LoadingSpinner /> : qaGapsError ? <ErrorFallback message="Could not load Q&A demand gaps." onRetry={() => refetchQaGaps()} /> : filteredQaGaps.length === 0 ? (
+                                <div className="rounded-xl border border-white/10 p-8 text-center text-white/50">No unmatched questions found. The reviewed corpus is covering current demand.</div>
+                            ) : (
+                                <div className="overflow-hidden rounded-xl border border-white/10">
+                                    <Table><TableHeader><TableRow><TableHead>Student question</TableHead><TableHead className="w-24 text-right">Demand</TableHead><TableHead className="w-48">Last seen</TableHead></TableRow></TableHeader>
+                                    <TableBody>{filteredQaGaps.map((gap) => <TableRow key={gap.queryText}><TableCell className="font-medium text-white">{gap.queryText}</TableCell><TableCell className="text-right"><Badge variant="secondary">{gap.hits}</Badge></TableCell><TableCell className="text-white/60"><time dateTime={gap.lastSeenAt}>{new Date(gap.lastSeenAt).toLocaleString()}</time></TableCell></TableRow>)}</TableBody></Table>
+                                </div>
+                            )}
+                        </section>
+                    )}
+
                     {activeTab === 'mess' && (
                         <div className="space-y-6">
                             <div className="flex justify-between items-center">

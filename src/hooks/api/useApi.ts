@@ -48,6 +48,7 @@ export const queryKeys = {
   admin: {
     pending: ['admin', 'pending'] as const,
     stats: ['admin', 'stats'] as const,
+    campusQaGaps: (limit: number) => ['admin', 'campus-qa-gaps', limit] as const,
     user: (userId: string) => ['admin', 'user', userId] as const,
   },
 
@@ -180,6 +181,12 @@ export interface AdminStats {
   activeDisputes: number;
   totalRequests: number;
   completedExchanges: number;
+}
+
+export interface CampusQaGap {
+  queryText: string;
+  hits: number;
+  lastSeenAt: string;
 }
 
 export interface AdminRecoveryResult {
@@ -462,6 +469,18 @@ export function useAdminStats(
   return useQuery({
     queryKey: queryKeys.admin.stats,
     queryFn: ({ signal }) => api.get<ApiResponse<AdminStats>>('/admin/stats', { signal }),
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useCampusQaGaps(
+  limit = 20,
+  options?: Partial<UseQueryOptions<ApiResponse<CampusQaGap[]>, ApiError>>,
+) {
+  return useQuery({
+    queryKey: queryKeys.admin.campusQaGaps(limit),
+    queryFn: ({ signal }) => api.get<ApiResponse<CampusQaGap[]>>(`/admin/campus-qa/gaps?limit=${limit}`, { signal }),
     staleTime: 60_000,
     ...options,
   });

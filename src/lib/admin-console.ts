@@ -1,6 +1,6 @@
 import type { AuditLogEntry, Dispute, FraudDashboardData, PendingItem } from '@/hooks/api/useApi';
 
-export type AdminTab = 'pending' | 'users' | 'disputes' | 'fraud' | 'logs' | 'activity' | 'mess' | 'hospital';
+export type AdminTab = 'pending' | 'users' | 'disputes' | 'fraud' | 'logs' | 'activity' | 'mess' | 'hospital' | 'qa-gaps';
 
 function includesQuery(parts: Array<string | undefined>, query: string): boolean {
   const normalized = query.trim().toLowerCase();

@@ -23,7 +23,7 @@ const AgentsHub: React.FC = () => {
   const [selectedAgents, setSelectedAgents] = useState<string[]>(['orchestrator']);
   const [isLaunching, setIsLaunching] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
-  const [simulationSteps, setSimulationSteps] = useState<unknown[]>([]);
+  const [simulationSteps, setSimulationSteps] = useState<Array<{ agentId: string; message: string }>>([]);
   const [taskInput, setTaskInput] = useState('Optimize the Resale module for mobile performance');
 
   const toggleAgent = (id: string) => {

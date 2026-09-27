@@ -88,7 +88,7 @@ const ResalePage = () => {
 
   const handleCategoryCardClick = (categoryId: string) => {
     // Toggle: clicking same category deselects it
-    setActiveCategory(prev => prev === categoryId ? null : categoryId);
+    setActiveCategory(activeCategory === categoryId ? null : categoryId);
     setSearchQuery('');
   };
 

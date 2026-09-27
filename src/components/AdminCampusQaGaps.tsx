@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api, { type ApiResponse } from '@/lib/api-client';
 import {
@@ -8,6 +8,8 @@ import {
   topGapCoverage,
 } from '@/lib/campus-qa-gaps';
 import { Button } from '@/components/ui/button';
+import { draftFromGap, type ReviewedAnswerDraft } from '@/lib/campus-qa-answers';
+import { AdminCampusQaAnswerForm, AdminCampusQaReviewedAnswers } from '@/components/AdminCampusQaAnswerStudio';
 
 /**
  * Admin panel: Campus Q&A demand gaps (APODEX continuation j).
@@ -23,6 +25,7 @@ export function AdminCampusQaGaps() {
   });
 
   const rows = useMemo(() => sanitizeCampusQaGaps(data?.data), [data]);
+  const [draft, setDraft] = useState<ReviewedAnswerDraft | null>(null);
   const totalHits = useMemo(() => rows.reduce((s, r) => s + r.hits, 0), [rows]);
   const coverage = useMemo(() => Math.round(topGapCoverage(rows, 10) * 100), [rows]);
 
@@ -65,7 +68,7 @@ export function AdminCampusQaGaps() {
 
       <p className="text-xs text-white/50 max-w-2xl">
         Questions students asked that no reviewed answer covered. Aggregated with no user id, IP or session.
-        Write a sourced answer for the top rows each week and add it to the reviewed corpus.
+        Press Answer on a row to publish a cited answer straight into the live corpus; the gap closes and reopens automatically if students keep asking it unmatched.
       </p>
 
       <div className="grid grid-cols-3 gap-4">
@@ -73,6 +76,14 @@ export function AdminCampusQaGaps() {
         <div className="border border-white/10 p-4"><div className="text-[10px] uppercase text-white/40">Unanswered asks</div><div className="text-2xl font-bold">{totalHits}</div></div>
         <div className="border border-white/10 p-4"><div className="text-[10px] uppercase text-white/40">Top-10 share</div><div className="text-2xl font-bold">{coverage}%</div></div>
       </div>
+
+      {draft ? (
+        <AdminCampusQaAnswerForm key={draft.gapQuery ?? 'new'} initial={draft} onDone={() => setDraft(null)} />
+      ) : (
+        <Button variant="outline" onClick={() => setDraft(draftFromGap(''))} className="rounded-none text-[10px] uppercase tracking-widest font-bold">
+          New reviewed answer
+        </Button>
+      )}
 
       {isLoading ? (
         <p className="text-sm text-white/50">Loading demand gaps...</p>
@@ -87,7 +98,8 @@ export function AdminCampusQaGaps() {
               <th className="py-2 pr-4">#</th>
               <th className="py-2 pr-4">Question</th>
               <th className="py-2 pr-4">Asks</th>
-              <th className="py-2">Last seen</th>
+              <th className="py-2 pr-4">Last seen</th>
+              <th className="py-2"><span className="sr-only">Action</span></th>
             </tr>
           </thead>
           <tbody>
@@ -96,12 +108,19 @@ export function AdminCampusQaGaps() {
                 <td className="py-2 pr-4 font-mono text-white/40">{i + 1}</td>
                 <td className="py-2 pr-4 text-white">{r.queryText}</td>
                 <td className="py-2 pr-4 font-mono">{r.hits}</td>
-                <td className="py-2 font-mono text-xs text-white/50">{r.lastSeenAt ? r.lastSeenAt.slice(0, 10) : '--'}</td>
+                <td className="py-2 pr-4 font-mono text-xs text-white/50">{r.lastSeenAt ? r.lastSeenAt.slice(0, 10) : '--'}</td>
+                <td className="py-2">
+                  <Button variant="outline" onClick={() => setDraft(draftFromGap(r.queryText))} className="rounded-none text-[10px] uppercase tracking-widest font-bold h-7 px-3" aria-label={`Answer: ${r.queryText}`}>
+                    Answer
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+
+      <AdminCampusQaReviewedAnswers />
     </div>
   );
 }

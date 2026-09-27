@@ -338,7 +338,30 @@ model CampusQaGap {
   hits       Int      @default(1)
   lastSeenAt DateTime @default(now()) @map("last_seen_at")
   createdAt  DateTime @default(now()) @map("created_at")
+  /// Set when an admin publishes a reviewed answer for this gap; cleared if the gap is asked again unmatched.
+  resolvedAt DateTime? @map("resolved_at")
+  answerId   String?   @map("answer_id") @db.Uuid
 
   @@index([hits])
+  @@index([resolvedAt])
   @@map("campus_qa_gaps")
+}
+
+/// Admin-reviewed campus answers stored in the database (APODEX continuation k).
+/// Merged with the static in-repo corpus by the deterministic Q&A engine.
+model CampusQaAnswer {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique @db.VarChar(80)
+  question    String   @db.VarChar(200)
+  answer      String   @db.VarChar(1200)
+  topic       String   @db.VarChar(20)
+  keywords    String[]
+  source      String   @db.VarChar(300)
+  published   Boolean  @default(true)
+  createdById String?  @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([published])
+  @@map("campus_qa_answers")
 }

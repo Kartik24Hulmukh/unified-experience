@@ -205,7 +205,7 @@ const App = () => (
               <AuthCacheSyncer />
               <Toaster />
               <Sonner />
-              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <BrowserRouter>
                 <PageViewTracker />
                 <AuthLogoutRedirectSyncer />
                 <OfflineWatcher />

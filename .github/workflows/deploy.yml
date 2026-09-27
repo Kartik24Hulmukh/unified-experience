@@ -61,7 +61,17 @@ jobs:
           path: dist/
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+
+      - name: Copy client dist to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "dist/*"
+          target: ${{ secrets.VPS_APP_PATH }}/dist
+          strip_components: 1
+          overwrite: true
 
       # ── Deploy via SSH ───────────────────────────
       - name: Deploy to VPS
@@ -79,7 +89,7 @@ jobs:
 
             APP_DIR="${{ secrets.VPS_APP_PATH || '/opt/berozgar' }}"
             COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.production"
-            HEALTH_URL="http://localhost:3001/health/ready"
+            HEALTH_URL="https://localhost/health"
             DEPLOY_SHA="${{ github.event.workflow_run.head_sha }}"
             DEPLOY_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -125,7 +135,7 @@ jobs:
             echo "→ Waiting for health check..."
             RETRIES=0
             MAX_RETRIES=30
-            until curl -sf "$HEALTH_URL" > /dev/null 2>&1; do
+            until curl -skf "$HEALTH_URL" > /dev/null 2>&1; do
               RETRIES=$((RETRIES + 1))
               if [ "$RETRIES" -ge "$MAX_RETRIES" ]; then
                 echo "✗ Health check failed after ${MAX_RETRIES} attempts!"
@@ -150,7 +160,7 @@ jobs:
 
             # ── 8. Verify nginx is serving ──────────────
             echo "→ Verifying nginx..."
-            curl -sf http://localhost:80/health > /dev/null 2>&1 || {
+            curl -skf https://localhost/ -o /dev/null || {
               echo "⚠ Nginx health check failed (API is healthy, nginx may need a moment)"
             }
 

@@ -11,6 +11,7 @@
 import type { FastifyInstance } from 'fastify';
 import { ListingModule } from '@prisma/client';
 import * as listingService from '@/services/listingService';
+import { answerCampusQuestion, listCampusQuestions } from '@/services/campusQaService';
 
 const VALID_MODULES = new Set<string>(Object.values(ListingModule));
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -55,6 +56,51 @@ export async function publicRoutes(app: FastifyInstance): Promise<void> {
         data: result.items,
         meta: { nextCursor: result.nextCursor, count: result.items.length },
       });
+    },
+  );
+
+  /**
+   * GET /api/public/campus-qa/questions - the full reviewed question set.
+   * Powers suggestion chips and indexable help pages.
+   */
+  app.get(
+    '/campus-qa/questions',
+    { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
+    async (_request, reply) => {
+      reply.header('Cache-Control', 'public, max-age=600, stale-while-revalidate=3600');
+      const questions = listCampusQuestions();
+      return reply.status(200).send({ data: questions, meta: { count: questions.length } });
+    },
+  );
+
+  /**
+   * GET /api/public/campus-qa?q=... - deterministic, cited campus Q&A.
+   * Anonymous and safe: answers are drawn only from reviewed in-repo documents,
+   * never from student records or user-generated content.
+   */
+  app.get(
+    '/campus-qa',
+    { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const q = (request.query as Record<string, string | undefined>).q;
+      if (!q || q.trim().length === 0) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          code: 'VALIDATION_ERROR',
+          message: 'Query parameter q is required.',
+        });
+      }
+      if (q.length > 200) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          code: 'VALIDATION_ERROR',
+          message: 'Query parameter q must be 200 characters or fewer.',
+        });
+      }
+
+      const result = answerCampusQuestion(q);
+      reply.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=900');
+      return reply.status(200).send({ data: result });
     },
   );
 }

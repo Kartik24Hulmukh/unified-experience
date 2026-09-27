@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 // Guards the three deploy.yml defects fixed in APODEX continuation (d).
-// Like admin-route-aliases, run vitest from the repo root.
-const root = process.cwd();
+// Resolved from this file's location so the suite passes from any cwd.
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const deploy = readFileSync(resolve(root, '.github/workflows/deploy.yml'), 'utf8');
 const compose = readFileSync(resolve(root, 'docker-compose.prod.yml'), 'utf8');
 

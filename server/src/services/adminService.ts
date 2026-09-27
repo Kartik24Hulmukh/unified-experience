@@ -10,6 +10,7 @@ import { RequestStatus } from '@prisma/client';
 import { NotFoundError, ForbiddenError } from '@/errors/index';
 import { isEmailAdminAllowed } from '@/config/constants';
 import { computeTrust } from '@/domain/trustEngine';
+import { TERMINAL_STATUSES as REQUEST_TERMINAL_STATUSES } from '@/services/requestService';
 import { evaluateFraudHeuristics } from '@/domain/fraudHeuristics';
 import { computeRestriction } from '@/domain/restrictionEngine';
 
@@ -429,7 +430,7 @@ async function _recoverStaleTransactionsImpl() {
   // middleware tried to INSERT a new key while the recovery job held a
   // table-level intent lock via the same transaction.
 
-  const terminalStatuses: RequestStatus[] = ['EXPIRED', 'DECLINED', 'CANCELLED', 'COMPLETED', 'WITHDRAWN', 'RESOLVED'];
+  const terminalStatuses: RequestStatus[] = [...REQUEST_TERMINAL_STATUSES]; // V3-14: single source of truth
 
   // ── Step 1: Expire stale requests + reset stranded listings ──────────────
   // Kept in one transaction because listing reset depends on request state

@@ -315,7 +315,40 @@ const ListingDetailPage = () => {
                     <span className="text-[10px] uppercase font-bold tracking-widest">MCTRGIT</span>
                 </div>
 
-                {/* Request Exchange or Contact Service — only show for approved listings */}
+                {/* Request Exchange or Contact Service — V3-12: contextual states for non-approved listings */}
+                {statusKey === 'interest_received' && (
+                    <div className="p-8 border border-amber-500/20 bg-amber-500/5 space-y-3">
+                        <div className="flex items-center gap-3">
+                            <Clock className="w-5 h-5 text-amber-400" />
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-amber-300">Under Consideration</h3>
+                        </div>
+                        <p className="text-amber-200/70 text-sm leading-relaxed">This listing already has a pending exchange request from another buyer. The seller is reviewing it — check back soon. If the request is declined or cancelled the listing will become available again.</p>
+                    </div>
+                )}
+                {statusKey === 'in_transaction' && (
+                    <div className="p-8 border border-white/10 bg-white/[0.03] space-y-3">
+                        <div className="flex items-center gap-3">
+                            <Shield className="w-5 h-5 text-white/40" />
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-white/60">In Active Exchange</h3>
+                        </div>
+                        <p className="text-white/40 text-sm leading-relaxed">This listing is currently in an active exchange between a buyer and seller. It will reappear as available if the exchange is cancelled. Browse other listings in the meantime.</p>
+                    </div>
+                )}
+                {statusKey === 'flagged' && (
+                    <div className="p-8 border border-red-500/20 bg-red-500/5 space-y-3">
+                        <div className="flex items-center gap-3">
+                            <AlertTriangle className="w-5 h-5 text-red-400" />
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-red-300">Under Review</h3>
+                        </div>
+                        <p className="text-red-200/60 text-sm">This listing has been flagged for admin review and is temporarily unavailable.</p>
+                    </div>
+                )}
+                {statusKey === 'completed' && (
+                    <div className="p-8 border border-emerald-500/20 bg-emerald-500/5 text-center">
+                        <p className="text-emerald-300 text-sm font-bold uppercase tracking-widest">Exchange Completed</p>
+                        <p className="text-emerald-200/50 text-xs mt-2">This item has been successfully exchanged.</p>
+                    </div>
+                )}
                 {statusKey === 'approved' && (
                     <div className="p-8 border border-primary/20 bg-primary/5 space-y-6">
                         <div className="flex items-center gap-3">

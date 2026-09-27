@@ -20,7 +20,7 @@ import type { RequestEvent, RequestState } from '@/domain/fsm/RequestMachine';
 // to be permanently blocked from re-requesting the same listing (EXCH-RACE-02),
 // and preventing cancelled-request listing reset (EXCH-BUG-04 activeCount check).
 // 'DISPUTED' is intentionally excluded — active litigation is not terminal.
-const TERMINAL_STATUSES: RequestStatus[] = [
+export const TERMINAL_STATUSES: RequestStatus[] = [
   'COMPLETED',
   'DECLINED',
   'EXPIRED',

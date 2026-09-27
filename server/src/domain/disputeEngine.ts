@@ -51,7 +51,7 @@ export type DisputeMachine = MachineInstance<DisputeState, DisputeEvent>;
    UNDER_REVIEW  → REJECT        → REJECTED
    UNDER_REVIEW  → ESCALATE      → ESCALATED
 
-   RESOLVED, REJECTED, ESCALATED are terminal.
+   RESOLVED, REJECTED are terminal; ESCALATED can be resolved/rejected by higher authority.
    ═══════════════════════════════════════════════════ */
 
 export const DisputeDefinition: MachineDefinition<DisputeState, DisputeEvent> = {
@@ -66,7 +66,12 @@ export const DisputeDefinition: MachineDefinition<DisputeState, DisputeEvent> = 
       REJECT:   'REJECTED',
       ESCALATE: 'ESCALATED',
     },
-    // RESOLVED, REJECTED, ESCALATED — no outgoing transitions (terminal)
+    // V3-06 FIX: ESCALATED can be resolved/rejected by higher authority after escalation
+    ESCALATED: {
+      RESOLVE: 'RESOLVED',
+      REJECT:  'REJECTED',
+    },
+    // RESOLVED, REJECTED — no outgoing transitions (terminal)
   },
 };
 
@@ -119,8 +124,8 @@ export function createDisputeMachine(
 const TERMINAL_STATES: ReadonlySet<DisputeState> = new Set([
   'RESOLVED',
   'REJECTED',
-  'ESCALATED',
 ]);
+// ESCALATED is pending-escalation, not terminal — SUPER admin can still RESOLVE/REJECT
 
 export function isDisputeTerminal(state: DisputeState): boolean {
   return TERMINAL_STATES.has(state);

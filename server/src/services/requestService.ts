@@ -316,7 +316,10 @@ export async function updateRequestEvent(
     // composite key — they never matched, making this check dead code.
     // The middleware's onSend hook handles replay correctly at the HTTP layer.
 
-    // 1. Acquire row-level lock (emulated via findUnique for SQLite)
+    // PostgreSQL findUnique is NOT a lock. Serialize competing FSM events and
+    // message sends before reading state; this prevents duplicate side effects.
+    await tx.$queryRaw`SELECT id FROM requests WHERE id = ${requestId}::uuid FOR UPDATE`;
+    // 1. Read the locked row.
     const row = await tx.request.findUnique({
       where: { id: requestId },
       select: { id: true, listingId: true, buyerId: true, sellerId: true, status: true, version: true },

@@ -10,8 +10,8 @@ import { buildApp } from '@/app';
 import { env } from '@/config/env';
 import { prisma } from '@/lib/prisma';
 import { recoverStaleTransactions } from '@/services/adminService';
+import { pruneAnalyticsEvents } from '@/services/analyticsService';
 import { pruneIdempotencyKeys } from '@/middleware/idempotency';
-import * as analyticsService from '@/services/analyticsService';
 
 // PROD-01: catch unhandled promise rejections and uncaught exceptions.
 // Without these, Node exits silently with code 1 and zero diagnostic info.
@@ -26,8 +26,6 @@ process.on('uncaughtException', (error) => {
 
 /** Run stale recovery every 30 minutes (was 6h; stuck transactions should not wait that long) */
 const STALE_RECOVERY_INTERVAL_MS = 30 * 60 * 1000;
-
-const ANALYTICS_PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 async function main(): Promise<void> {
   const app = await buildApp();
@@ -49,6 +47,7 @@ async function main(): Promise<void> {
     }
     recoveryRunning = true;
     try {
+      await pruneAnalyticsEvents();
       const result = await recoverStaleTransactions();
       app.log.info(result, 'Stale recovery completed');
     } catch (err) {
@@ -75,17 +74,6 @@ async function main(): Promise<void> {
       const pruned = await pruneIdempotencyKeys();
       if (pruned > 0) {
         app.log.info({ pruned }, 'Pruned stale idempotency sentinels');
-
-  const analyticsPruneTimer = setInterval(async () => {
-    try {
-      const pruned = await analyticsService.pruneExpired();
-      if (pruned > 0) {
-        app.log.debug({ pruned }, 'Analytics events pruned');
-      }
-    } catch (err) {
-      app.log.error({ err }, 'Analytics prune failed');
-    }
-  }, ANALYTICS_PRUNE_INTERVAL_MS);
       }
     } catch (err) {
       app.log.warn({ err }, 'Sentinel prune failed');
@@ -100,7 +88,6 @@ async function main(): Promise<void> {
       clearTimeout(startupDelay);
       if (recoveryTimer) clearInterval(recoveryTimer);
       clearInterval(sentinelPruneTimer);
-      if (analyticsPruneTimer) clearInterval(analyticsPruneTimer);
       try {
         await app.close();
         await prisma.$disconnect();

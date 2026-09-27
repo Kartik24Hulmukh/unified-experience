@@ -31,6 +31,7 @@ declare module 'fastify' {
 import { healthRoutes } from '@/routes/health';
 import { authRoutes } from '@/routes/auth';
 import { listingRoutes } from '@/routes/listings';
+import { publicRoutes } from '@/routes/public';
 import { requestRoutes } from '@/routes/requests';
 import { disputeRoutes } from '@/routes/disputes';
 import { adminRoutes } from '@/routes/admin';
@@ -214,6 +215,7 @@ export async function buildApp() {
   // API routes
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(listingRoutes, { prefix: '/api' });
+  await app.register(publicRoutes, { prefix: '/api/public' });
   await app.register(requestRoutes, { prefix: '/api' });
   await app.register(disputeRoutes, { prefix: '/api' });
   await app.register(profileRoutes, { prefix: '/api' });

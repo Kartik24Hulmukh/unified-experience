@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id                  String          @id @default(uuid())
+  id                  String          @id @default(uuid()) @db.Uuid
   googleId            String?         @unique @map("google_id")
   email               String          @unique
   fullName            String          @map("full_name")
@@ -36,12 +36,13 @@ model User {
   refreshTokens       RefreshToken[]
   buyerRequests       Request[]       @relation("BuyerRequests")
   sellerRequests      Request[]       @relation("SellerRequests")
+  messages            Message[]
+  analyticsEvents     AnalyticsEvent[]
   collegeStudent      CollegeStudent? @relation(fields: [collegeStudentId], references: [id])
 
   @@index([email])
   @@index([role])
   @@map("users")
-  analyticsEvents AnalyticsEvent[]
 }
 
 model CollegeStudent {
@@ -59,9 +60,9 @@ model CollegeStudent {
 }
 
 model RefreshToken {
-  id              String    @id @default(uuid())
+  id              String    @id @default(uuid()) @db.Uuid
   token           String    @unique
-  userId          String    @map("user_id")
+  userId          String    @map("user_id") @db.Uuid
   expiresAt       DateTime  @map("expires_at")
   revokedAt       DateTime? @map("revoked_at")
   replacedByToken String?   @map("replaced_by_token")
@@ -76,10 +77,10 @@ model RefreshToken {
 }
 
 model Otp {
-  id        String    @id @default(uuid())
+  id        String    @id @default(uuid()) @db.Uuid
   email     String
   code      String
-  userId    String?   @map("user_id")
+  userId    String?   @map("user_id") @db.Uuid
   expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
   createdAt DateTime  @default(now()) @map("created_at")
@@ -91,8 +92,8 @@ model Otp {
 }
 
 model Listing {
-  id          String        @id @default(uuid())
-  ownerId     String        @map("owner_id")
+  id          String        @id @default(uuid()) @db.Uuid
+  ownerId     String        @map("owner_id") @db.Uuid
   title       String
   price       Decimal       @default(0)
   status      ListingStatus @default(DRAFT)
@@ -115,15 +116,16 @@ model Listing {
 }
 
 model Request {
-  id        String        @id @default(uuid())
-  listingId String        @map("listing_id")
-  buyerId   String        @map("buyer_id")
+  id        String        @id @default(uuid()) @db.Uuid
+  listingId String        @map("listing_id") @db.Uuid
+  buyerId   String        @map("buyer_id") @db.Uuid
   status    RequestStatus @default(IDLE)
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
-  sellerId  String        @map("seller_id")
+  sellerId  String        @map("seller_id") @db.Uuid
   version   Int           @default(0)
   disputes  Dispute[]
+  messages  Message[]
   buyer     User          @relation("BuyerRequests", fields: [buyerId], references: [id])
   listing   Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
   seller    User          @relation("SellerRequests", fields: [sellerId], references: [id])
@@ -136,14 +138,14 @@ model Request {
 }
 
 model Dispute {
-  id          String        @id @default(uuid())
-  requestId   String?       @map("request_id")
-  raisedById  String        @map("raised_by")
+  id          String        @id @default(uuid()) @db.Uuid
+  requestId   String?       @map("request_id") @db.Uuid
+  raisedById  String        @map("raised_by") @db.Uuid
   status      DisputeStatus @default(OPEN)
   createdAt   DateTime      @default(now()) @map("created_at")
-  againstId   String        @map("against_id")
+  againstId   String        @map("against_id") @db.Uuid
   description String
-  listingId   String?       @map("listing_id")
+  listingId   String?       @map("listing_id") @db.Uuid
   type        DisputeType
   against     User          @relation("AgainstDisputes", fields: [againstId], references: [id])
   listing     Listing?      @relation("DisputeListing", fields: [listingId], references: [id])
@@ -157,11 +159,11 @@ model Dispute {
 }
 
 model AuditLog {
-  id         String   @id @default(uuid())
-  actorId    String?  @map("actor_id")
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
   action     String
   entityType String?  @map("entity_type")
-  entityId   String?  @map("entity_id")
+  entityId   String?  @map("entity_id") @db.Uuid
   metadata   Json?
   createdAt  DateTime @default(now()) @map("created_at")
   actorRole  String?  @map("actor_role")
@@ -176,9 +178,9 @@ model AuditLog {
 }
 
 model IdempotencyKey {
-  id             String   @id @default(uuid())
+  id             String   @id @default(uuid()) @db.Uuid
   key            String   @unique
-  userId         String   @map("user_id")
+  userId         String   @map("user_id") @db.Uuid
   responseStatus Int      @map("response_status")
   responseBody   Json     @map("response_body")
   expiresAt      DateTime @map("expires_at")
@@ -254,8 +256,8 @@ enum ListingModule {
 }
 
 model ListingImage {
-  id        String   @id @default(uuid())
-  listingId String   @map("listing_id")
+  id        String   @id @default(uuid()) @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
   url       String
   order     Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at")
@@ -265,29 +267,8 @@ model ListingImage {
   @@map("listing_images")
 }
 
-model AnalyticsEvent {
-  id        String   @id @default(uuid())
-  name      String   // "listing_created", "request_sent", etc.
-  level     String   @default("info")  // "info", "warning", "error"
-  userId    String?  @map("user_id")
-  userRole  String?  @map("user_role")
-  properties Json?
-  context   Json?
-  timestamp DateTime @default(now())
-  createdAt DateTime @default(now()) @map("created_at")
-  expiresAt DateTime @map("expires_at")
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([name])
-  @@index([userId])
-  @@index([timestamp(sort: Desc)])
-  @@index([expiresAt])
-  @@map("analytics_events")
-}
-
-
 model MessProvider {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid()) @db.Uuid
   name         String
   type         String   // "canteen" | "tiffin" | "cloud_kitchen"
   location     String?
@@ -304,7 +285,7 @@ model MessProvider {
 }
 
 model Hospital {
-  id             String   @id @default(uuid())
+  id             String   @id @default(uuid()) @db.Uuid
   name           String
   type           String   // "campus" | "hospital" | "clinic" | "dispensary"
   address        String
@@ -318,4 +299,34 @@ model Hospital {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("hospitals")
+}
+
+// Only metadata is retained: never raw client properties, queries or contact details.
+model AnalyticsEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @db.VarChar(64)
+  level      String   @db.VarChar(10)
+  occurredAt DateTime @map("occurred_at")
+  receivedAt DateTime @default(now()) @map("received_at")
+  userId     String?  @map("user_id") @db.Uuid
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([receivedAt])
+  @@index([name, receivedAt])
+  @@map("analytics_events")
+}
+
+model Message {
+  id        String   @id @default(uuid()) @db.Uuid
+  requestId String   @map("request_id") @db.Uuid
+  senderId  String   @map("sender_id") @db.Uuid
+  clientId  String   @map("client_id") @db.VarChar(36)
+  body      String   @db.VarChar(2000)
+  createdAt DateTime @default(now()) @map("created_at")
+  request   Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, senderId, clientId])
+  @@index([requestId, createdAt, id])
+  @@map("messages")
 }

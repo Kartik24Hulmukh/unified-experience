@@ -26,7 +26,8 @@ interface AnalyticsEvent {
   };
 }
 
-const INGEST_ENDPOINT = '/api/analytics/events';
+const INGEST_ENDPOINT = `${env.VITE_API_BASE_URL.replace(/\/$/, '')}/analytics/events`;
+const REMOTE_EVENTS = new Set(['page_view', 'client_exception', 'client_message', 'listing_view', 'listing_created', 'request_sent', 'request_accepted', 'exchange_completed']);
 const MAX_BUFFER_SIZE = 200;
 const MAX_BATCH_SIZE = 25;
 const FLUSH_INTERVAL_MS = 5000;
@@ -66,6 +67,7 @@ function enqueueEvent(event: AnalyticsEvent): void {
   if (analyticsBuffer.length >= MAX_BUFFER_SIZE) {
     analyticsBuffer.shift();
   }
+  if (!env.VITE_ENABLE_ANALYTICS || !REMOTE_EVENTS.has(event.name)) return;
   analyticsBuffer.push(event);
   scheduleFlush();
 }
@@ -84,30 +86,29 @@ async function flushAnalyticsBuffer(): Promise<void> {
   if (analyticsBuffer.length === 0) return;
 
   const events = analyticsBuffer.splice(0, MAX_BATCH_SIZE);
-  const payload = JSON.stringify({ events });
+  // Remote analytics deliberately excludes PII, raw errors, URLs and arbitrary properties.
+  const payload = JSON.stringify({ events: events.filter(e => REMOTE_EVENTS.has(e.name)).map(({ name, level, timestamp }) => ({ name, level, timestamp })) });
 
   try {
-    if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator && document.visibilityState === 'hidden') {
-      const blob = new Blob([payload], { type: 'application/json' });
-      navigator.sendBeacon(INGEST_ENDPOINT, blob);
-      return;
-    }
-
     // Must dynamically import to avoid circular dependency
     const { getCsrfToken } = await import('@/lib/api-client');
+    const { sessionManager } = await import('@/lib/session');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const accessToken = sessionManager.getAccessToken();
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
     const csrfToken = getCsrfToken();
     if (csrfToken) {
       headers['X-CSRF-Token'] = csrfToken;
     }
 
-    await fetch(INGEST_ENDPOINT, {
+    const response = await fetch(INGEST_ENDPOINT, {
       method: 'POST',
       headers,
       body: payload,
       keepalive: true,
       credentials: 'include',
     });
+    if (response.status >= 500 || response.status === 429) throw new Error('Telemetry temporarily unavailable');
   } catch {
     // Requeue once on failure to avoid silent loss during transient issues.
     for (const ev of events.reverse()) {

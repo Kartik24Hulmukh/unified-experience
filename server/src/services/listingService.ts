@@ -29,6 +29,7 @@ interface ListListingsParams {
   cursor?: string; // GAP-08: cursor for pagination
   search?: string;
   ownerId?: string; // Filter by listing owner (used by profile page)
+  statuses?: string[]; // Allow-list of statuses (used to restrict non-privileged viewers)
 }
 
 export async function listListings(params: ListListingsParams) {
@@ -42,6 +43,11 @@ export async function listListings(params: ListListingsParams) {
     if (Object.values(ListingStatus).includes(statusVal as ListingStatus)) {
       where.status = statusVal as ListingStatus;
     }
+  } else if (params.statuses && params.statuses.length > 0) {
+    const allowed = params.statuses
+      .map((st) => st.toUpperCase())
+      .filter((st) => Object.values(ListingStatus).includes(st as ListingStatus)) as ListingStatus[];
+    where.status = { in: allowed };
   }
   if (params.category) {
     where.category = { equals: params.category };
@@ -476,4 +482,75 @@ export async function deleteListing(listingId: string, userId: string, userRole:
   });
 
   return { success: true };
+}
+
+/* ═══════════════════════════════════════════════════
+   Public discovery (APODEX priority 6)
+   Narrow, anonymous-safe DTO: no owner identity, no contact fields,
+   no request rows, no moderation states.
+   ═══════════════════════════════════════════════════ */
+
+export interface PublicListingDTO {
+  id: string;
+  title: string;
+  category: string;
+  module: string;
+  price: string;
+  status: string;
+  createdAt: string;
+}
+
+export async function listPublicListings(params: {
+  module?: string;
+  category?: string;
+  search?: string;
+  cursor?: string;
+  limit?: number;
+}): Promise<{ items: PublicListingDTO[]; nextCursor: string | null }> {
+  const limit = Math.min(Math.max(params.limit ?? 24, 1), 50);
+  const where: Prisma.ListingWhereInput = {
+    status: ListingStatus.APPROVED,
+    owner: { role: { not: 'PUBLIC_USER' }, isRestricted: false },
+  };
+  if (params.module) where.module = params.module as ListingModule;
+  if (params.category) where.category = params.category;
+  if (params.search) {
+    const q = params.search.slice(0, 80);
+    where.OR = [
+      { title: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+
+  const rows = await prisma.listing.findMany({
+    where,
+    select: {
+      id: true,
+      title: true,
+      category: true,
+      module: true,
+      price: true,
+      status: true,
+      createdAt: true,
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: limit + 1,
+    cursor: params.cursor ? { id: params.cursor } : undefined,
+    skip: params.cursor ? 1 : 0,
+  });
+
+  const hasNext = rows.length > limit;
+  const page = hasNext ? rows.slice(0, limit) : rows;
+  return {
+    items: page.map((r) => ({
+      id: r.id,
+      title: r.title,
+      category: r.category,
+      module: String(r.module),
+      price: r.price.toString(),
+      status: String(r.status),
+      createdAt: r.createdAt.toISOString(),
+    })),
+    nextCursor: hasNext ? page[page.length - 1].id : null,
+  };
 }

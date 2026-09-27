@@ -17,6 +17,30 @@ import { createListingSchema, updateListingStatusSchema } from '@/shared/validat
 import type { CreateListingInput, UpdateListingStatusInput } from '@/shared/validation';
 import { apiData, apiPage } from '@/shared/response';
 import * as listingService from '@/services/listingService';
+import { NotFoundError } from '@/errors/index';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+
+/**
+ * Listing statuses that may be shown to people who are neither the owner nor an
+ * admin. Moderation-only states (DRAFT, PENDING_REVIEW, REJECTED, FLAGGED,
+ * REMOVED, EXPIRED, ARCHIVED) must never leak to anonymous or third-party viewers.
+ */
+export const PUBLIC_LISTING_STATUSES: ReadonlySet<string> = new Set([
+  'APPROVED',
+  'INTEREST_RECEIVED',
+  'IN_TRANSACTION',
+  'COMPLETED',
+]);
+
+/** Optional auth: resolves the viewer if a valid session is present, never throws. */
+async function resolveViewer(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    await authenticate(request, reply);
+    return { userId: request.userId ?? null, role: request.userRole ?? null };
+  } catch {
+    return { userId: null as string | null, role: null as string | null };
+  }
+}
 
 const VALID_STATUSES = new Set(Object.values(ListingStatus));
 const VALID_MODULES = new Set(Object.values(ListingModule));
@@ -59,27 +83,26 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    // Security: when ownerId filter is used, restrict visible statuses
-    // - the owner can see all their own listings (any status)
-    // - anyone else can only see APPROVED listings for that owner
-    // Attempt to decode the session token (optional auth — no error if absent)
-    let requestingUserId: string | null = null;
-    try {
-      await authenticate(request, reply);
-      requestingUserId = request.userId ?? null;
-    } catch {
-      // unauthenticated — that's fine for public listing browse
+    // Security (APODEX-PD1): only owners and admins may see moderation-only states.
+    // Previously an anonymous GET /listings without ?status returned PENDING_REVIEW,
+    // REJECTED, FLAGGED and REMOVED listings to anyone.
+    const viewer = await resolveViewer(request, reply);
+    const isAdmin = viewer.role === 'ADMIN';
+    const effectiveOwnerId = query.ownerId;
+    const isOwnerView = Boolean(effectiveOwnerId && viewer.userId === effectiveOwnerId);
+    const privileged = isAdmin || isOwnerView;
+
+    if (!privileged && status && !PUBLIC_LISTING_STATUSES.has(status)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        code: 'FORBIDDEN',
+        message: 'This listing status is only visible to its owner or an administrator.',
+      });
     }
 
-    const effectiveOwnerId = query.ownerId;
-    // If viewing another user's listings (or unauthenticated), only show APPROVED
-    const ownerIdStatus: string | undefined =
-      effectiveOwnerId && requestingUserId !== effectiveOwnerId
-        ? 'APPROVED'
-        : status; // owner sees all their own statuses
-
     const result = await listingService.listListings({
-      status: effectiveOwnerId ? ownerIdStatus : status,
+      status,
+      statuses: privileged || status ? undefined : [...PUBLIC_LISTING_STATUSES],
       category: query.category,
       module: moduleParam,
       limit: safeParseInt(query.limit),
@@ -95,7 +118,30 @@ export async function listingRoutes(app: FastifyInstance): Promise<void> {
   app.get('/listings/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const listing = await listingService.getListing(id);
-    return reply.status(200).send(apiData(listing));
+    const viewer = await resolveViewer(request, reply);
+    const isAdmin = viewer.role === 'ADMIN';
+    const ownerId = (listing as { ownerId?: string }).ownerId;
+    const isOwner = Boolean(viewer.userId && ownerId === viewer.userId);
+
+    // APODEX-PD2: moderation-only listings are indistinguishable from missing ones
+    // for third parties (uniform 404, no existence oracle).
+    if (!isAdmin && !isOwner && !PUBLIC_LISTING_STATUSES.has(String(listing.status).toUpperCase())) {
+      throw new NotFoundError('Listing', id);
+    }
+
+    // APODEX-PD3: request rows (buyer IDs + states) are private. Owners/admins see
+    // all; a buyer sees only their own; anonymous viewers see none.
+    const requests = Array.isArray((listing as { requests?: unknown[] }).requests)
+      ? ((listing as { requests: Array<{ buyerId: string }> }).requests)
+      : [];
+    const visibleRequests = isAdmin || isOwner
+      ? requests
+      : viewer.userId
+        ? requests.filter((r) => r.buyerId === viewer.userId)
+        : [];
+
+    reply.header('Cache-Control', 'private, no-store');
+    return reply.status(200).send(apiData({ ...listing, requests: visibleRequests }));
   });
 
   /** POST /listings — create new listing (auth required) */

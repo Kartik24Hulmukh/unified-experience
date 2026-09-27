@@ -1,26 +1,31 @@
-# ═══════════════════════════════════════════════════
-# BErozgar — Deploy Pipeline
-# ═══════════════════════════════════════════════════
+# ===================================================
+# BErozgar (rgitrozgar) - Deploy Pipeline
+# ===================================================
 #
-# Triggers: successful CI on main branch push
-# Deploys to VPS via SSH + Docker Compose
+# Trigger: successful "Node.js CI" run for a push to main.
+# Target:  single VPS running docker-compose.prod.yml (api + postgres + nginx).
 #
-# Flow:
-#   1. Download client dist artifact from CI
-#   2. SSH into VPS → pull latest code + Docker image
-#   3. Run database migrations
-#   4. Rolling restart (api first, then nginx reloads)
-#   5. Health check — rolls back on failure
+# Flow (APODEX continuation d - fixes the three deploy.yml defects):
+#   0. Preflight: skip cleanly (not fail) when VPS secrets are not configured.
+#   1. Download the client-dist artifact from the CI run (REQUIRED - a missing
+#      artifact now fails the deploy instead of being ignored) and verify dist/index.html exists.
+#   2. Copy the dist tarball to the VPS (previously it was downloaded onto
+#      the runner and never shipped, so nginx kept serving a stale SPA).
+#   3. On the VPS: checkout the exact SHA, BUILD the api image locally and
+#      tag it berozgar-api:<sha> (previously we pulled a registry image that CI
+#      never publishes, then built anyway).
+#   4. pg_dump backup, then prisma migrate deploy using the NEW image.
+#   5. Publish dist in place (old hashed assets kept for open tabs), restart.
+#   6. Health-check the api INSIDE the container network (port 3001 is only
+#      `expose`d, so probing host port 3001 always failed and
+#      every deploy "rolled back"). Then check nginx end to end.
+#   7. On failure: restore previous SHA, previous image tag and previous dist.
+#      Migrations are forward-only; the pre-deploy dump path is printed.
 #
 # Required GitHub Secrets:
-#   VPS_HOST          — SSH hostname (e.g., rgitrozgar.in)
-#   VPS_USER          — SSH username (e.g., deploy)
-#   VPS_SSH_KEY       — Private SSH key for VPS access
-#   VPS_APP_PATH      — App directory on VPS (e.g., /opt/berozgar)
-#   DEPLOY_ENV_FILE   — Base64-encoded .env.production file
-#
-# Required GitHub Variables (non-secret):
-#   DEPLOY_DOMAIN     — Production domain (default: rgitrozgar.in)
+#   VPS_HOST, VPS_USER, VPS_SSH_KEY
+#   VPS_APP_PATH      - app directory on VPS (default /opt/berozgar)
+#   DEPLOY_ENV_FILE   - base64 of .env.production (optional if already on VPS)
 
 name: Deploy
 
@@ -30,13 +35,9 @@ on:
     types: [completed]
     branches: [main]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/api
-
 permissions:
   contents: read
-  packages: read
+  actions: read
 
 jobs:
   deploy:
@@ -46,25 +47,57 @@ jobs:
       group: production-deploy
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+      APP_DIR: ${{ secrets.VPS_APP_PATH || '/opt/berozgar' }}
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Preflight - are deploy secrets configured?
+        id: preflight
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_HOST" ] || [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "### Deploy skipped: VPS_HOST / VPS_USER / VPS_SSH_KEY not set" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      # ── Download client dist from CI ─────────────
-      - name: Download client artifact
+      - name: Download client artifact (required)
+        if: steps.preflight.outputs.configured == 'true'
         uses: actions/download-artifact@v4
         with:
           name: client-dist
           path: dist/
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
-      # ── Deploy via SSH ───────────────────────────
-      - name: Deploy to VPS
+      - name: Verify and package client build
+        if: steps.preflight.outputs.configured == 'true'
+        run: |
+          set -euo pipefail
+          test -f dist/index.html || { echo "dist/index.html missing - refusing to deploy an empty SPA"; exit 1; }
+          mkdir -p release
+          tar -czf "release/dist-${DEPLOY_SHA}.tgz" -C dist .
+          ls -la release
+
+      - name: Upload client build to VPS
+        if: steps.preflight.outputs.configured == 'true'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: release/dist-${{ github.event.workflow_run.head_sha }}.tgz
+          target: ${{ secrets.VPS_APP_PATH || '/opt/berozgar' }}/releases
+          strip_components: 1
+
+      - name: Deploy on VPS
+        if: steps.preflight.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1
         env:
           DEPLOY_ENV_B64: ${{ secrets.DEPLOY_ENV_FILE }}
@@ -72,112 +105,84 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          command_timeout: 10m
-          envs: DEPLOY_ENV_B64
+          command_timeout: 15m
+          envs: DEPLOY_ENV_B64,DEPLOY_SHA,APP_DIR
           script: |
             set -euo pipefail
-
-            APP_DIR="${{ secrets.VPS_APP_PATH || '/opt/berozgar' }}"
-            COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.production"
-            HEALTH_URL="http://localhost:3001/health/ready"
-            DEPLOY_SHA="${{ github.event.workflow_run.head_sha }}"
-            DEPLOY_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
             cd "$APP_DIR"
+            COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.production"
+            SHA="$DEPLOY_SHA"
+            echo "== BErozgar deploy $SHA @ $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-            echo "══════════════════════════════════════"
-            echo "  BErozgar Deploy — $DEPLOY_SHA"
-            echo "  Started: $DEPLOY_TIME"
-            echo "══════════════════════════════════════"
+            # 1. Snapshot for rollback
+            PREV_SHA="$(git rev-parse HEAD 2>/dev/null || echo none)"
+            PREV_TAG="$(cat .deployed-tag 2>/dev/null || echo latest)"
+            echo "-> previous: sha=$PREV_SHA image=berozgar-api:$PREV_TAG"
 
-            # ── 1. Snapshot current state for rollback ──
-            PREV_IMAGE=$($COMPOSE images -q api 2>/dev/null || echo "none")
-            echo "→ Previous image: $PREV_IMAGE"
+            # 2. Exact code for this deploy
+            git fetch --quiet origin main
+            git reset --hard "$SHA"
 
-            # ── 2. Pull latest code ─────────────────────
-            echo "→ Pulling latest code..."
-            git fetch origin main
-            git reset --hard "$DEPLOY_SHA"
-
-            # ── 3. Write env file from secret ───────────
-            # (only if DEPLOY_ENV_FILE secret is set)
+            # 3. Env file
             if [ -n "${DEPLOY_ENV_B64:-}" ]; then
-              echo "→ Writing .env.production from secret..."
-              echo "$DEPLOY_ENV_B64" | base64 -d > .env.production
+              (umask 077; echo "$DEPLOY_ENV_B64" | base64 -d > .env.production)
             fi
+            test -s .env.production || { echo "x .env.production missing"; exit 1; }
 
-            # ── 4. Pull Docker image from registry ──────
-            echo "→ Pulling Docker image..."
-            docker pull "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" || true
+            # 4. Stage client build
+            mkdir -p releases backups dist
+            rm -rf "releases/dist-$SHA" && mkdir -p "releases/dist-$SHA"
+            tar -xzf "releases/dist-$SHA.tgz" -C "releases/dist-$SHA"
+            test -f "releases/dist-$SHA/index.html"
 
-            # ── 5. Run database migrations ──────────────
-            echo "→ Running database migrations..."
-            $COMPOSE run --rm --no-deps api sh -c "npx prisma migrate deploy" || {
-              echo "✗ Migration failed! Aborting deploy."
+            # 5. Build api image for this SHA (no registry dependency)
+            export API_IMAGE_TAG="$SHA"
+            $COMPOSE build api
+
+            # 6. Database: ensure up, back up, migrate with the NEW image
+            $COMPOSE up -d --wait postgres
+            DUMP="backups/pre-$SHA.dump"
+            $COMPOSE exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > "$DUMP"
+            echo "-> backup written: $DUMP ($(du -h "$DUMP" | cut -f1))"
+            $COMPOSE run --rm --no-deps api npx prisma migrate deploy || { echo "x migration failed - nothing restarted"; exit 1; }
+
+            # 7. Publish SPA in place (keep old hashed assets for open tabs)
+            rm -rf releases/dist-prev && mkdir -p releases/dist-prev
+            cp -a dist/. releases/dist-prev/ 2>/dev/null || true
+            cp -a "releases/dist-$SHA/." dist/
+
+            # 8. Restart on the new image
+            $COMPOSE up -d --no-build --remove-orphans
+
+            api_ok() { $COMPOSE exec -T api wget -qO- http://localhost:3001/health/ready >/dev/null 2>&1; }
+            web_ok() { curl -skf https://localhost/health >/dev/null 2>&1 || curl -sf http://localhost/health >/dev/null 2>&1; }
+
+            rollback() {
+              echo "x $1 - rolling back to $PREV_SHA / berozgar-api:$PREV_TAG"
+              $COMPOSE logs --tail=80 api || true
+              [ "$PREV_SHA" != none ] && git reset --hard "$PREV_SHA"
+              cp -a releases/dist-prev/. dist/ 2>/dev/null || true
+              API_IMAGE_TAG="$PREV_TAG" $COMPOSE up -d --no-build --remove-orphans || true
+              echo "x deploy rolled back. Schema is forward-only; pre-deploy dump: $APP_DIR/$DUMP"
               exit 1
             }
 
-            # ── 6. Rolling restart ──────────────────────
-            echo "→ Restarting services..."
-            $COMPOSE up -d --build --remove-orphans
+            # 9. Health: api inside the network, then nginx end to end
+            for i in $(seq 1 45); do api_ok && break; [ "$i" = 45 ] && rollback "api /health/ready failed"; sleep 2; done
+            for i in $(seq 1 15); do web_ok && break; [ "$i" = 15 ] && rollback "nginx /health failed"; sleep 2; done
 
-            # ── 7. Wait for API health ──────────────────
-            echo "→ Waiting for health check..."
-            RETRIES=0
-            MAX_RETRIES=30
-            until curl -sf "$HEALTH_URL" > /dev/null 2>&1; do
-              RETRIES=$((RETRIES + 1))
-              if [ "$RETRIES" -ge "$MAX_RETRIES" ]; then
-                echo "✗ Health check failed after ${MAX_RETRIES} attempts!"
-                echo "→ Rolling back..."
+            # 10. Record + housekeeping (keep last 5 builds / 14 days of dumps)
+            echo "$SHA" > .deployed-tag
+            ls -1t releases/*.tgz 2>/dev/null | tail -n +6 | xargs -r rm -f
+            find backups -name 'pre-*.dump' -mtime +14 -delete || true
+            docker image prune -f --filter "until=168h" >/dev/null 2>&1 || true
+            echo "== deploy OK $SHA"
 
-                # Show recent logs for debugging
-                $COMPOSE logs --tail=50 api
-
-                # Rollback: restart with previous image
-                $COMPOSE down
-                if [ "$PREV_IMAGE" != "none" ]; then
-                  docker tag "$PREV_IMAGE" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" 2>/dev/null || true
-                fi
-                git checkout HEAD~1 -- docker-compose.prod.yml 2>/dev/null || true
-                $COMPOSE up -d
-                echo "✗ Deploy ROLLED BACK. Previous version restored."
-                exit 1
-              fi
-              echo "  Attempt $RETRIES/$MAX_RETRIES — waiting 2s..."
-              sleep 2
-            done
-
-            # ── 8. Verify nginx is serving ──────────────
-            echo "→ Verifying nginx..."
-            curl -sf http://localhost:80/health > /dev/null 2>&1 || {
-              echo "⚠ Nginx health check failed (API is healthy, nginx may need a moment)"
-            }
-
-            # ── 9. Clean up old images ──────────────────
-            echo "→ Pruning old Docker images..."
-            docker image prune -f --filter "until=168h" > /dev/null 2>&1 || true
-
-            echo ""
-            echo "══════════════════════════════════════"
-            echo "  ✓ Deploy successful!"
-            echo "  SHA:  $DEPLOY_SHA"
-            echo "  Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "══════════════════════════════════════"
-
-      # ── Post-deploy notification ─────────────────
       - name: Post-deploy summary
-        if: always()
+        if: always() && steps.preflight.outputs.configured == 'true'
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            echo "### ✅ Deploy Successful" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **Branch:** main" >> $GITHUB_STEP_SUMMARY
-            echo "- **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+            echo "### Deploy successful - \`${DEPLOY_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "### ❌ Deploy Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "Check logs for rollback status." >> $GITHUB_STEP_SUMMARY
+            echo "### Deploy FAILED - \`${DEPLOY_SHA}\` (see logs; rollback attempted)" >> "$GITHUB_STEP_SUMMARY"
           fi

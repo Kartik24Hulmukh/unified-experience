@@ -19,6 +19,7 @@
 
 import { createHash } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
+import { utcDay } from '@/services/campusQaMetricsService';
 
 export const MAX_GAP_QUERY_LENGTH = 200;
 const MIN_GAP_TOKENS = 2;
@@ -52,12 +53,26 @@ export async function recordUnmatchedQuery(raw: string): Promise<boolean> {
   if (!normalized) return false;
   const queryHash = gapQueryHash(normalized);
   try {
-    await prisma.campusQaGap.upsert({
-      where: { queryHash },
-      create: { queryHash, queryText: normalized, hits: 1, lastSeenAt: new Date() },
-      // A resolved gap asked again unmatched means the published answer does not
-      // actually match how students phrase it: reopen it in the queue.
-      update: { hits: { increment: 1 }, lastSeenAt: new Date(), resolvedAt: null },
+    const now = new Date();
+    await prisma.$transaction(async (tx) => {
+      // Upsert first to lock even an already-open gap against concurrent
+      // publication. Never clear resolvedAt here: the conditional update below
+      // owns the transition and its counter in the same transaction.
+      await tx.campusQaGap.upsert({
+        where: { queryHash },
+        create: { queryHash, queryText: normalized, hits: 1, lastSeenAt: now },
+        update: { hits: { increment: 1 }, lastSeenAt: now },
+      });
+      const reopened = await tx.campusQaGap.updateMany({
+        where: { queryHash, resolvedAt: { not: null } }, data: { resolvedAt: null },
+      });
+      if (reopened.count > 0) {
+        await tx.campusQaDailyMetric.upsert({
+          where: { day: utcDay(now) },
+          create: { day: utcDay(now), reopened: reopened.count },
+          update: { reopened: { increment: reopened.count } },
+        });
+      }
     });
     return true;
   } catch {

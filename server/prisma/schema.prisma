@@ -365,3 +365,13 @@ model CampusQaAnswer {
   @@index([published])
   @@map("campus_qa_answers")
 }
+
+/// Aggregate-only observed Q&A traffic; no query text or visitor identifiers.
+model CampusQaDailyMetric {
+  day        DateTime @id @db.Date
+  answered   Int @default(0)
+  unanswered Int @default(0)
+  reopened   Int @default(0)
+
+  @@map("campus_qa_daily_metrics")
+}

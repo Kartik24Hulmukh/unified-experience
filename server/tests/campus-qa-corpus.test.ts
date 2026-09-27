@@ -90,6 +90,7 @@ beforeEach(() => {
   Object.values(mocks).forEach((m) => m.mockReset());
   setReviewedAnswers([]);
   resetReviewedAnswersCache();
+  mocks.gapUpdateMany.mockResolvedValue({ count: 0 });
 });
 
 describe('validation contract', () => {

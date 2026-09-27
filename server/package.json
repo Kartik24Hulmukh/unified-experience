@@ -18,7 +18,7 @@
     "db:studio": "prisma studio",
     "lint": "eslint src/",
     "type-check": "tsc --noEmit",
-    "test:integration": "vitest run tests/exchange-evidence.integration.test.ts"
+    "test:integration": "vitest run tests/exchange-evidence.integration.test.ts tests/campus-qa-metrics.integration.test.ts"
   },
   "dependencies": {
     "@berozgar/shared": "file:../shared",

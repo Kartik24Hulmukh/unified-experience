@@ -45,3 +45,6 @@ Retention and purge operations must be restricted to authorized admin/ops roles 
 ## 6. Review Cycle
 
 This policy should be reviewed at least once per semester or when major architecture/security changes occur.
+
+### Campus Q&A daily counters
+Aggregate daily matched/unmatched counts and automatic gap-reopen transition counts contain no visitor identifier or query text. Retain for longitudinal pilot comparisons; no automatic expiry is currently configured. The admin API exposes at most twelve UTC weeks per request. These aggregates are distinct from raw analytics events and unmatched-query review text. Reassess the need for long-term aggregates at pilot close.

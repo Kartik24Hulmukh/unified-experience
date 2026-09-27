@@ -1,3 +1,4 @@
+import { AdminCampusQaMetrics } from '@/components/AdminCampusQaMetrics';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api, { type ApiResponse } from '@/lib/api-client';
@@ -70,6 +71,8 @@ export function AdminCampusQaGaps() {
         Questions students asked that no reviewed answer covered. Aggregated with no user id, IP or session.
         Press Answer on a row to publish a cited answer straight into the live corpus; the gap closes and reopens automatically if students keep asking it unmatched.
       </p>
+
+      <AdminCampusQaMetrics />
 
       <div className="grid grid-cols-3 gap-4">
         <div className="border border-white/10 p-4"><div className="text-[10px] uppercase text-white/40">Open gaps</div><div className="text-2xl font-bold">{rows.length}</div></div>

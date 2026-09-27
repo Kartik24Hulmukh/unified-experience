@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { safeNavigate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { APP_VERSION } from '@/lib/app-meta';
+import { PublicListingsStrip } from '@/components/PublicListingsStrip';
 
 const Portal3D = lazy(() => import('@/components/Portal3D'));
 
@@ -340,6 +341,9 @@ const LandingPage = () => {
               </Link>
             </Button>
           </div>
+
+          {/* APODEX P6: real, minimal public supply for signed-out visitors */}
+          {!isAuthenticated && !authLoading && <PublicListingsStrip />}
         </div>
 
         {/* ── Bottom Meta ── */}

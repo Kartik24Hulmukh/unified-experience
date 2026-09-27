@@ -65,9 +65,11 @@ export default function HelpPage() {
       return;
     }
     setOpenId(q.id);
-    if (answers[q.id]) return;
     setPendingId(q.id);
     try {
+      // Always re-ask the live (no-store) answer API. In-memory answers are
+      // never treated as durable: if an admin withdraws an answer mid-session,
+      // matched:false replaces the stale paragraph instead of keeping it.
       const answer = await askCampusQuestion(q.question);
       setAnswers((prev) => ({ ...prev, [q.id]: answer }));
     } catch {
@@ -145,10 +147,9 @@ export default function HelpPage() {
                     </button>
                     {open && (
                       <div className="pb-5 pl-1">
-                        {pendingId === q.id && !answer && (
+                        {pendingId === q.id ? (
                           <p className="text-sm text-foreground/40 animate-pulse">Fetching reviewed answer…</p>
-                        )}
-                        {answer?.matched && answer.answer ? (
+                        ) : answer?.matched && answer.answer ? (
                           <>
                             <p className="text-sm leading-relaxed text-foreground/70">{answer.answer}</p>
                             <p className="mt-2 text-[11px] font-mono text-foreground/35">
@@ -156,11 +157,9 @@ export default function HelpPage() {
                             </p>
                           </>
                         ) : (
-                          pendingId !== q.id && (
-                            <p className="text-sm text-foreground/40">
-                              Answer unavailable right now — please retry.
-                            </p>
-                          )
+                          <p className="text-sm text-foreground/40">
+                            Answer unavailable right now — please retry.
+                          </p>
                         )}
                       </div>
                     )}
